@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="220" viewBox="0 0 520 220" role="img" aria-label="Greenfield Plumbing and Heating logo placeholder">
+  <rect width="520" height="220" rx="22" fill="#f5f7f6" stroke="#025d24" stroke-width="6" />
+  <rect x="26" y="26" width="80" height="80" rx="18" fill="#037a2f" />
+  <path d="M52 82h28M66 68v28" stroke="#f5f7f6" stroke-width="8" stroke-linecap="round" />
+  <text x="130" y="85" fill="#080a0a" font-size="34" font-family="'Chakra Petch', sans-serif" font-weight="700">GREENFIELD</text>
+  <text x="130" y="122" fill="#025d24" font-size="24" font-family="'Work Sans', sans-serif" font-weight="700">PLUMBING &amp; HEATING</text>
+</svg>

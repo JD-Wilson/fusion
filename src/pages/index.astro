@@ -1,0 +1,605 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const homePage = await requirePageEntry('home');
+const { Content } = await render(homePage);
+
+const teams = await getCollection('teams', ({ data }) => !data.noindex);
+const leagues = await getCollection('leagues', ({ data }) => !data.noindex);
+const sponsors = await getCollection('sponsors', ({ data }) => !data.noindex);
+const latestPosts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+const featuredSponsors = [...sponsors]
+  .sort((a, b) => {
+    const featuredDiff = Number(b.data.featured) - Number(a.data.featured);
+    if (featuredDiff !== 0) {
+      return featuredDiff;
+    }
+
+    return (a.data.order ?? 999) - (b.data.order ?? 999);
+  })
+  .slice(0, 3);
+
+const [primarySponsor, ...secondarySponsors] = featuredSponsors;
+
+const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
+---
+
+<BaseLayout
+  title={homePage.data.seoTitle ?? 'Fusion FC Grassroots Football Community'}
+  description={homePage.data.seoDescription ?? homePage.data.description}
+  canonical={homePage.data.canonicalUrl ?? '/'}
+  image={homePage.data.ogImage}
+  noindex={homePage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow="Fusion Football Club"
+    title="Growing local football pathways for every young player"
+    summary="Fusion FC gives players, parents, and volunteers a structured, supportive club experience from first kick to competitive football."
+    actions={[
+      { href: '/about/', label: 'Discover the Club' },
+      { href: '/new-sponsors/', label: 'Sponsor Us', ghost: true }
+    ]}
+  />
+
+  <!-- Bold stats strip -->
+  <section class="stats-strip reveal" data-delay="1">
+    <p class="stats-label">Club Snapshot — 2026/27 Season</p>
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-number">{teams.length}</span>
+        <span class="stat-name">Active Teams</span>
+      </div>
+      <div class="stat-divider" aria-hidden="true"></div>
+      <div class="stat-item">
+        <span class="stat-number">{leagues.length}</span>
+        <span class="stat-name">League Pathways</span>
+      </div>
+      <div class="stat-divider" aria-hidden="true"></div>
+      <div class="stat-item">
+        <span class="stat-number">{sponsors.length}</span>
+        <span class="stat-name">Local Partners</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid grid-2">
+    <article class="section-card reveal" data-delay="2">
+      <h2 class="section-title">Inside the Club</h2>
+      <div class="prose">
+        <Content />
+      </div>
+      <a class="link-arrow" href="/age-groups/">View age groups</a>
+    </article>
+
+    <article class="section-card reveal" data-delay="3">
+      <h2 class="section-title">Latest from the Blog</h2>
+      <div class="mini-list">
+        {
+          latestPosts.map((post) => (
+            <a class="mini-item" href={`/blog/${post.id}/`}>
+              <span class="mini-date">{post.data.date.toLocaleDateString('en-GB')}</span>
+              <strong class="mini-title">{post.data.title}</strong>
+              <p class="mini-excerpt">{post.data.excerpt}</p>
+            </a>
+          ))
+        }
+      </div>
+      <a class="link-arrow" href="/blog/">Read all updates</a>
+    </article>
+  </section>
+
+  <section class="sponsors-section reveal" data-delay="4">
+    <div class="sponsors-band">
+
+      <div class="sponsors-band-head">
+        <div>
+          <p class="sponsors-eyebrow">Club Partners</p>
+          <h2 class="sponsors-title">Featured Sponsors</h2>
+        </div>
+        <a class="sponsors-all-link" href="/sponsors/">
+          View all sponsors →
+        </a>
+      </div>
+
+      {primarySponsor && (
+        <article class="sponsor-featured">
+          <div class="sponsor-featured-logo-box">
+            <img
+              src={primarySponsor.data.logo}
+              alt={`${primarySponsor.data.name} logo`}
+            />
+          </div>
+          <div class="sponsor-featured-body">
+            {primarySponsor.data.level && (
+              <span class="sponsor-tier">{primarySponsor.data.level}</span>
+            )}
+            <h3 class="sponsor-featured-name">{primarySponsor.data.name}</h3>
+            <p class="sponsor-featured-summary">{primarySponsor.data.summary}</p>
+            <a class="sponsor-profile-link" href={`/sponsors/${primarySponsor.id}/`}>
+              View profile →
+            </a>
+          </div>
+          <span class="sponsor-num" aria-hidden="true">01</span>
+        </article>
+      )}
+
+      {secondarySponsors.length > 0 && (
+        <div class="sponsors-secondary-grid">
+          {secondarySponsors.map((sponsor, i) => (
+            <article class="sponsor-secondary">
+              <span class="sponsor-num-sm" aria-hidden="true">
+                {String(i + 2).padStart(2, '0')}
+              </span>
+              <div class="sponsor-secondary-logo-box">
+                <img
+                  src={sponsor.data.logo}
+                  alt={`${sponsor.data.name} logo`}
+                />
+              </div>
+              {sponsor.data.level && (
+                <span class="sponsor-tier">{sponsor.data.level}</span>
+              )}
+              <h3 class="sponsor-secondary-name">{sponsor.data.name}</h3>
+              <p class="sponsor-secondary-summary">{sponsor.data.summary}</p>
+              <a class="sponsor-profile-link" href={`/sponsors/${sponsor.id}/`}>
+                View profile →
+              </a>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <div class="sponsors-cta-strip">
+        <p>Interested in sponsoring Fusion FC?</p>
+        <a class="sponsors-cta-btn" href="/new-sponsors/">Become a partner</a>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ─── Stats strip ──────────────────────────────────── */
+
+  .stats-strip {
+    border-radius: var(--radius-m);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding: var(--space-l) var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+
+  .stats-label {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-lime);
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 1;
+    color: var(--color-lime);
+    font-weight: 700;
+  }
+
+  .stat-name {
+    font-size: 0.82rem;
+    color: rgba(245, 247, 246, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 52px;
+    background: rgba(245, 247, 246, 0.12);
+    flex-shrink: 0;
+  }
+
+  /* ─── Blog mini-list ───────────────────────────────── */
+
+  .mini-list {
+    display: grid;
+    margin-top: var(--space-m);
+    margin-bottom: var(--space-xs);
+  }
+
+  .mini-item {
+    display: grid;
+    gap: 0.2rem;
+    padding: var(--space-s) 0;
+    border-bottom: 1px solid var(--color-border);
+    transition: background var(--transition);
+  }
+
+  .mini-item:first-child {
+    padding-top: 0;
+  }
+
+  .mini-item:last-child {
+    border-bottom: none;
+  }
+
+  .mini-date {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    color: var(--color-forest);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .mini-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.3;
+    color: var(--color-charcoal);
+    transition: color var(--transition);
+  }
+
+  .mini-item:hover .mini-title {
+    color: var(--color-forest-deep);
+  }
+
+  .mini-excerpt {
+    color: var(--color-muted);
+    font-size: 0.87rem;
+    line-height: 1.5;
+  }
+
+  /* ─── Sponsors band ────────────────────────────────── */
+
+  .sponsors-band {
+    background: var(--color-charcoal);
+    border-radius: var(--radius-l);
+    padding: var(--space-xl);
+    color: var(--color-paper);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Subtle green wash from top-right */
+  .sponsors-band::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 100% 0%, rgba(3, 122, 47, 0.18) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .sponsors-band-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-m);
+    margin-bottom: var(--space-l);
+    position: relative;
+  }
+
+  .sponsors-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+    margin-bottom: 0.35rem;
+  }
+
+  .sponsors-title {
+    font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+    color: var(--color-paper);
+  }
+
+  .sponsors-all-link {
+    color: rgba(245, 247, 246, 0.5);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color var(--transition);
+  }
+
+  .sponsors-all-link:hover {
+    color: var(--color-lime);
+  }
+
+  /* ─── Featured sponsor card ─────────────────────────── */
+
+  .sponsor-featured {
+    display: grid;
+    grid-template-columns: 200px 1fr auto;
+    gap: var(--space-l);
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(29, 185, 84, 0.2);
+    border-radius: var(--radius-m);
+    padding: var(--space-l);
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--transition), background var(--transition);
+  }
+
+  .sponsor-featured:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(29, 185, 84, 0.4);
+  }
+
+  /* Green shine on hover from left */
+  .sponsor-featured::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(2, 93, 36, 0.12) 0%, transparent 55%);
+    opacity: 0;
+    transition: opacity var(--transition);
+    pointer-events: none;
+  }
+
+  .sponsor-featured:hover::before {
+    opacity: 1;
+  }
+
+  .sponsor-featured-logo-box {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-s);
+    padding: var(--space-m) var(--space-l);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .sponsor-featured-logo-box img {
+    max-width: 140px;
+    height: 56px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .sponsor-featured-body {
+    display: grid;
+    gap: 0.4rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sponsor-tier {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(29, 185, 84, 0.35);
+    color: var(--color-lime);
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    width: fit-content;
+  }
+
+  .sponsor-featured-name {
+    font-size: 1.35rem;
+    color: var(--color-paper);
+    line-height: 1.2;
+  }
+
+  .sponsor-featured-summary {
+    color: rgba(245, 247, 246, 0.6);
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .sponsor-profile-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-lime);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-top: 0.3rem;
+    transition: gap var(--transition);
+  }
+
+  .sponsor-profile-link:hover {
+    gap: 0.55rem;
+  }
+
+  /* Large ghost number */
+  .sponsor-num {
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 8vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(29, 185, 84, 0.07);
+    letter-spacing: -0.03em;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  /* ─── Secondary sponsor cards ───────────────────────── */
+
+  .sponsors-secondary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-m);
+    margin-top: var(--space-m);
+  }
+
+  .sponsor-secondary {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 2px solid rgba(29, 185, 84, 0.35);
+    border-radius: var(--radius-m);
+    padding: var(--space-m);
+    display: grid;
+    gap: 0.4rem;
+    position: relative;
+    overflow: hidden;
+    transition: background var(--transition), border-color var(--transition);
+  }
+
+  .sponsor-secondary:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-top-color: var(--color-lime);
+  }
+
+  .sponsor-num-sm {
+    position: absolute;
+    top: var(--space-s);
+    right: var(--space-s);
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(29, 185, 84, 0.1);
+    letter-spacing: -0.02em;
+    user-select: none;
+  }
+
+  .sponsor-secondary-logo-box {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 8px;
+    padding: 0.7rem 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-bottom: 0.2rem;
+  }
+
+  .sponsor-secondary-logo-box img {
+    max-width: 110px;
+    height: 36px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .sponsor-secondary-name {
+    font-size: 1.1rem;
+    color: var(--color-paper);
+  }
+
+  .sponsor-secondary-summary {
+    color: rgba(245, 247, 246, 0.55);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  /* ─── CTA strip ─────────────────────────────────────── */
+
+  .sponsors-cta-strip {
+    margin-top: var(--space-l);
+    padding-top: var(--space-l);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    position: relative;
+  }
+
+  .sponsors-cta-strip p {
+    color: rgba(245, 247, 246, 0.45);
+    font-size: 0.9rem;
+  }
+
+  .sponsors-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(29, 185, 84, 0.4);
+    border-radius: 999px;
+    padding: 0.6rem 1.2rem;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-lime);
+    flex-shrink: 0;
+    transition: background var(--transition), border-color var(--transition);
+  }
+
+  .sponsors-cta-btn:hover {
+    background: rgba(29, 185, 84, 0.1);
+    border-color: rgba(29, 185, 84, 0.7);
+  }
+
+  /* ─── Responsive ───────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .sponsor-featured {
+      grid-template-columns: 160px 1fr;
+    }
+
+    .sponsor-num {
+      display: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .stats-strip {
+      padding: var(--space-m);
+    }
+
+    .stats-row {
+      gap: var(--space-l);
+    }
+
+    .sponsors-band {
+      padding: var(--space-l) var(--space-m);
+    }
+
+    .sponsor-featured {
+      grid-template-columns: 1fr;
+    }
+
+    .sponsor-featured-logo-box {
+      justify-content: flex-start;
+      padding: var(--space-s) var(--space-m);
+    }
+
+    .sponsors-secondary-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sponsors-band-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-xs);
+    }
+
+    .sponsors-cta-strip {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .stat-divider {
+      height: 36px;
+    }
+  }
+</style>

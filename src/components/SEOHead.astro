@@ -1,0 +1,49 @@
+---
+import { isSiteUrlConfigured, siteConfig, toAbsoluteUrl } from '../config/site';
+import type { SEOProps } from '../types/seo';
+
+const {
+  title,
+  description,
+  canonical,
+  image,
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  noindex = false,
+  structuredData = []
+} = Astro.props as SEOProps;
+
+const fullTitle = title ? `${title} | ${siteConfig.siteName}` : siteConfig.defaultTitle;
+const metaDescription = description ?? siteConfig.defaultDescription;
+const canonicalUrl = toAbsoluteUrl(canonical ?? Astro.url.pathname);
+const imageUrl = toAbsoluteUrl(image ?? siteConfig.defaultOgImage);
+const robotsContent = noindex || !isSiteUrlConfigured ? 'noindex, nofollow' : 'index, follow';
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={metaDescription} />
+<meta name="robots" content={robotsContent} />
+<link rel="canonical" href={canonicalUrl} />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={siteConfig.siteName} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={metaDescription} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:locale" content={siteConfig.locale} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={metaDescription} />
+<meta name="twitter:image" content={imageUrl} />
+
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+
+{
+  structuredData.map((entry) => (
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(entry)} />
+  ))
+}

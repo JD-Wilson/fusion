@@ -1,0 +1,35 @@
+:root {
+  --color-ink: #080a0a;
+  --color-charcoal: #101414;
+  --color-charcoal-mid: #1a2020;
+  --color-forest: #037a2f;
+  --color-forest-deep: #025d24;
+  --color-lime: #1db954;
+  --color-lime-bright: #22d163;
+  --color-paper: #f5f7f6;
+  --color-paper-strong: #ffffff;
+  --color-surface: #f0f4f2;
+  --color-muted: #4a4f4d;
+  --color-border: #dde4e0;
+
+  --font-display: 'Chakra Petch', 'Trebuchet MS', sans-serif;
+  --font-body: 'Work Sans', 'Segoe UI', sans-serif;
+
+  --radius-s: 10px;
+  --radius-m: 16px;
+  --radius-l: 24px;
+
+  --space-2xs: 0.35rem;
+  --space-xs: 0.6rem;
+  --space-s: 0.9rem;
+  --space-m: 1.4rem;
+  --space-l: 2.2rem;
+  --space-xl: 3.4rem;
+  --space-2xl: 5rem;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px -8px rgba(0,0,0,0.10);
+  --shadow-card-hover: 0 4px 8px rgba(0,0,0,0.08), 0 20px 48px -12px rgba(2,93,36,0.22);
+  --shadow-hero: 0 8px 24px rgba(0,0,0,0.18), 0 40px 80px -20px rgba(0,0,0,0.40);
+
+  --transition: 0.22s ease;
+}

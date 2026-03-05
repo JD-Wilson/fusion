@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="220" viewBox="0 0 520 220" role="img" aria-label="Riverside Garage logo placeholder">
+  <rect width="520" height="220" rx="22" fill="#f5f7f6" stroke="#037a2f" stroke-width="6" />
+  <rect x="28" y="28" width="78" height="78" rx="16" fill="#080a0a" />
+  <path d="M47 84h40l-8-30H55z" fill="#1db954" />
+  <text x="130" y="85" fill="#080a0a" font-size="34" font-family="'Chakra Petch', sans-serif" font-weight="700">RIVERSIDE</text>
+  <text x="130" y="122" fill="#025d24" font-size="24" font-family="'Work Sans', sans-serif" font-weight="700">GARAGE</text>
+</svg>

@@ -1,0 +1,277 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../../lib/seo';
+import { requirePageEntry } from '../../lib/pages';
+
+const sponsorsPage = await requirePageEntry('sponsors');
+
+const sponsors = (await getCollection('sponsors', ({ data }) => !data.noindex)).sort((a, b) => {
+  const orderDiff = (a.data.order ?? 999) - (b.data.order ?? 999);
+  if (orderDiff !== 0) return orderDiff;
+  return a.data.name.localeCompare(b.data.name);
+});
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Sponsors', path: '/sponsors/' }
+]);
+---
+
+<BaseLayout
+  title={sponsorsPage.data.seoTitle ?? sponsorsPage.data.title}
+  description={sponsorsPage.data.seoDescription ?? sponsorsPage.data.description}
+  canonical={sponsorsPage.data.canonicalUrl ?? '/sponsors/'}
+  image={sponsorsPage.data.ogImage}
+  noindex={sponsorsPage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero eyebrow="Club Partners" title={sponsorsPage.data.title} summary={sponsorsPage.data.description} />
+
+  <section class="dark-band reveal" data-delay="1">
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">Our Partners</p>
+        <h2 class="band-title">Businesses backing Fusion FC</h2>
+        <p class="band-description">
+          Each sponsor plays a direct role in helping our players access better resources, stronger experiences, and a stable football environment.
+        </p>
+      </div>
+      <a class="band-cta" href="/new-sponsors/">Become a partner →</a>
+    </div>
+
+    <div class="sponsors-grid">
+      {sponsors.map((sponsor) => (
+        <article class="dark-card sponsor-card">
+
+          <div class="card-logo-wrap">
+            <div class="card-logo-box">
+              <img src={sponsor.data.logo} alt={`${sponsor.data.name} logo`} />
+            </div>
+            {sponsor.data.featured && (
+              <span class="featured-badge">Featured</span>
+            )}
+          </div>
+
+          <div class="card-body">
+            {sponsor.data.level && (
+              <span class="chip sponsor-tier-chip">{sponsor.data.level}</span>
+            )}
+            <h3 class="sponsor-name">{sponsor.data.name}</h3>
+            <p class="sponsor-summary">{sponsor.data.summary}</p>
+          </div>
+
+          <div class="card-actions">
+            <a class="card-profile-link" href={`/sponsors/${sponsor.id}/`}>
+              View profile →
+            </a>
+            {sponsor.data.website && (
+              <a
+                class="card-website-link"
+                href={sponsor.data.website}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`Visit ${sponsor.data.name} website (opens in new tab)`}
+              >
+                Website ↗
+              </a>
+            )}
+          </div>
+
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="join-strip reveal" data-delay="3">
+    <div class="join-strip-inner">
+      <div>
+        <p class="join-eyebrow">Get involved</p>
+        <p class="join-text">Want your business alongside these partners?</p>
+      </div>
+      <a class="button" href="/new-sponsors/">Become a sponsor</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .band-cta {
+    color: rgba(245, 247, 246, 0.4);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color var(--transition);
+  }
+
+  .band-cta:hover {
+    color: var(--color-lime);
+  }
+
+  /* ─── Sponsor grid ───────────────────────────────────── */
+
+  .sponsors-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-m);
+  }
+
+  .sponsor-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+
+  /* Logo area */
+
+  .card-logo-wrap {
+    position: relative;
+    padding: var(--space-m) var(--space-m) var(--space-s);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .card-logo-box {
+    background: rgba(255, 255, 255, 0.94);
+    border-radius: var(--radius-s);
+    padding: var(--space-s) var(--space-m);
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .card-logo-box img {
+    max-width: 130px;
+    height: 40px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .featured-badge {
+    position: absolute;
+    top: var(--space-s);
+    right: var(--space-s);
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-lime);
+    border: 1px solid rgba(29, 185, 84, 0.35);
+    border-radius: 999px;
+    padding: 0.18rem 0.55rem;
+  }
+
+  /* Text body */
+
+  .card-body {
+    padding: var(--space-m) var(--space-m) var(--space-s);
+    display: grid;
+    gap: 0.4rem;
+    flex: 1;
+  }
+
+  .sponsor-tier-chip {
+    width: fit-content;
+  }
+
+  .sponsor-name {
+    font-size: 1.05rem;
+    color: var(--color-paper);
+    line-height: 1.25;
+  }
+
+  .sponsor-summary {
+    font-size: 0.85rem;
+    color: rgba(245, 247, 246, 0.5);
+    line-height: 1.55;
+  }
+
+  /* Actions */
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    padding: var(--space-s) var(--space-m) var(--space-m);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: auto;
+  }
+
+  .card-profile-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-lime);
+    transition: opacity var(--transition);
+  }
+
+  .card-profile-link:hover {
+    opacity: 0.75;
+  }
+
+  .card-website-link {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(245, 247, 246, 0.4);
+    transition: color var(--transition);
+  }
+
+  .card-website-link:hover {
+    color: rgba(245, 247, 246, 0.75);
+  }
+
+  /* ─── Join strip ─────────────────────────────────────── */
+
+  .join-strip {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-l) var(--space-xl);
+  }
+
+  .join-strip-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+  }
+
+  .join-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-forest);
+    margin-bottom: 0.25rem;
+  }
+
+  .join-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--color-charcoal);
+  }
+
+  /* ─── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .sponsors-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 600px) {
+    .sponsors-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .join-strip {
+      padding: var(--space-m);
+    }
+
+    .join-strip-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

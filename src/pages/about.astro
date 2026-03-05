@@ -1,0 +1,32 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const aboutPage = await requirePageEntry('about');
+const { Content } = await render(aboutPage);
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'About', path: '/about/' }
+]);
+---
+
+<BaseLayout
+  title={aboutPage.data.seoTitle ?? aboutPage.data.title}
+  description={aboutPage.data.seoDescription ?? aboutPage.data.description}
+  canonical={aboutPage.data.canonicalUrl ?? '/about/'}
+  image={aboutPage.data.ogImage}
+  noindex={aboutPage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero eyebrow="Our Story" title={aboutPage.data.title} summary={aboutPage.data.description} />
+
+  <section class="dark-band reveal" data-delay="1">
+    <div class="prose">
+      <Content />
+    </div>
+  </section>
+</BaseLayout>

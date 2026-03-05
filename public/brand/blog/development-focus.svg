@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Player development visual">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#025d24" />
+      <stop offset="100%" stop-color="#0f1512" />
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)" />
+  <path d="M0 560L340 420L740 560L1280 360V720H0Z" fill="rgba(245,247,246,0.22)" />
+  <text x="96" y="350" fill="#f5f7f6" font-size="90" font-family="'Chakra Petch', sans-serif" font-weight="700">PLAYER</text>
+  <text x="96" y="430" fill="#f5f7f6" font-size="72" font-family="'Work Sans', sans-serif" font-weight="700">DEVELOPMENT</text>
+</svg>

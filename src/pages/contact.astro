@@ -1,0 +1,249 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { siteConfig } from '../config/site';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const contactPage = await requirePageEntry('contact');
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Contact', path: '/contact/' }
+]);
+
+const enquiries = [
+  {
+    num: '01',
+    title: 'Joining the club',
+    description: 'Trial opportunities, age group pathways, registration questions, and what to expect as a new player.',
+    href: `mailto:${siteConfig.clubContactEmail}?subject=Player%20Enquiry`,
+    cta: 'Email about joining',
+  },
+  {
+    num: '02',
+    title: 'Volunteering & coaching',
+    description: 'Support roles, coaching opportunities, matchday help, and other ways to get involved with the club.',
+    href: `mailto:${siteConfig.clubContactEmail}?subject=Volunteer%20Enquiry`,
+    cta: 'Email about volunteering',
+  },
+  {
+    num: '03',
+    title: 'Sponsorship & partnerships',
+    description: 'Local business support, kit sponsorship, training equipment, and partnership packages.',
+    href: '/new-sponsors/',
+    cta: 'View sponsor info',
+  },
+];
+---
+
+<BaseLayout
+  title={contactPage.data.seoTitle ?? contactPage.data.title}
+  description={contactPage.data.seoDescription ?? contactPage.data.description}
+  canonical={contactPage.data.canonicalUrl ?? '/contact/'}
+  image={contactPage.data.ogImage}
+  noindex={contactPage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow="Get in Touch"
+    title={contactPage.data.title}
+    summary={contactPage.data.description}
+  />
+
+  <section class="dark-band reveal" data-delay="1">
+
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">We're here to help</p>
+        <h2 class="band-title">How can we help you?</h2>
+      </div>
+    </div>
+
+    <div class="enquiry-grid">
+      {enquiries.map((item) => (
+        <article class="dark-card enquiry-card">
+          <p class="enquiry-num" aria-hidden="true">{item.num}</p>
+          <h3 class="enquiry-title">{item.title}</h3>
+          <p class="enquiry-desc">{item.description}</p>
+          <a class="link-arrow" href={item.href}>{item.cta}</a>
+        </article>
+      ))}
+    </div>
+
+    <div class="section-rule" aria-hidden="true"></div>
+
+    <div class="direct-contact">
+      <p class="direct-label">Or reach us directly</p>
+      <div class="channels">
+        <a class="channel channel-link" href={`mailto:${siteConfig.clubContactEmail}`}>
+          <span class="channel-label">Email</span>
+          <span class="channel-value">{siteConfig.clubContactEmail}</span>
+        </a>
+        <div class="channel-sep" aria-hidden="true"></div>
+        <div class="channel">
+          <span class="channel-label">Phone</span>
+          <span class="channel-value">{siteConfig.clubPhone}</span>
+        </div>
+        <div class="channel-sep" aria-hidden="true"></div>
+        <div class="channel">
+          <span class="channel-label">Response time</span>
+          <span class="channel-value">Within 2 working days</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="dev-note">
+      Placeholder details — update in <code>src/config/site.ts</code> before go-live.
+    </p>
+
+  </section>
+</BaseLayout>
+
+<style>
+  /* ─── Enquiry cards ──────────────────────────────────── */
+
+  .enquiry-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-m);
+  }
+
+  .enquiry-card {
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+    padding: var(--space-l) var(--space-m);
+  }
+
+  .enquiry-num {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+    text-transform: uppercase;
+    margin-bottom: 0.1rem;
+  }
+
+  .enquiry-title {
+    font-size: 1.15rem;
+    color: var(--color-paper);
+    line-height: 1.25;
+  }
+
+  .enquiry-desc {
+    font-size: 0.88rem;
+    color: rgba(245, 247, 246, 0.5);
+    line-height: 1.6;
+  }
+
+  /* ─── Divider ────────────────────────────────────────── */
+
+  .section-rule {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: var(--space-xl) 0;
+  }
+
+  /* ─── Direct contact ─────────────────────────────────── */
+
+  .direct-contact {
+    display: grid;
+    gap: var(--space-m);
+  }
+
+  .direct-label {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: rgba(245, 247, 246, 0.3);
+  }
+
+  .channels {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .channel {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .channel-link {
+    transition: opacity var(--transition);
+  }
+
+  .channel-link:hover {
+    opacity: 0.75;
+  }
+
+  .channel-label {
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(245, 247, 246, 0.28);
+  }
+
+  .channel-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: rgba(245, 247, 246, 0.85);
+    letter-spacing: 0.01em;
+  }
+
+  .channel-link .channel-value {
+    color: var(--color-lime);
+  }
+
+  .channel-sep {
+    width: 1px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  /* ─── Dev note ───────────────────────────────────────── */
+
+  .dev-note {
+    margin-top: var(--space-l);
+    font-size: 0.74rem;
+    color: rgba(245, 247, 246, 0.2);
+    line-height: 1.5;
+  }
+
+  .dev-note code {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+  }
+
+  /* ─── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 820px) {
+    .enquiry-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .enquiry-card {
+      padding: var(--space-m);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .channels {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-m);
+    }
+
+    .channel-sep {
+      display: none;
+    }
+  }
+</style>

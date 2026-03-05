@@ -1,0 +1,153 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { siteConfig } from '../config/site';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const sponsorPage = await requirePageEntry('new-sponsors');
+const { Content } = await render(sponsorPage);
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'New Sponsors', path: '/new-sponsors/' }
+]);
+---
+
+<BaseLayout
+  title={sponsorPage.data.seoTitle ?? sponsorPage.data.title}
+  description={sponsorPage.data.seoDescription ?? sponsorPage.data.description}
+  canonical={sponsorPage.data.canonicalUrl ?? '/new-sponsors/'}
+  image={sponsorPage.data.ogImage}
+  noindex={sponsorPage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow="Partners Wanted"
+    title={sponsorPage.data.title}
+    summary={sponsorPage.data.description}
+    actions={[
+      { href: '/contact/', label: 'Contact the Club' },
+      { href: '/sponsors/', label: 'See Current Sponsors', ghost: true }
+    ]}
+  />
+
+  <section class="grid grid-2">
+    <article class="section-card reveal" data-delay="1">
+      <div class="prose">
+        <Content />
+      </div>
+    </article>
+
+    <article class="dark-card quick-contact reveal" data-delay="2">
+      <p class="qc-eyebrow">Quick Contact</p>
+      <h2 class="qc-heading">Ready to back the club?</h2>
+      <p class="qc-body">
+        Let us know if you want to sponsor kits, training equipment, or player development. We'll find the right package for you.
+      </p>
+
+      <div class="qc-details">
+        <div class="qc-row">
+          <span class="qc-label">Email</span>
+          <a class="qc-value" href={`mailto:${siteConfig.clubContactEmail}`}>
+            {siteConfig.clubContactEmail}
+          </a>
+        </div>
+        <div class="qc-row">
+          <span class="qc-label">Phone</span>
+          <span class="qc-value">{siteConfig.clubPhone}</span>
+        </div>
+      </div>
+
+      <a class="qc-cta" href="/contact/">Open contact page →</a>
+    </article>
+  </section>
+</BaseLayout>
+
+<style>
+  .qc-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-lime);
+    margin-bottom: 0.3rem;
+  }
+
+  .qc-heading {
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+    color: var(--color-paper);
+    margin-bottom: var(--space-s);
+    line-height: 1.2;
+  }
+
+  .qc-body {
+    font-size: 0.9rem;
+    color: rgba(245, 247, 246, 0.55);
+    line-height: 1.6;
+    margin-bottom: var(--space-m);
+  }
+
+  .qc-details {
+    display: grid;
+    gap: 0;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+    margin-bottom: var(--space-m);
+  }
+
+  .qc-row {
+    display: grid;
+    gap: 0.2rem;
+    padding: var(--space-s) var(--space-m);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .qc-row:last-child {
+    border-bottom: none;
+  }
+
+  .qc-label {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(245, 247, 246, 0.3);
+  }
+
+  .qc-value {
+    font-size: 0.95rem;
+    color: rgba(245, 247, 246, 0.85);
+  }
+
+  a.qc-value {
+    color: var(--color-lime);
+    transition: opacity var(--transition);
+  }
+
+  a.qc-value:hover {
+    opacity: 0.75;
+  }
+
+  .qc-cta {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.65rem 1.3rem;
+    transition: background var(--transition), transform var(--transition);
+  }
+
+  .qc-cta:hover {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+</style>

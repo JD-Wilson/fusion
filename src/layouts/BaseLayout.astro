@@ -1,0 +1,75 @@
+---
+import SEOHead from '../components/SEOHead.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import '../styles/global.css';
+import { createOrganizationJsonLd } from '../lib/seo';
+import type { SEOProps } from '../types/seo';
+
+interface LayoutProps extends SEOProps {
+  lang?: string;
+}
+
+const {
+  lang = 'en-GB',
+  title,
+  description,
+  canonical,
+  image,
+  type,
+  publishedTime,
+  modifiedTime,
+  noindex,
+  structuredData = []
+} = Astro.props as LayoutProps;
+
+const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <SEOHead
+      title={title}
+      description={description}
+      canonical={canonical}
+      image={image}
+      type={type}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      noindex={noindex}
+      structuredData={fullStructuredData}
+    />
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <SiteHeader />
+    <main id="content">
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>
+
+<style>
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    z-index: 999;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.5rem;
+    background: #080a0a;
+    color: #f5f7f6;
+  }
+
+  .skip-link:focus {
+    left: 0.8rem;
+    top: 0.8rem;
+  }
+</style>

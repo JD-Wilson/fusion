@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Page Not Found"
+  description="The page you are looking for could not be found on Fusion Football Club website."
+  canonical="/404/"
+  noindex={true}
+>
+  <section class="page-hero reveal">
+    <p class="eyebrow">404</p>
+    <h1 class="hero-title">Page not found</h1>
+    <p class="hero-summary">The page may have moved, or the link may be out of date.</p>
+    <div class="hero-actions">
+      <a class="button" href="/">Back to home</a>
+      <a class="button ghost" href="/contact/">Contact the club</a>
+    </div>
+  </section>
+
+  <section class="dark-band not-found-band reveal" data-delay="1">
+    <p class="band-eyebrow">Need help?</p>
+    <p class="not-found-copy">
+      Use the navigation above to find what you're looking for, or try one of these:
+    </p>
+    <div class="not-found-links">
+      <a class="nf-link" href="/about/">About the club</a>
+      <a class="nf-link" href="/age-groups/">Age groups</a>
+      <a class="nf-link" href="/blog/">Latest news</a>
+      <a class="nf-link" href="/sponsors/">Our sponsors</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero-actions {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .not-found-band {
+    max-width: 560px;
+  }
+
+  .not-found-copy {
+    color: rgba(245, 247, 246, 0.5);
+    font-size: 0.9rem;
+    margin-bottom: var(--space-m);
+  }
+
+  .not-found-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .nf-link {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(29, 185, 84, 0.25);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    color: rgba(245, 247, 246, 0.7);
+    transition: border-color var(--transition), color var(--transition);
+  }
+
+  .nf-link:hover {
+    border-color: rgba(29, 185, 84, 0.6);
+    color: var(--color-lime);
+  }
+</style>

@@ -1,0 +1,103 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const leaguesPage = await requirePageEntry('leagues');
+const { Content } = await render(leaguesPage);
+
+const leagues = (await getCollection('leagues', ({ data }) => !data.noindex)).sort((a, b) => {
+  const ageA = Number.parseInt(a.data.ageBand.replace(/\D/g, ''), 10) || 99;
+  const ageB = Number.parseInt(b.data.ageBand.replace(/\D/g, ''), 10) || 99;
+  if (ageA !== ageB) return ageA - ageB;
+  return a.data.name.localeCompare(b.data.name);
+});
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Leagues', path: '/leagues/' }
+]);
+---
+
+<BaseLayout
+  title={leaguesPage.data.seoTitle ?? leaguesPage.data.title}
+  description={leaguesPage.data.seoDescription ?? leaguesPage.data.description}
+  canonical={leaguesPage.data.canonicalUrl ?? '/leagues/'}
+  image={leaguesPage.data.ogImage}
+  noindex={leaguesPage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero eyebrow="League Competition" title={leaguesPage.data.title} summary={leaguesPage.data.description} />
+
+  <section class="section-card reveal" data-delay="1">
+    <div class="prose">
+      <Content />
+    </div>
+  </section>
+
+  <section class="dark-band reveal" data-delay="2">
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">Competition Structure</p>
+        <h2 class="band-title">League Calendar</h2>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      {leagues.map((league, i) => (
+        <article class="dark-card league-card">
+          <span class="league-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <h3 class="league-name">{league.data.name}</h3>
+          <div class="chip-list">
+            <span class="chip">{league.data.ageBand}</span>
+            {league.data.division && <span class="chip">{league.data.division}</span>}
+            <span class="chip">Season {league.data.season}</span>
+          </div>
+          {league.data.region && (
+            <p class="league-region">{league.data.region}</p>
+          )}
+          {league.data.website && (
+            <a class="link-arrow" href={league.data.website} target="_blank" rel="noreferrer">
+              League website
+            </a>
+          )}
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .league-card {
+    display: grid;
+    gap: 0.45rem;
+    align-content: start;
+  }
+
+  .league-num {
+    position: absolute;
+    top: var(--space-s);
+    right: var(--space-s);
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: rgba(29, 185, 84, 0.1);
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .league-name {
+    font-size: 1.15rem;
+    color: var(--color-paper);
+    padding-right: 2.5rem;
+  }
+
+  .league-region {
+    font-size: 0.85rem;
+    color: rgba(245, 247, 246, 0.45);
+  }
+</style>

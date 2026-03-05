@@ -1,0 +1,306 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { createBreadcrumbJsonLd } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const sponsors = await getCollection('sponsors');
+
+  return sponsors.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry }
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<'sponsors'>;
+}
+
+const { entry } = Astro.props as Props;
+const { Content } = await render(entry);
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Sponsors', path: '/sponsors/' },
+  { name: entry.data.name, path: `/sponsors/${entry.id}/` }
+]);
+---
+
+<BaseLayout
+  title={entry.data.seoTitle ?? `${entry.data.name} — Fusion FC Partner`}
+  description={entry.data.seoDescription ?? entry.data.summary}
+  canonical={entry.data.canonicalUrl ?? `/sponsors/${entry.id}/`}
+  image={entry.data.ogImage ?? entry.data.logo}
+  noindex={entry.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <!-- Hero: feels like a spotlight, not a listing -->
+  <section class="page-hero reveal">
+    <p class="eyebrow">Partner Spotlight</p>
+    <h1 class="hero-title">{entry.data.name}</h1>
+    <p class="hero-summary">{entry.data.summary}</p>
+    {entry.data.website && (
+      <div class="hero-actions">
+        <a class="button" href={entry.data.website} target="_blank" rel="noreferrer noopener">
+          Visit {entry.data.name} ↗
+        </a>
+        <a class="button ghost" href="/sponsors/">All partners</a>
+      </div>
+    )}
+  </section>
+
+  <!-- Profile band -->
+  <section class="dark-band reveal" data-delay="1">
+
+    <!-- Logo header — full width, centred, prominent -->
+    <div class="logo-header">
+      <div class="logo-header-box">
+        <img
+          src={entry.data.logo}
+          alt={`${entry.data.name} logo`}
+          class="logo-header-img"
+        />
+      </div>
+      <div class="logo-header-meta">
+        {entry.data.level && <span class="chip">{entry.data.level}</span>}
+        {entry.data.featured && <span class="chip">Featured Partner</span>}
+      </div>
+    </div>
+
+    <div class="profile-rule" aria-hidden="true"></div>
+
+    <!-- Partnership story -->
+    <div class="profile-content">
+      <p class="content-eyebrow">About the partnership</p>
+      <div class="prose partnership-prose">
+        <Content />
+      </div>
+    </div>
+
+    <div class="profile-rule" aria-hidden="true"></div>
+
+    <!-- Prominent website CTA -->
+    {entry.data.website && (
+      <div class="website-cta">
+        <div class="website-cta-text">
+          <p class="website-cta-label">Visit their website</p>
+          <p class="website-cta-url">{entry.data.website.replace(/^https?:\/\//, '')}</p>
+        </div>
+        <a
+          class="website-cta-btn"
+          href={entry.data.website}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Visit {entry.data.name} ↗
+        </a>
+      </div>
+    )}
+
+  </section>
+
+  <!-- Bottom callout — separate, light background -->
+  <section class="partner-callout reveal" data-delay="2">
+    <div class="callout-inner">
+      <div>
+        <p class="callout-eyebrow">Support local football</p>
+        <p class="callout-text">Interested in sponsoring Fusion FC?</p>
+      </div>
+      <div class="callout-actions">
+        <a class="button" href="/new-sponsors/">Become a partner</a>
+        <a class="link-arrow" href="/sponsors/">See all sponsors</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ─── Hero actions (reused from global but scoped) ───── */
+
+  .hero-actions {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  /* ─── Logo header ────────────────────────────────────── */
+
+  .logo-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-l);
+    margin-bottom: 0;
+  }
+
+  .logo-header-box {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius-m);
+    padding: var(--space-m) var(--space-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .logo-header-img {
+    max-width: 200px;
+    height: 72px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .logo-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  /* ─── Divider ────────────────────────────────────────── */
+
+  .profile-rule {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: var(--space-xl) 0;
+  }
+
+  /* ─── Partnership content ────────────────────────────── */
+
+  .profile-content {
+    max-width: 72ch;
+  }
+
+  .content-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+    margin-bottom: var(--space-s);
+  }
+
+  /* ─── Website CTA ────────────────────────────────────── */
+
+  .website-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-l);
+    flex-wrap: wrap;
+  }
+
+  .website-cta-text {
+    display: grid;
+    gap: 0.2rem;
+  }
+
+  .website-cta-label {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(245, 247, 246, 0.3);
+  }
+
+  .website-cta-url {
+    font-size: 0.95rem;
+    color: rgba(245, 247, 246, 0.5);
+  }
+
+  .website-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.8rem 1.6rem;
+    flex-shrink: 0;
+    transition: background var(--transition), transform var(--transition);
+  }
+
+  .website-cta-btn:hover {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+
+  /* ─── Bottom callout ─────────────────────────────────── */
+
+  .partner-callout {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-l) var(--space-xl);
+  }
+
+  .callout-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  .callout-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-forest);
+    margin-bottom: 0.25rem;
+  }
+
+  .callout-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--color-charcoal);
+  }
+
+  .callout-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  /* ─── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 720px) {
+    .logo-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-m);
+    }
+
+    .logo-header-box {
+      padding: var(--space-m);
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .website-cta {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .website-cta-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .partner-callout {
+      padding: var(--space-m);
+    }
+
+    .callout-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

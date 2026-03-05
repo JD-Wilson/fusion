@@ -1,0 +1,101 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  summary: string;
+  actions?: { href: string; label: string; ghost?: boolean }[];
+}
+
+const { eyebrow = 'Fusion Football Club', title, summary, actions = [] } = Astro.props as Props;
+---
+
+<section class="page-hero reveal">
+  <!-- Football pitch geometry: angled fill + center circle -->
+  <div class="hero-decor" aria-hidden="true">
+    <svg
+      class="hero-svg"
+      viewBox="0 0 700 480"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMaxYMid meet"
+    >
+      <!-- Angled green accent panel -->
+      <path d="M 700 0 L 380 0 L 260 480 L 700 480 Z" fill="rgba(2,93,36,0.18)" />
+      <path d="M 700 0 L 440 0 L 320 480 L 700 480 Z" fill="rgba(2,93,36,0.10)" />
+
+      <!-- Center circle -->
+      <circle cx="560" cy="240" r="190" stroke="rgba(29,185,84,0.14)" stroke-width="1.5" />
+      <circle cx="560" cy="240" r="130" stroke="rgba(29,185,84,0.09)" stroke-width="1" />
+      <circle cx="560" cy="240" r="68" stroke="rgba(29,185,84,0.06)" stroke-width="1" />
+
+      <!-- Center spot -->
+      <circle cx="560" cy="240" r="5" fill="rgba(29,185,84,0.25)" />
+
+      <!-- Horizontal midline -->
+      <line x1="260" y1="240" x2="700" y2="240" stroke="rgba(29,185,84,0.07)" stroke-width="1" />
+
+      <!-- Lime accent top-right corner arc -->
+      <circle cx="700" cy="0" r="80" stroke="rgba(29,185,84,0.18)" stroke-width="1.5" fill="none" />
+    </svg>
+  </div>
+
+  <div class="hero-content">
+    <p class="eyebrow">{eyebrow}</p>
+    <h1 class="hero-title">{title}</h1>
+    <p class="hero-summary">{summary}</p>
+
+    {
+      actions.length > 0 && (
+        <div class="hero-actions">
+          {actions.map((action) => (
+            <a href={action.href} class:list={['button', action.ghost && 'ghost']}>
+              {action.label}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+</section>
+
+<style>
+  .hero-decor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  .hero-svg {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    width: 65%;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 58%;
+  }
+
+  .hero-actions {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 720px) {
+    .hero-content {
+      max-width: 100%;
+    }
+
+    .hero-svg {
+      opacity: 0.5;
+      width: 100%;
+    }
+  }
+</style>

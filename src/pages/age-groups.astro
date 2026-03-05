@@ -1,0 +1,134 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const agePage = await requirePageEntry('age-groups');
+const { Content } = await render(agePage);
+
+const teams = (await getCollection('teams', ({ data }) => !data.noindex)).sort((a, b) => {
+  const ageA = Number.parseInt(a.data.ageGroup.replace(/\D/g, ''), 10) || 99;
+  const ageB = Number.parseInt(b.data.ageGroup.replace(/\D/g, ''), 10) || 99;
+  return ageA - ageB;
+});
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Age Groups', path: '/age-groups/' }
+]);
+---
+
+<BaseLayout
+  title={agePage.data.seoTitle ?? agePage.data.title}
+  description={agePage.data.seoDescription ?? agePage.data.description}
+  canonical={agePage.data.canonicalUrl ?? '/age-groups/'}
+  image={agePage.data.ogImage}
+  noindex={agePage.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero eyebrow="Player Pathways" title={agePage.data.title} summary={agePage.data.description} />
+
+  <section class="section-card reveal" data-delay="1">
+    <div class="prose">
+      <Content />
+    </div>
+  </section>
+
+  <section class="dark-band reveal" data-delay="2">
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">Registered Teams</p>
+        <h2 class="band-title">Current Team Groups</h2>
+      </div>
+      <a class="band-link" href="/leagues/">View leagues →</a>
+    </div>
+
+    <div class="grid grid-3">
+      {teams.map((team) => (
+        <article class="dark-card team-card">
+          <span class="team-ghost">{team.data.ageGroup}</span>
+          <h3 class="team-name">{team.data.teamName}</h3>
+          <p class="team-age-label">{team.data.ageGroup}</p>
+          <div class="chip-list">
+            <span class="chip">Season {team.data.season}</span>
+            <span class="chip">{team.data.league}</span>
+          </div>
+          {(team.data.training || team.data.coach) && (
+            <div class="team-details">
+              {team.data.training && (
+                <div class="detail-item">
+                  <span class="detail-label">Training</span>
+                  <span class="detail-value">{team.data.training}</span>
+                </div>
+              )}
+              {team.data.coach && (
+                <div class="detail-item">
+                  <span class="detail-label">Coach</span>
+                  <span class="detail-value">{team.data.coach}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .band-link {
+    color: rgba(245, 247, 246, 0.45);
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color var(--transition);
+  }
+
+  .band-link:hover {
+    color: var(--color-lime);
+  }
+
+  .team-card {
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+  }
+
+  .team-ghost {
+    position: absolute;
+    bottom: -0.6rem;
+    right: var(--space-s);
+    font-family: var(--font-display);
+    font-size: 3.8rem;
+    font-weight: 700;
+    color: rgba(29, 185, 84, 0.07);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .team-name {
+    font-size: 1.15rem;
+    color: var(--color-paper);
+    position: relative;
+    z-index: 1;
+  }
+
+  .team-age-label {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(245, 247, 246, 0.38);
+  }
+
+  .team-details {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+</style>

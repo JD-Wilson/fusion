@@ -1,0 +1,47 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { CORE_PAGE_SLUGS } from '../../lib/pages';
+import { createBreadcrumbJsonLd } from '../../lib/seo';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('pages');
+
+  return pages
+    .filter((entry) => !CORE_PAGE_SLUGS.has(entry.id))
+    .map((entry) => ({
+      params: { slug: entry.id },
+      props: { entry }
+    }));
+}
+
+interface Props {
+  entry: CollectionEntry<'pages'>;
+}
+
+const { entry } = Astro.props as Props;
+const { Content } = await render(entry);
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: entry.data.title, path: `/club/${entry.id}/` }
+]);
+---
+
+<BaseLayout
+  title={entry.data.seoTitle ?? entry.data.title}
+  description={entry.data.seoDescription ?? entry.data.description}
+  canonical={entry.data.canonicalUrl ?? `/club/${entry.id}/`}
+  image={entry.data.ogImage}
+  noindex={entry.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero eyebrow="Club Information" title={entry.data.title} summary={entry.data.description} />
+
+  <section class="dark-band reveal" data-delay="1">
+    <div class="prose">
+      <Content />
+    </div>
+  </section>
+</BaseLayout>
