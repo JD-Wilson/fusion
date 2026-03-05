@@ -22,7 +22,7 @@ export const createOrganizationJsonLd = (): StructuredData => ({
   '@type': 'SportsOrganization',
   name: siteConfig.siteName,
   url: siteConfig.siteUrl,
-  logo: toAbsoluteUrl('/brand/logo-placeholder.svg'),
+  logo: toAbsoluteUrl('/brand/logo.jpeg'),
   email: siteConfig.clubContactEmail,
   telephone: siteConfig.clubPhone,
   areaServed: 'United Kingdom',
@@ -63,7 +63,7 @@ export const createBlogPostingJsonLd = ({
     name: siteConfig.siteName,
     logo: {
       '@type': 'ImageObject',
-      url: toAbsoluteUrl('/brand/logo-placeholder.svg')
+      url: toAbsoluteUrl('/brand/logo.jpeg')
     }
   }
 });
