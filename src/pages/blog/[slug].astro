@@ -19,6 +19,10 @@ interface Props {
 const { entry } = Astro.props as Props;
 const { Content } = await render(entry);
 
+// Estimated reading time
+const wordCount = entry.body.split(/\s+/).length;
+const readingTime = Math.max(1, Math.round(wordCount / 200));
+
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
   { name: 'Blog', path: '/blog/' },
@@ -58,7 +62,6 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   </div>
 
   <article>
-    <!-- Hero: same pattern as the rest of the site -->
     <section class="page-hero reveal">
       <p class="eyebrow">Fusion Blog</p>
       <h1 class="hero-title">{entry.data.title}</h1>
@@ -67,6 +70,8 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
         <time class="meta-date" datetime={entry.data.date.toISOString()}>{formattedDate}</time>
         <span class="meta-sep" aria-hidden="true">·</span>
         <span class="meta-author">{entry.data.author}</span>
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span class="meta-read">{readingTime} min read</span>
       </div>
       {entry.data.tags.length > 0 && (
         <div class="chip-list article-hero-tags">
@@ -75,7 +80,6 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       )}
     </section>
 
-    <!-- Article content: dark band, consistent with rest of site -->
     <section class="dark-band article-band reveal" data-delay="1" id="article-body">
       <img
         src={entry.data.coverImage}
@@ -88,10 +92,21 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       </div>
 
       <div class="article-footer">
-        <a class="back-link" href="/blog/">← Back to blog</a>
+        <div class="footer-row">
+          <a class="back-link" href="/blog/">← Back to blog</a>
+          <button class="copy-btn" id="copy-link" type="button" aria-label="Copy link to this post">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span class="copy-label">Copy link</span>
+          </button>
+        </div>
       </div>
     </section>
   </article>
+
+  <!-- Scroll to top -->
+  <button class="scroll-top" id="scroll-top" type="button" aria-label="Back to top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
 </BaseLayout>
 
 <style>
@@ -111,7 +126,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     height: 100%;
     width: 0%;
     background: var(--color-lime);
-    box-shadow: 0 0 8px rgba(29, 185, 84, 0.5);
+    box-shadow: 0 0 10px rgba(29, 185, 84, 0.6);
     transition: width 0.08s linear;
   }
 
@@ -120,14 +135,21 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   .article-meta {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: var(--space-m);
     font-size: 0.88rem;
     color: rgba(245, 247, 246, 0.55);
   }
 
-  .meta-sep {
-    color: rgba(245, 247, 246, 0.2);
+  .meta-sep { color: rgba(245, 247, 246, 0.2); }
+
+  .meta-read {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-lime);
   }
 
   .article-hero-tags {
@@ -153,11 +175,69 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     max-width: 72ch;
   }
 
+  /* ─── Prose enhancements ─────────────────────────────── */
+
+  /* Blockquotes — dramatic pull-quote style */
+  .article-prose :global(blockquote) {
+    position: relative;
+    margin: var(--space-l) 0;
+    padding: var(--space-m) var(--space-l);
+    border-left: 3px solid var(--color-lime);
+    background: rgba(29, 185, 84, 0.05);
+    border-radius: 0 var(--radius-s) var(--radius-s) 0;
+  }
+
+  .article-prose :global(blockquote)::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.6rem;
+    left: var(--space-m);
+    font-family: var(--font-display);
+    font-size: 5rem;
+    line-height: 1;
+    color: rgba(29, 185, 84, 0.2);
+    pointer-events: none;
+  }
+
+  .article-prose :global(blockquote p) {
+    font-size: 1.08rem;
+    font-style: italic;
+    color: rgba(245, 247, 246, 0.85);
+    line-height: 1.65;
+  }
+
+  /* Section headings — lime left tick */
+  .article-prose :global(h2),
+  .article-prose :global(h3) {
+    position: relative;
+    padding-left: var(--space-m);
+  }
+
+  .article-prose :global(h2)::before,
+  .article-prose :global(h3)::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.2em;
+    bottom: 0.2em;
+    width: 3px;
+    background: var(--color-lime);
+    border-radius: 2px;
+  }
+
   /* ─── Article footer ─────────────────────────────────── */
 
   .article-footer {
     padding: var(--space-m) var(--space-xl) var(--space-xl);
     border-top: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .footer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
   }
 
   .back-link {
@@ -171,6 +251,82 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     color: var(--color-lime);
   }
 
+  /* ─── Copy link button ───────────────────────────────── */
+
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(29, 185, 84, 0.08);
+    border: 1px solid rgba(29, 185, 84, 0.25);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(245, 247, 246, 0.6);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+  }
+
+  .copy-btn:hover {
+    background: rgba(29, 185, 84, 0.14);
+    border-color: rgba(29, 185, 84, 0.5);
+    color: var(--color-lime);
+  }
+
+  .copy-btn.copied {
+    background: rgba(29, 185, 84, 0.18);
+    border-color: var(--color-lime);
+    color: var(--color-lime);
+  }
+
+  /* ─── Scroll to top ──────────────────────────────────── */
+
+  .scroll-top {
+    position: fixed;
+    bottom: var(--space-l);
+    right: var(--space-l);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+    transition: opacity 0.3s, transform 0.3s, background var(--transition);
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .scroll-top.visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .scroll-top:hover {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+
+  /* ─── Prose element stagger (applied via JS) ─────────── */
+
+  :global(.prose-item) {
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+
+  :global(.prose-item.prose-hidden) {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
   /* ─── Responsive ─────────────────────────────────────── */
 
   @media (max-width: 720px) {
@@ -179,20 +335,79 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       padding-left: var(--space-m);
       padding-right: var(--space-m);
     }
+
+    .scroll-top {
+      bottom: var(--space-m);
+      right: var(--space-m);
+    }
   }
 </style>
 
 <script>
+  /* ─── Reading progress ───────────────────────────────── */
   const bar = document.getElementById('reading-bar');
-  const body = document.getElementById('article-body');
+  const articleBody = document.getElementById('article-body');
 
-  if (bar && body) {
-    const update = () => {
-      const top = body.getBoundingClientRect().top + window.scrollY;
-      const progress = Math.min(Math.max((window.scrollY - top) / body.offsetHeight, 0), 1);
+  if (bar && articleBody) {
+    const updateProgress = () => {
+      const top = articleBody.getBoundingClientRect().top + window.scrollY;
+      const progress = Math.min(Math.max((window.scrollY - top) / articleBody.offsetHeight, 0), 1);
       bar.style.width = `${progress * 100}%`;
     };
-    window.addEventListener('scroll', update, { passive: true });
-    update();
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+  }
+
+  /* ─── Scroll-to-top button ───────────────────────────── */
+  const scrollBtn = document.getElementById('scroll-top');
+  if (scrollBtn) {
+    window.addEventListener('scroll', () => {
+      scrollBtn.classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+    scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  /* ─── Copy link button ───────────────────────────────── */
+  const copyBtn = document.getElementById('copy-link');
+  if (copyBtn) {
+    const label = copyBtn.querySelector('.copy-label');
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        copyBtn.classList.add('copied');
+        if (label) label.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          if (label) label.textContent = 'Copy link';
+        }, 2000);
+      } catch {
+        // Clipboard not available — silently ignore
+      }
+    });
+  }
+
+  /* ─── Staggered prose element reveals ───────────────── */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const proseEl = document.querySelector('.article-prose');
+    if (proseEl) {
+      const items = Array.from(proseEl.children);
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.remove('prose-hidden');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -24px 0px' }
+      );
+
+      items.forEach((el, i) => {
+        el.classList.add('prose-item', 'prose-hidden');
+        (el as HTMLElement).style.transitionDelay = `${Math.min(i * 0.05, 0.3)}s`;
+        observer.observe(el);
+      });
+    }
   }
 </script>
