@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { siteConfig } from '../config/site';
+import PhoneReveal from '../components/PhoneReveal.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
 import { requirePageEntry } from '../lib/pages';
 
@@ -83,7 +84,7 @@ const enquiries = [
         <div class="channel-sep" aria-hidden="true"></div>
         <div class="channel">
           <span class="channel-label">Phone</span>
-          <span class="channel-value">{siteConfig.clubPhone}</span>
+          <span class="channel-value"><PhoneReveal phone={siteConfig.clubPhone} /></span>
         </div>
         <div class="channel-sep" aria-hidden="true"></div>
         <div class="channel">
@@ -93,9 +94,6 @@ const enquiries = [
       </div>
     </div>
 
-    <p class="dev-note">
-      Placeholder details — update in <code>src/config/site.ts</code> before go-live.
-    </p>
 
   </section>
 </BaseLayout>
@@ -205,22 +203,6 @@ const enquiries = [
     background: rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     align-self: center;
-  }
-
-  /* ─── Dev note ───────────────────────────────────────── */
-
-  .dev-note {
-    margin-top: var(--space-l);
-    font-size: 0.74rem;
-    color: rgba(245, 247, 246, 0.2);
-    line-height: 1.5;
-  }
-
-  .dev-note code {
-    font-size: 0.7rem;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 4px;
-    padding: 0.1rem 0.35rem;
   }
 
   /* ─── Responsive ─────────────────────────────────────── */

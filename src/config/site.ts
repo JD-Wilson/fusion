@@ -1,4 +1,4 @@
-const FALLBACK_SITE_URL = 'https://fusion-fc.local';
+const FALLBACK_SITE_URL = 'https://fusionfc.co.uk';
 
 const normalizeSiteUrl = (url: string) => url.trim().replace(/\/+$/, '');
 
@@ -14,8 +14,8 @@ export const siteConfig = {
     'Fusion Football Club is a growing grassroots football community in the UK, supporting player development, team spirit, and local partnerships.',
   defaultOgImage: '/brand/og-default.svg',
   locale: 'en_GB',
-  clubContactEmail: 'hello@fusionfc.example',
-  clubPhone: '+44 7000 000000'
+  clubContactEmail: 'info@fusionfc.co.uk',
+  clubPhone: '07852 344421'
 } as const;
 
 export const toAbsoluteUrl = (pathOrUrl: string) => {

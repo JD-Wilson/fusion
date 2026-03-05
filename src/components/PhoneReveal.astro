@@ -1,0 +1,73 @@
+---
+interface Props {
+  phone: string;
+}
+const { phone } = Astro.props;
+// Reverse the string so the number isn't in plain text in the HTML source
+const encoded = phone.split('').reverse().join('');
+---
+
+<span class="phone-reveal" data-p={encoded}>
+  <button class="pr-btn" type="button" aria-label="Reveal phone number">
+    <svg class="pr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.61 4.93 2 2 0 0 1 3.6 2.73h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.09a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 17.5z"/>
+    </svg>
+    Tap to reveal
+  </button>
+</span>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.phone-reveal').forEach((el) => {
+    const btn = el.querySelector('.pr-btn');
+    if (!btn) return;
+    const encoded = el.getAttribute('data-p') ?? '';
+
+    btn.addEventListener('click', () => {
+      const phone = encoded.split('').reverse().join('');
+      const a = document.createElement('a');
+      a.href = `tel:${phone.replace(/\s/g, '')}`;
+      a.textContent = phone;
+      a.className = 'pr-revealed';
+      el.replaceChild(a, btn);
+    });
+  });
+</script>
+
+<style>
+  .pr-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(29, 185, 84, 0.07);
+    border: 1px solid rgba(29, 185, 84, 0.22);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.88em;
+    font-family: inherit;
+    color: rgba(245, 247, 246, 0.55);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+    vertical-align: middle;
+  }
+
+  .pr-btn:hover {
+    background: rgba(29, 185, 84, 0.14);
+    border-color: rgba(29, 185, 84, 0.45);
+    color: rgba(245, 247, 246, 0.85);
+  }
+
+  .pr-icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  :global(.pr-revealed) {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.18s;
+  }
+
+  :global(.pr-revealed:hover) {
+    color: var(--color-lime);
+  }
+</style>

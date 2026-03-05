@@ -1,5 +1,6 @@
 ---
 import { siteConfig } from '../config/site';
+import PhoneReveal from './PhoneReveal.astro';
 
 const year = new Date().getFullYear();
 
@@ -42,7 +43,7 @@ const footerLinks = [
         </div>
         <div class="footer-contact-item">
           <span class="contact-label">Phone</span>
-          <span>{siteConfig.clubPhone}</span>
+          <PhoneReveal phone={siteConfig.clubPhone} />
         </div>
       </div>
       <a href="/new-sponsors/" class="footer-cta">Sponsor the Club →</a>
@@ -51,7 +52,6 @@ const footerLinks = [
 
   <div class="footer-bottom">
     <p>© {year} Fusion Football Club. All rights reserved.</p>
-    <p class="footer-placeholder-note">Update contact details before go-live.</p>
   </div>
 </footer>
 
@@ -207,10 +207,6 @@ const footerLinks = [
   .footer-bottom p {
     font-size: 0.78rem;
     color: rgba(245, 247, 246, 0.3);
-  }
-
-  .footer-placeholder-note {
-    font-style: italic;
   }
 
   @media (max-width: 900px) {
