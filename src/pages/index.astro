@@ -54,17 +54,17 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     <p class="stats-label">Club Snapshot — 2026/27 Season</p>
     <div class="stats-row">
       <div class="stat-item">
-        <span class="stat-number">{teams.length}</span>
+        <span class="stat-number" data-count={teams.length}>0</span>
         <span class="stat-name">Active Teams</span>
       </div>
       <div class="stat-divider" aria-hidden="true"></div>
       <div class="stat-item">
-        <span class="stat-number">{leagues.length}</span>
+        <span class="stat-number" data-count={leagues.length}>0</span>
         <span class="stat-name">League Pathways</span>
       </div>
       <div class="stat-divider" aria-hidden="true"></div>
       <div class="stat-item">
-        <span class="stat-number">{sponsors.length}</span>
+        <span class="stat-number" data-count={sponsors.length}>0</span>
         <span class="stat-name">Local Partners</span>
       </div>
     </div>
