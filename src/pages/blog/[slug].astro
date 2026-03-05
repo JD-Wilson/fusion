@@ -19,13 +19,6 @@ interface Props {
 const { entry } = Astro.props as Props;
 const { Content } = await render(entry);
 
-// Related posts — most recent other posts
-const allPosts = await getCollection('blog', ({ data }) => !data.draft);
-const relatedPosts = allPosts
-  .filter((p) => p.id !== entry.id)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 2);
-
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
   { name: 'Blog', path: '/blog/' },
@@ -65,78 +58,38 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   </div>
 
   <article>
-    <!-- Cinematic hero with cover image background -->
-    <header class="article-hero reveal">
-      <div class="article-hero-media">
-        <img
-          src={entry.data.coverImage}
-          alt=""
-          class="article-hero-img"
-          aria-hidden="true"
-        />
-        <div class="article-hero-overlay"></div>
+    <!-- Hero: same pattern as the rest of the site -->
+    <section class="page-hero reveal">
+      <p class="eyebrow">Fusion Blog</p>
+      <h1 class="hero-title">{entry.data.title}</h1>
+      <p class="hero-summary">{entry.data.excerpt}</p>
+      <div class="article-meta">
+        <time class="meta-date" datetime={entry.data.date.toISOString()}>{formattedDate}</time>
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span class="meta-author">{entry.data.author}</span>
       </div>
-
-      <div class="article-hero-content">
-        <a class="article-eyebrow" href="/blog/">← Fusion Blog</a>
-        <h1 class="article-title">{entry.data.title}</h1>
-        <p class="article-excerpt">{entry.data.excerpt}</p>
-        <div class="article-meta">
-          <time datetime={entry.data.date.toISOString()}>{formattedDate}</time>
-          <span class="meta-dot" aria-hidden="true">·</span>
-          <span>{entry.data.author}</span>
-          {entry.data.tags.length > 0 && (
-            <>
-              <span class="meta-dot" aria-hidden="true">·</span>
-              <div class="meta-tags">
-                {entry.data.tags.map((tag) => (
-                  <span class="chip chip-sm">{tag}</span>
-                ))}
-              </div>
-            </>
-          )}
+      {entry.data.tags.length > 0 && (
+        <div class="chip-list article-hero-tags">
+          {entry.data.tags.map((tag) => <span class="chip">{tag}</span>)}
         </div>
-      </div>
-    </header>
+      )}
+    </section>
 
-    <!-- Article body -->
-    <section class="dark-band article-body reveal" data-delay="1" id="article-body">
+    <!-- Article content: dark band, consistent with rest of site -->
+    <section class="dark-band article-band reveal" data-delay="1" id="article-body">
+      <img
+        src={entry.data.coverImage}
+        alt={entry.data.title}
+        class="article-cover"
+      />
+
       <div class="prose article-prose">
         <Content />
       </div>
 
-      <!-- Footer: back link + related posts -->
-      <footer class="article-footer">
-        <a class="back-link" href="/blog/">← Back to all posts</a>
-
-        {relatedPosts.length > 0 && (
-          <div class="related-posts">
-            <p class="related-heading">More from the blog</p>
-            <div class="related-grid">
-              {relatedPosts.map((post) => (
-                <a class="related-card" href={`/blog/${post.id}/`}>
-                  <img
-                    src={post.data.coverImage}
-                    alt={post.data.title}
-                    class="related-img"
-                  />
-                  <div class="related-body">
-                    <time class="related-date">
-                      {post.data.date.toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </time>
-                    <p class="related-title">{post.data.title}</p>
-                    <p class="related-excerpt">{post.data.excerpt}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </footer>
+      <div class="article-footer">
+        <a class="back-link" href="/blog/">← Back to blog</a>
+      </div>
     </section>
   </article>
 </BaseLayout>
@@ -151,7 +104,6 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     right: 0;
     height: 3px;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.06);
     pointer-events: none;
   }
 
@@ -159,260 +111,85 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     height: 100%;
     width: 0%;
     background: var(--color-lime);
+    box-shadow: 0 0 8px rgba(29, 185, 84, 0.5);
     transition: width 0.08s linear;
-    box-shadow: 0 0 8px rgba(29, 185, 84, 0.6);
   }
 
-  /* ─── Article hero ───────────────────────────────────── */
-
-  .article-hero {
-    margin-top: var(--space-m);
-    position: relative;
-    min-height: 520px;
-    border-radius: var(--radius-l);
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-    padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3.5rem);
-  }
-
-  .article-hero-media {
-    position: absolute;
-    inset: 0;
-  }
-
-  .article-hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transform: scale(1.04);
-    transition: transform 8s ease;
-  }
-
-  .article-hero:hover .article-hero-img {
-    transform: scale(1);
-  }
-
-  /* Dark gradient overlay — heavier at bottom for legibility */
-  .article-hero-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(8, 10, 10, 0.15) 0%,
-      rgba(8, 10, 10, 0.45) 45%,
-      rgba(8, 10, 10, 0.92) 100%
-    );
-  }
-
-  /* Lime diagonal accent, echoes the global hero */
-  .article-hero::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      118deg,
-      transparent 0%,
-      transparent 55%,
-      rgba(2, 93, 36, 0.35) 100%
-    );
-    pointer-events: none;
-  }
-
-  .article-hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 72ch;
-  }
-
-  .article-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--color-lime);
-    margin-bottom: var(--space-s);
-    transition: opacity var(--transition);
-  }
-
-  .article-eyebrow:hover {
-    opacity: 0.75;
-  }
-
-  .article-title {
-    font-family: var(--font-display);
-    font-size: clamp(1.9rem, 4.5vw, 3.2rem);
-    color: var(--color-paper);
-    line-height: 1.12;
-    letter-spacing: 0.01em;
-    margin-bottom: var(--space-s);
-    text-wrap: balance;
-  }
-
-  .article-excerpt {
-    font-size: clamp(0.95rem, 1.5vw, 1.1rem);
-    color: rgba(245, 247, 246, 0.72);
-    line-height: 1.6;
-    max-width: 58ch;
-    margin-bottom: var(--space-m);
-  }
+  /* ─── Hero meta ──────────────────────────────────────── */
 
   .article-meta {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    font-size: 0.84rem;
-    color: rgba(245, 247, 246, 0.5);
+    gap: 0.5rem;
+    margin-top: var(--space-m);
+    font-size: 0.88rem;
+    color: rgba(245, 247, 246, 0.55);
   }
 
-  .meta-dot {
+  .meta-sep {
     color: rgba(245, 247, 246, 0.2);
   }
 
-  .meta-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
+  .article-hero-tags {
+    margin-top: var(--space-s);
   }
 
-  .chip-sm {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
+  /* ─── Article band ───────────────────────────────────── */
+
+  .article-band {
+    padding: 0;
+    overflow: hidden;
   }
 
-  /* ─── Article body ───────────────────────────────────── */
-
-  .article-body {
-    padding: var(--space-xl);
+  .article-cover {
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    object-fit: cover;
+    display: block;
   }
 
   .article-prose {
+    padding: var(--space-l) var(--space-xl);
     max-width: 72ch;
   }
 
   /* ─── Article footer ─────────────────────────────────── */
 
   .article-footer {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-l);
+    padding: var(--space-m) var(--space-xl) var(--space-xl);
     border-top: 1px solid rgba(255, 255, 255, 0.07);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
   }
 
   .back-link {
     font-size: 0.88rem;
-    font-weight: 600;
     color: rgba(245, 247, 246, 0.4);
+    font-weight: 600;
     transition: color var(--transition);
-    width: fit-content;
   }
 
   .back-link:hover {
     color: var(--color-lime);
   }
 
-  /* ─── Related posts ──────────────────────────────────── */
-
-  .related-heading {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: var(--color-lime);
-    margin-bottom: var(--space-m);
-  }
-
-  .related-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-m);
-  }
-
-  .related-card {
-    display: flex;
-    flex-direction: column;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-top: 2px solid rgba(29, 185, 84, 0.25);
-    border-radius: var(--radius-m);
-    overflow: hidden;
-    transition: border-top-color var(--transition), background var(--transition), transform var(--transition);
-  }
-
-  .related-card:hover {
-    border-top-color: var(--color-lime);
-    background: rgba(255, 255, 255, 0.06);
-    transform: translateY(-3px);
-  }
-
-  .related-img {
-    width: 100%;
-    aspect-ratio: 16 / 6;
-    object-fit: cover;
-    display: block;
-  }
-
-  .related-body {
-    padding: var(--space-s) var(--space-m) var(--space-m);
-    display: grid;
-    gap: 0.3rem;
-  }
-
-  .related-date {
-    font-family: var(--font-display);
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-lime);
-  }
-
-  .related-title {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-paper);
-    line-height: 1.3;
-  }
-
-  .related-excerpt {
-    font-size: 0.82rem;
-    color: rgba(245, 247, 246, 0.45);
-    line-height: 1.5;
-  }
-
   /* ─── Responsive ─────────────────────────────────────── */
 
   @media (max-width: 720px) {
-    .article-hero {
-      min-height: 420px;
-    }
-
-    .article-body {
-      padding: var(--space-m);
-    }
-
-    .related-grid {
-      grid-template-columns: 1fr;
+    .article-prose,
+    .article-footer {
+      padding-left: var(--space-m);
+      padding-right: var(--space-m);
     }
   }
 </style>
 
 <script>
-  // Reading progress bar
   const bar = document.getElementById('reading-bar');
   const body = document.getElementById('article-body');
 
   if (bar && body) {
     const update = () => {
       const top = body.getBoundingClientRect().top + window.scrollY;
-      const scrolled = window.scrollY - top;
-      const progress = Math.min(Math.max(scrolled / body.offsetHeight, 0), 1);
+      const progress = Math.min(Math.max((window.scrollY - top) / body.offsetHeight, 0), 1);
       bar.style.width = `${progress * 100}%`;
     };
     window.addEventListener('scroll', update, { passive: true });
