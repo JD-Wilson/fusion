@@ -27,6 +27,7 @@ export async function GET() {
     { path: '/', id: 'home' },
     { path: '/about/', id: 'about' },
     { path: '/age-groups/', id: 'age-groups' },
+    { path: '/development-sessions/', id: 'development-sessions' },
     { path: '/leagues/', id: 'leagues' },
     { path: '/new-sponsors/', id: 'new-sponsors' },
     { path: '/sponsors/', id: 'sponsors' },

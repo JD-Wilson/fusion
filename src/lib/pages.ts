@@ -4,6 +4,7 @@ export const CORE_PAGE_SLUGS = new Set([
   'home',
   'about',
   'age-groups',
+  'development-sessions',
   'leagues',
   'new-sponsors',
   'sponsors',

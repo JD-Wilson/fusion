@@ -1,0 +1,433 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+const page = await requirePageEntry('development-sessions');
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Development Sessions', path: '/development-sessions/' }
+]);
+
+const bookingUrl = 'https://ffc.hivelink.co.uk/365/';
+
+const ageGroups = [
+  {
+    range: '3–4',
+    label: 'Toddler Kicks',
+    description:
+      'An introduction to football through fun movement, ball familiarity, and play-based activities. Sessions focus on coordination and confidence in a safe, encouraging setting.',
+    tags: ['First touch', 'Movement skills', 'Play-based'],
+  },
+  {
+    range: '5–7',
+    label: 'Mini Fusion',
+    description:
+      'Fundamental football skills in a fun, low-pressure environment. Children learn dribbling, passing, and basic game understanding through small-sided games and activities.',
+    tags: ['Dribbling', 'Passing', 'Small-sided games'],
+  },
+  {
+    range: '8–10',
+    label: 'Foundation',
+    description:
+      'Structured sessions focused on developing core technique and football intelligence. Players are challenged to improve decision-making, positioning, and teamwork.',
+    tags: ['Technique', 'Game intelligence', 'Teamwork'],
+  },
+  {
+    range: '11–12+',
+    label: 'Development',
+    description:
+      'Advanced sessions for older players looking to develop their game further. Emphasis on tactical awareness, competitive scenarios, and individual improvement.',
+    tags: ['Tactics', 'Competitive play', 'Individual development'],
+  },
+];
+---
+
+<BaseLayout
+  title={page.data.seoTitle ?? page.data.title}
+  description={page.data.seoDescription ?? page.data.description}
+  canonical={page.data.canonicalUrl ?? '/development-sessions/'}
+  image={page.data.ogImage}
+  noindex={page.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow="Open to All"
+    title="Development Sessions"
+    summary={page.data.description}
+    actions={[
+      { href: bookingUrl, label: 'Book a Session' },
+      { href: '/age-groups/', label: 'Club Teams', ghost: true }
+    ]}
+  />
+
+  <!-- Age group cards -->
+  <section class="dark-band reveal" data-delay="1">
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">Sessions for every age</p>
+        <h2 class="band-title">Ages 3 to 12+</h2>
+        <p class="band-description">
+          Each session is tailored to the age group, so children are always learning at the right pace with the right challenge.
+        </p>
+      </div>
+    </div>
+
+    <div class="age-grid">
+      {ageGroups.map((group, i) => (
+        <article class="dark-card age-card reveal" data-delay={String(Math.min(i + 1, 4))}>
+          <span class="age-ghost" aria-hidden="true">{group.range}</span>
+          <div class="age-card-body">
+            <p class="age-range">{group.range} years</p>
+            <h3 class="age-label">{group.label}</h3>
+            <p class="age-description">{group.description}</p>
+            <div class="chip-list age-tags">
+              {group.tags.map((tag) => <span class="chip">{tag}</span>)}
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <!-- What to expect -->
+  <section class="dark-band reveal" data-delay="2">
+    <div class="band-head">
+      <div>
+        <p class="band-eyebrow">What to expect</p>
+        <h2 class="band-title">No club needed. Just show up.</h2>
+      </div>
+    </div>
+
+    <div class="expect-grid">
+      <div class="expect-item">
+        <span class="expect-num" aria-hidden="true">01</span>
+        <h3 class="expect-title">Open to all children</h3>
+        <p class="expect-body">Development sessions are open to any child aged 3 to 12+, whether they've never kicked a ball before or are looking to develop existing skills outside of a club environment.</p>
+      </div>
+      <div class="expect-item">
+        <span class="expect-num" aria-hidden="true">02</span>
+        <h3 class="expect-title">Coached sessions</h3>
+        <p class="expect-body">Every session is led by qualified Fusion FC coaches who create a structured, supportive environment where children feel comfortable, challenged, and encouraged to improve.</p>
+      </div>
+      <div class="expect-item">
+        <span class="expect-num" aria-hidden="true">03</span>
+        <h3 class="expect-title">Book online</h3>
+        <p class="expect-body">Sessions can be booked easily through our online booking system. Check availability, choose the right age group, and secure your child's place in just a few clicks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Booking CTA — primary action -->
+  <section class="booking-cta reveal" data-delay="3">
+    <div class="booking-cta-inner">
+      <div class="booking-cta-text">
+        <p class="booking-eyebrow">Ready to get started?</p>
+        <h2 class="booking-title">Book a development session</h2>
+        <p class="booking-summary">
+          Sessions are available for children aged 3 to 12+. Use our online booking system to find a session that works for you and secure your child's place.
+        </p>
+      </div>
+      <div class="booking-action">
+        <a
+          class="booking-btn"
+          href={bookingUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          Book now ↗
+        </a>
+        <p class="booking-url">{bookingUrl.replace(/^https?:\/\//, '')}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Callout for existing club players -->
+  <section class="club-callout reveal" data-delay="4">
+    <div class="callout-inner">
+      <div>
+        <p class="callout-eyebrow">Already in a club?</p>
+        <p class="callout-text">View our registered club teams and age group pathways.</p>
+      </div>
+      <div class="callout-actions">
+        <a class="button" href="/age-groups/">View age groups</a>
+        <a class="link-arrow" href="/contact/">Get in touch</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ─── Age group grid ─────────────────────────────────── */
+
+  .age-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-m);
+  }
+
+  .age-card {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-l) var(--space-m) var(--space-m);
+  }
+
+  /* Large ghost age range */
+  .age-ghost {
+    position: absolute;
+    top: -0.5rem;
+    right: var(--space-s);
+    font-family: var(--font-display);
+    font-size: clamp(3.5rem, 7vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(29, 185, 84, 0.07);
+    letter-spacing: -0.03em;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .age-card-body {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .age-range {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+  }
+
+  .age-label {
+    font-size: 1.2rem;
+    color: var(--color-paper);
+    line-height: 1.2;
+  }
+
+  .age-description {
+    font-size: 0.88rem;
+    color: rgba(245, 247, 246, 0.55);
+    line-height: 1.6;
+  }
+
+  .age-tags {
+    margin-top: 0.25rem;
+  }
+
+  /* ─── What to expect ─────────────────────────────────── */
+
+  .expect-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-m);
+  }
+
+  .expect-item {
+    position: relative;
+    padding-top: var(--space-l);
+    border-top: 1px solid rgba(29, 185, 84, 0.2);
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+  }
+
+  .expect-num {
+    position: absolute;
+    top: var(--space-s);
+    right: 0;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: rgba(29, 185, 84, 0.35);
+  }
+
+  .expect-title {
+    font-size: 1.05rem;
+    color: var(--color-paper);
+    line-height: 1.25;
+  }
+
+  .expect-body {
+    font-size: 0.88rem;
+    color: rgba(245, 247, 246, 0.5);
+    line-height: 1.6;
+  }
+
+  /* ─── Booking CTA ────────────────────────────────────── */
+
+  .booking-cta {
+    background: var(--color-ink);
+    border-radius: var(--radius-l);
+    padding: var(--space-xl);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Lime glow from right */
+  .booking-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 100% 50%, rgba(29, 185, 84, 0.14) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .booking-cta-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xl);
+    flex-wrap: wrap;
+  }
+
+  .booking-cta-text {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 55ch;
+  }
+
+  .booking-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+  }
+
+  .booking-title {
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    color: var(--color-paper);
+    line-height: 1.15;
+  }
+
+  .booking-summary {
+    font-size: 0.9rem;
+    color: rgba(245, 247, 246, 0.55);
+    line-height: 1.6;
+  }
+
+  .booking-action {
+    display: grid;
+    gap: 0.5rem;
+    align-items: center;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .booking-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 1rem 2.2rem;
+    border-radius: 999px;
+    transition: background var(--transition), transform var(--transition);
+    white-space: nowrap;
+  }
+
+  .booking-btn:hover {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+
+  .booking-url {
+    font-size: 0.72rem;
+    color: rgba(245, 247, 246, 0.25);
+    text-align: center;
+  }
+
+  /* ─── Club callout ───────────────────────────────────── */
+
+  .club-callout {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-l) var(--space-xl);
+  }
+
+  .callout-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  .callout-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-forest);
+    margin-bottom: 0.25rem;
+  }
+
+  .callout-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--color-charcoal);
+  }
+
+  .callout-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  /* ─── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .expect-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .age-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .booking-cta {
+      padding: var(--space-l) var(--space-m);
+    }
+
+    .booking-cta-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .booking-btn {
+      width: 100%;
+    }
+
+    .booking-action {
+      width: 100%;
+    }
+
+    .club-callout {
+      padding: var(--space-m);
+    }
+
+    .callout-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
