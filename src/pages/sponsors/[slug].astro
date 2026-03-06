@@ -99,6 +99,11 @@ const breadcrumbs = createBreadcrumbJsonLd([
 
   </section>
 
+  <!-- Scroll to top -->
+  <button class="scroll-top" id="scroll-top" type="button" aria-label="Back to top">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+
   <!-- Bottom callout — separate, light background -->
   <section class="partner-callout reveal" data-delay="2">
     <div class="callout-inner">
@@ -269,9 +274,71 @@ const breadcrumbs = createBreadcrumbJsonLd([
     flex-wrap: wrap;
   }
 
+  /* ─── Logo entrance ─────────────────────────────────── */
+
+  .logo-header-box {
+    animation: logo-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both;
+  }
+
+  @keyframes logo-pop {
+    from { opacity: 0; transform: scale(0.88); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* ─── Prose stagger (applied via JS) ─────────────────── */
+
+  :global(.prose-item) {
+    transition: opacity 0.55s ease, transform 0.55s ease;
+  }
+
+  :global(.prose-item.prose-hidden) {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  /* ─── Scroll to top ──────────────────────────────────── */
+
+  .scroll-top {
+    position: fixed;
+    bottom: var(--space-l);
+    right: var(--space-l);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+    transition: opacity 0.3s, transform 0.3s, background var(--transition);
+    z-index: 50;
+    pointer-events: none;
+  }
+
+  .scroll-top.visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .scroll-top:hover {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .logo-header-box { animation: none; }
+  }
+
   /* ─── Responsive ─────────────────────────────────────── */
 
   @media (max-width: 720px) {
+    .scroll-top { bottom: var(--space-m); right: var(--space-m); }
+
     .logo-header {
       flex-direction: column;
       align-items: flex-start;
@@ -304,3 +371,37 @@ const breadcrumbs = createBreadcrumbJsonLd([
     }
   }
 </style>
+
+<script>
+  /* ─── Scroll to top ──────────────────────────────────── */
+  const scrollBtn = document.getElementById('scroll-top');
+  if (scrollBtn) {
+    window.addEventListener('scroll', () => {
+      scrollBtn.classList.toggle('visible', window.scrollY > 400);
+    }, { passive: true });
+    scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  /* ─── Staggered prose reveals ────────────────────────── */
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const proseEl = document.querySelector('.partnership-prose');
+    if (proseEl) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.remove('prose-hidden');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1, rootMargin: '0px 0px -24px 0px' }
+      );
+      Array.from(proseEl.children).forEach((el, i) => {
+        el.classList.add('prose-item', 'prose-hidden');
+        (el as HTMLElement).style.transitionDelay = `${Math.min(i * 0.06, 0.3)}s`;
+        observer.observe(el);
+      });
+    }
+  }
+</script>

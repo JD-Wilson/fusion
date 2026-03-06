@@ -29,8 +29,8 @@ const breadcrumbs = createBreadcrumbJsonLd([
 >
   <PageHero eyebrow="Club Partners" title={sponsorsPage.data.title} summary={sponsorsPage.data.description} />
 
-  <section class="dark-band reveal" data-delay="1">
-    <div class="band-head">
+  <section class="dark-band">
+    <div class="band-head reveal">
       <div>
         <p class="band-eyebrow">Our Partners</p>
         <h2 class="band-title">Businesses backing Fusion FC</h2>
@@ -42,8 +42,8 @@ const breadcrumbs = createBreadcrumbJsonLd([
     </div>
 
     <div class="sponsors-grid">
-      {sponsors.map((sponsor) => (
-        <article class="dark-card sponsor-card">
+      {sponsors.map((sponsor, i) => (
+        <article class="dark-card sponsor-card reveal" data-delay={String(Math.min(i + 1, 4))}>
 
           <div class="card-logo-wrap">
             <div class="card-logo-box">
@@ -202,11 +202,15 @@ const breadcrumbs = createBreadcrumbJsonLd([
     font-size: 0.82rem;
     font-weight: 700;
     color: var(--color-lime);
-    transition: opacity var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: gap var(--transition), opacity var(--transition);
   }
 
   .card-profile-link:hover {
-    opacity: 0.75;
+    gap: 0.55rem;
+    opacity: 0.85;
   }
 
   .card-website-link {
