@@ -32,7 +32,8 @@ export async function GET() {
     { path: '/new-sponsors/', id: 'new-sponsors' },
     { path: '/sponsors/', id: 'sponsors' },
     { path: '/blog/', id: 'blog' },
-    { path: '/contact/', id: 'contact' }
+    { path: '/contact/', id: 'contact' },
+    { path: '/join/', id: 'join' }
   ]
     .filter((route) => !pageBySlug.get(route.id)?.data.noindex)
     .map((route) => ({

@@ -9,7 +9,8 @@ export const CORE_PAGE_SLUGS = new Set([
   'new-sponsors',
   'sponsors',
   'blog',
-  'contact'
+  'contact',
+  'join'
 ]);
 
 export const getCorePagePath = (slug: string) => `/${slug}/`;

@@ -1,0 +1,665 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import { requirePageEntry } from '../lib/pages';
+
+export const prerender = true;
+
+const page = await requirePageEntry('join');
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Join Fusion FC', path: '/join/' }
+]);
+
+const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
+
+const ageGroups = [
+  { value: 'development-3-4', label: 'Development Sessions — ages 3–4' },
+  { value: 'development-5-7', label: 'Development Sessions — ages 5–7' },
+  { value: 'u7', label: 'U7' },
+  { value: 'u8', label: 'U8' },
+  { value: 'u9', label: 'U9' },
+  { value: 'u10', label: 'U10' },
+  { value: 'u11', label: 'U11' },
+  { value: 'u12', label: 'U12' },
+  { value: 'u13', label: 'U13' },
+  { value: 'u14', label: 'U14' },
+  { value: 'u15', label: 'U15' },
+  { value: 'u16plus', label: 'U16+' },
+  { value: 'unsure', label: "Not sure — I'd like advice" },
+];
+
+const experienceLevels = [
+  { value: 'none', label: 'No experience — brand new to football' },
+  { value: 'informal', label: 'Played informally (kickabouts, PE, etc.)' },
+  { value: 'club-before', label: 'Previously played for a club' },
+  { value: 'current-club', label: 'Currently in a club, looking to join or switch' },
+];
+---
+
+<BaseLayout
+  title={page.data.seoTitle ?? page.data.title}
+  description={page.data.seoDescription ?? page.data.description}
+  canonical={page.data.canonicalUrl ?? '/join/'}
+  image={page.data.ogImage}
+  noindex={page.data.noindex}
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow="Get Involved"
+    title="Join Fusion FC"
+    summary={page.data.description}
+  />
+
+  <section class="dark-band form-section reveal" data-delay="1">
+    <div class="form-layout">
+
+      <!-- Left: context panel -->
+      <div class="form-context reveal" data-delay="1">
+        <div class="context-block">
+          <span class="context-num" aria-hidden="true">01</span>
+          <h3 class="context-title">Tell us about your child</h3>
+          <p class="context-body">Share their age, experience level, and which age group you're interested in — we'll help find the best fit.</p>
+        </div>
+        <div class="context-block">
+          <span class="context-num" aria-hidden="true">02</span>
+          <h3 class="context-title">We'll be in touch</h3>
+          <p class="context-body">One of our coaches will reach out directly to discuss the right team, training times, and how to get started.</p>
+        </div>
+        <div class="context-block">
+          <span class="context-num" aria-hidden="true">03</span>
+          <h3 class="context-title">Come and try us out</h3>
+          <p class="context-body">We invite all new players to a trial session before any commitment — so your child can see if Fusion FC is right for them.</p>
+        </div>
+      </div>
+
+      <!-- Right: form -->
+      <div class="form-wrap reveal" data-delay="2">
+        <form
+          id="join-form"
+          class="join-form"
+          novalidate
+        >
+          <input type="hidden" name="access_key" value={web3formsKey} />
+          <input type="hidden" name="subject" value="New Player Enquiry — Fusion FC" />
+          <input type="hidden" name="from_name" value="Fusion FC Website" />
+          <!-- honeypot -->
+          <input type="checkbox" name="botcheck" style="display:none" />
+
+          <fieldset class="form-fieldset">
+            <legend class="fieldset-legend">Parent / Guardian Details</legend>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="parent_name">Full name <span class="required" aria-hidden="true">*</span></label>
+                <input
+                  class="field-input"
+                  type="text"
+                  id="parent_name"
+                  name="parent_name"
+                  autocomplete="name"
+                  required
+                  placeholder="Jane Smith"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label" for="parent_email">Email address <span class="required" aria-hidden="true">*</span></label>
+                <input
+                  class="field-input"
+                  type="email"
+                  id="parent_email"
+                  name="parent_email"
+                  autocomplete="email"
+                  required
+                  placeholder="jane@example.com"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="parent_phone">Phone number</label>
+              <input
+                class="field-input"
+                type="tel"
+                id="parent_phone"
+                name="parent_phone"
+                autocomplete="tel"
+                placeholder="07700 000000"
+              />
+            </div>
+          </fieldset>
+
+          <fieldset class="form-fieldset">
+            <legend class="fieldset-legend">About Your Child</legend>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="child_name">Child's first name <span class="required" aria-hidden="true">*</span></label>
+                <input
+                  class="field-input"
+                  type="text"
+                  id="child_name"
+                  name="child_name"
+                  required
+                  placeholder="Alex"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label" for="child_age">Child's age <span class="required" aria-hidden="true">*</span></label>
+                <input
+                  class="field-input"
+                  type="number"
+                  id="child_age"
+                  name="child_age"
+                  min="3"
+                  max="18"
+                  required
+                  placeholder="9"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="age_group">Interested age group / team <span class="required" aria-hidden="true">*</span></label>
+              <select class="field-input field-select" id="age_group" name="age_group" required>
+                <option value="" disabled selected>Select an age group…</option>
+                {ageGroups.map((g) => <option value={g.value}>{g.label}</option>)}
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="experience">Experience level <span class="required" aria-hidden="true">*</span></label>
+              <select class="field-input field-select" id="experience" name="experience" required>
+                <option value="" disabled selected>Select experience level…</option>
+                {experienceLevels.map((e) => <option value={e.value}>{e.label}</option>)}
+              </select>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label class="field-label" for="comments">Anything else you'd like us to know?</label>
+            <textarea
+              class="field-input field-textarea"
+              id="comments"
+              name="comments"
+              rows="4"
+              placeholder="Any questions, special requirements, preferred training days, or anything else…"
+            ></textarea>
+          </div>
+
+          <div class="form-footer">
+            <p class="form-note">Fields marked <span class="required" aria-hidden="true">*</span> are required.</p>
+            <button class="submit-btn" type="submit" id="submit-btn">
+              <span class="btn-label">Send enquiry</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <!-- Status messages -->
+          <div class="form-status" id="form-status" aria-live="polite"></div>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Bottom callout -->
+  <section class="club-callout reveal" data-delay="3">
+    <div class="callout-inner">
+      <div>
+        <p class="callout-eyebrow">Already decided?</p>
+        <p class="callout-text">Come along to a development session first — no commitment required.</p>
+      </div>
+      <div class="callout-actions">
+        <a class="button" href="/development-sessions/">Development sessions</a>
+        <a class="link-arrow" href="/contact/">Get in touch</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById('join-form') as HTMLFormElement | null;
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('form-status') as HTMLElement | null;
+
+  if (form && submitBtn && statusEl) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Basic client-side validation
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      // Loading state
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('data-loading', 'true');
+      statusEl.innerHTML = '';
+      statusEl.className = 'form-status';
+
+      try {
+        const data = Object.fromEntries(new FormData(form));
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          statusEl.innerHTML = `
+            <div class="status-success">
+              <span class="status-icon" aria-hidden="true">✓</span>
+              <div>
+                <strong>Enquiry sent!</strong>
+                <p>Thanks for getting in touch. We'll be back to you within a couple of days.</p>
+              </div>
+            </div>`;
+          statusEl.className = 'form-status is-visible';
+          form.reset();
+        } else {
+          throw new Error(json.message ?? 'Submission failed');
+        }
+      } catch (err) {
+        statusEl.innerHTML = `
+          <div class="status-error">
+            <span class="status-icon" aria-hidden="true">!</span>
+            <div>
+              <strong>Something went wrong</strong>
+              <p>Please try again or email us directly at <a href="mailto:info@fusionfc.co.uk">info@fusionfc.co.uk</a>.</p>
+            </div>
+          </div>`;
+        statusEl.className = 'form-status is-visible';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('data-loading');
+      }
+    });
+  }
+</script>
+
+<style>
+  /* ─── Layout ────────────────────────────────────────── */
+
+  .form-section {
+    padding-top: 0;
+  }
+
+  .form-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  /* ─── Context panel ─────────────────────────────────── */
+
+  .form-context {
+    display: grid;
+    gap: var(--space-l);
+    position: sticky;
+    top: calc(var(--header-height, 72px) + var(--space-m));
+  }
+
+  .context-block {
+    position: relative;
+    padding-top: var(--space-m);
+    border-top: 1px solid rgba(29, 185, 84, 0.2);
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+  }
+
+  .context-num {
+    position: absolute;
+    top: var(--space-xs);
+    right: 0;
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: rgba(29, 185, 84, 0.35);
+  }
+
+  .context-title {
+    font-size: 1rem;
+    color: var(--color-paper);
+    line-height: 1.25;
+  }
+
+  .context-body {
+    font-size: 0.86rem;
+    color: rgba(245, 247, 246, 0.5);
+    line-height: 1.6;
+  }
+
+  /* ─── Form wrapper ──────────────────────────────────── */
+
+  .form-wrap {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-l);
+    padding: var(--space-xl);
+  }
+
+  /* ─── Fieldsets ─────────────────────────────────────── */
+
+  .form-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 var(--space-l);
+  }
+
+  .fieldset-legend {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+    margin-bottom: var(--space-m);
+    padding: 0;
+    width: 100%;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(29, 185, 84, 0.2);
+  }
+
+  /* ─── Fields ────────────────────────────────────────── */
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-m);
+    margin-bottom: var(--space-m);
+  }
+
+  .field {
+    display: grid;
+    gap: 0.4rem;
+    margin-bottom: var(--space-m);
+  }
+
+  .field:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-label {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(245, 247, 246, 0.6);
+  }
+
+  .required {
+    color: var(--color-lime);
+  }
+
+  .field-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-s, 8px);
+    padding: 0.7rem 0.9rem;
+    color: var(--color-paper);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .field-input::placeholder {
+    color: rgba(245, 247, 246, 0.2);
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: rgba(29, 185, 84, 0.5);
+    background: rgba(29, 185, 84, 0.04);
+  }
+
+  .field-input:invalid:not(:placeholder-shown) {
+    border-color: rgba(255, 80, 80, 0.5);
+  }
+
+  .field-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231db954' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.9rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
+
+  .field-select option {
+    background: #181c1c;
+    color: var(--color-paper);
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 7rem;
+    line-height: 1.6;
+  }
+
+  /* ─── Footer ────────────────────────────────────────── */
+
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    margin-top: var(--space-l);
+    flex-wrap: wrap;
+  }
+
+  .form-note {
+    font-size: 0.78rem;
+    color: rgba(245, 247, 246, 0.3);
+  }
+
+  .submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--color-lime);
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.85rem 2rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition);
+    flex-shrink: 0;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: var(--color-lime-bright);
+    transform: translateY(-2px);
+  }
+
+  .submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Spinner */
+  .btn-spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(16, 20, 20, 0.3);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .submit-btn[data-loading='true'] .btn-label {
+    opacity: 0.6;
+  }
+
+  .submit-btn[data-loading='true'] .btn-spinner {
+    display: block;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ─── Status messages ───────────────────────────────── */
+
+  .form-status {
+    margin-top: var(--space-m);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .form-status.is-visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .status-success,
+  .status-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-s, 8px);
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .status-success {
+    background: rgba(29, 185, 84, 0.1);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+    color: rgba(245, 247, 246, 0.85);
+  }
+
+  .status-success strong {
+    color: var(--color-lime);
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .status-error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: rgba(245, 247, 246, 0.75);
+  }
+
+  .status-error strong {
+    color: #ff8080;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .status-error a {
+    color: var(--color-lime);
+    text-decoration: underline;
+  }
+
+  .status-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  /* ─── Club callout (reused pattern) ─────────────────── */
+
+  .club-callout {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-l) var(--space-xl);
+  }
+
+  .callout-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  .callout-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-forest);
+    margin-bottom: 0.25rem;
+  }
+
+  .callout-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--color-charcoal);
+  }
+
+  .callout-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  /* ─── Responsive ────────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .form-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .form-context {
+      position: static;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-m);
+    }
+  }
+
+  @media (max-width: 720px) {
+    .form-context {
+      grid-template-columns: 1fr;
+    }
+
+    .field-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-wrap {
+      padding: var(--space-m);
+    }
+
+    .form-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .submit-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .club-callout {
+      padding: var(--space-m);
+    }
+
+    .callout-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
