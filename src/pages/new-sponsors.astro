@@ -2,7 +2,6 @@
 import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
-import { siteConfig } from '../config/site';
 import { createBreadcrumbJsonLd } from '../lib/seo';
 import { requirePageEntry } from '../lib/pages';
 
@@ -13,6 +12,8 @@ const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
   { name: 'New Sponsors', path: '/new-sponsors/' }
 ]);
+
+const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
 ---
 
 <BaseLayout
@@ -28,7 +29,6 @@ const breadcrumbs = createBreadcrumbJsonLd([
     title={sponsorPage.data.title}
     summary={sponsorPage.data.description}
     actions={[
-      { href: '/contact/', label: 'Contact the Club' },
       { href: '/sponsors/', label: 'See Current Sponsors', ghost: true }
     ]}
   />
@@ -40,114 +40,307 @@ const breadcrumbs = createBreadcrumbJsonLd([
       </div>
     </article>
 
-    <article class="dark-card quick-contact reveal" data-delay="2">
-      <p class="qc-eyebrow">Quick Contact</p>
-      <h2 class="qc-heading">Ready to back the club?</h2>
-      <p class="qc-body">
-        Let us know if you want to sponsor kits, training equipment, or player development. We'll find the right package for you.
+    <div class="sponsor-form-wrap reveal" data-delay="2">
+      <p class="form-eyebrow">Sponsorship Enquiry</p>
+      <h2 class="form-heading">Ready to back the club?</h2>
+      <p class="form-subhead">
+        Fill in the form and we'll be in touch to talk through the right partnership package for your business.
       </p>
 
-      <div class="qc-details">
-        <div class="qc-row">
-          <span class="qc-label">Email</span>
-          <a class="qc-value" href={`mailto:${siteConfig.clubContactEmail}`}>
-            {siteConfig.clubContactEmail}
-          </a>
-        </div>
-        <div class="qc-row">
-          <span class="qc-label">Phone</span>
-          <span class="qc-value">{siteConfig.clubPhone}</span>
-        </div>
-      </div>
+      <form id="sponsor-form" class="sponsor-form" novalidate>
+        <input type="hidden" name="access_key" value={web3formsKey} />
+        <input type="hidden" name="subject" value="Sponsorship Enquiry — Fusion FC" />
+        <input type="hidden" name="from_name" value="Fusion FC Website" />
+        <input type="checkbox" name="botcheck" style="display:none" />
 
-      <a class="qc-cta" href="/contact/">Open contact page →</a>
-    </article>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="business_name">Business name <span class="required" aria-hidden="true">*</span></label>
+            <input class="field-input" type="text" id="business_name" name="business_name" required placeholder="Acme Ltd" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="contact_name">Your name <span class="required" aria-hidden="true">*</span></label>
+            <input class="field-input" type="text" id="contact_name" name="contact_name" autocomplete="name" required placeholder="Jane Smith" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="sponsor_email">Email address <span class="required" aria-hidden="true">*</span></label>
+            <input class="field-input" type="email" id="sponsor_email" name="email" autocomplete="email" required placeholder="jane@email.co.uk" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="sponsor_phone">Phone number</label>
+            <input class="field-input" type="tel" id="sponsor_phone" name="phone" autocomplete="tel" placeholder="07700 000000" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="sponsor_message">What are you interested in? <span class="required" aria-hidden="true">*</span></label>
+          <textarea class="field-input field-textarea" id="sponsor_message" name="message" rows="4" required placeholder="Kit sponsorship, training equipment, general partnership…"></textarea>
+        </div>
+
+        <div class="form-footer">
+          <p class="form-note">Fields marked <span class="required" aria-hidden="true">*</span> are required.</p>
+          <button class="submit-btn" type="submit" id="sponsor-submit">
+            <span class="btn-label">Send enquiry</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="form-status" id="sponsor-status" aria-live="polite"></div>
+      </form>
+    </div>
   </section>
 </BaseLayout>
 
+<script>
+  const form = document.getElementById('sponsor-form') as HTMLFormElement | null;
+  const submitBtn = document.getElementById('sponsor-submit') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('sponsor-status') as HTMLElement | null;
+
+  if (form && submitBtn && statusEl) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) { form.reportValidity(); return; }
+
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('data-loading', 'true');
+      statusEl.innerHTML = '';
+      statusEl.className = 'form-status';
+
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(Object.fromEntries(new FormData(form)))
+        });
+        const json = await res.json();
+
+        if (res.ok && json.success) {
+          statusEl.innerHTML = `<div class="status-success"><span class="status-icon" aria-hidden="true">✓</span><div><strong>Enquiry sent!</strong><p>Thanks for your interest. We'll be in touch shortly to discuss a partnership.</p></div></div>`;
+          statusEl.className = 'form-status is-visible';
+          form.reset();
+        } else {
+          throw new Error(json.message ?? 'Submission failed');
+        }
+      } catch {
+        statusEl.innerHTML = `<div class="status-error"><span class="status-icon" aria-hidden="true">!</span><div><strong>Something went wrong</strong><p>Please try again or email us at <a href="mailto:info@fusionfc.co.uk">info@fusionfc.co.uk</a>.</p></div></div>`;
+        statusEl.className = 'form-status is-visible';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('data-loading');
+      }
+    });
+  }
+</script>
+
 <style>
-  .qc-eyebrow {
+  /* ─── Form wrapper ───────────────────────────────────── */
+
+  .sponsor-form-wrap {
+    background: var(--color-charcoal);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-top: 2px solid rgba(29, 185, 84, 0.4);
+    border-radius: var(--radius-m);
+    padding: var(--space-l);
+    display: grid;
+    gap: var(--space-m);
+    align-content: start;
+  }
+
+  .form-eyebrow {
     font-family: var(--font-display);
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--color-lime);
-    margin-bottom: 0.3rem;
   }
 
-  .qc-heading {
+  .form-heading {
     font-size: clamp(1.1rem, 2vw, 1.5rem);
     color: var(--color-paper);
-    margin-bottom: var(--space-s);
     line-height: 1.2;
   }
 
-  .qc-body {
-    font-size: 0.9rem;
-    color: rgba(245, 247, 246, 0.55);
+  .form-subhead {
+    font-size: 0.88rem;
+    color: rgba(245, 247, 246, 0.5);
     line-height: 1.6;
-    margin-bottom: var(--space-m);
   }
 
-  .qc-details {
+  /* ─── Fields ─────────────────────────────────────────── */
+
+  .sponsor-form {
     display: grid;
-    gap: 0;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: var(--radius-s);
-    overflow: hidden;
-    margin-bottom: var(--space-m);
+    gap: var(--space-m);
   }
 
-  .qc-row {
+  .field-row {
     display: grid;
-    gap: 0.2rem;
-    padding: var(--space-s) var(--space-m);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-m);
+    align-items: start;
   }
 
-  .qc-row:last-child {
-    border-bottom: none;
+  .field-row .field { margin-bottom: 0; }
+
+  .field {
+    display: grid;
+    gap: 0.4rem;
   }
 
-  .qc-label {
+  .field-label {
     font-family: var(--font-display);
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
+    color: rgba(245, 247, 246, 0.6);
+  }
+
+  .required { color: var(--color-lime); }
+
+  .field-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-s, 8px);
+    padding: 0.7rem 0.9rem;
+    color: var(--color-paper);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .field-input::placeholder { color: rgba(245, 247, 246, 0.2); }
+
+  .field-input:focus {
+    outline: none;
+    border-color: rgba(29, 185, 84, 0.5);
+    background: rgba(29, 185, 84, 0.04);
+  }
+
+  .field-textarea {
+    resize: vertical;
+    min-height: 6rem;
+    line-height: 1.6;
+  }
+
+  /* ─── Footer & submit ────────────────────────────────── */
+
+  .form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  .form-note {
+    font-size: 0.75rem;
     color: rgba(245, 247, 246, 0.3);
   }
 
-  .qc-value {
-    font-size: 0.95rem;
-    color: rgba(245, 247, 246, 0.85);
-  }
-
-  a.qc-value {
-    color: var(--color-lime);
-    transition: opacity var(--transition);
-  }
-
-  a.qc-value:hover {
-    opacity: 0.75;
-  }
-
-  .qc-cta {
+  .submit-btn {
     display: inline-flex;
     align-items: center;
-    border-radius: 999px;
+    gap: 0.6rem;
     background: var(--color-lime);
     color: var(--color-ink);
     font-family: var(--font-display);
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    padding: 0.65rem 1.3rem;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
     transition: background var(--transition), transform var(--transition);
   }
 
-  .qc-cta:hover {
+  .submit-btn:hover:not(:disabled) {
     background: var(--color-lime-bright);
     transform: translateY(-2px);
+  }
+
+  .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(16, 20, 20, 0.3);
+    border-top-color: var(--color-ink);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .submit-btn[data-loading='true'] .btn-label { opacity: 0.6; }
+  .submit-btn[data-loading='true'] .btn-spinner { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Status messages ────────────────────────────────── */
+
+  .form-status {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .form-status.is-visible {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  .status-success,
+  .status-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius-s, 8px);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .status-success {
+    background: rgba(29, 185, 84, 0.1);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+    color: rgba(245, 247, 246, 0.85);
+  }
+
+  .status-success strong { color: var(--color-lime); display: block; margin-bottom: 0.2rem; }
+
+  .status-error {
+    background: rgba(255, 80, 80, 0.08);
+    border: 1px solid rgba(255, 80, 80, 0.25);
+    color: rgba(245, 247, 246, 0.75);
+  }
+
+  .status-error strong { color: #ff8080; display: block; margin-bottom: 0.2rem; }
+  .status-error a { color: var(--color-lime); text-decoration: underline; }
+  .status-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+
+  /* ─── Responsive ─────────────────────────────────────── */
+
+  @media (max-width: 720px) {
+    .field-row { grid-template-columns: 1fr; }
+
+    .sponsor-form-wrap { padding: var(--space-m); }
+
+    .form-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .submit-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
