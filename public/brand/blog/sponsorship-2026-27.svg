@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#101414"/>
+
+  <!-- Diagonal green accent panels -->
+  <path d="M 1200 0 L 700 0 L 520 630 L 1200 630 Z" fill="rgba(3,122,47,0.18)"/>
+  <path d="M 1200 0 L 820 0 L 640 630 L 1200 630 Z" fill="rgba(3,122,47,0.10)"/>
+
+  <!-- Pitch circle geometry -->
+  <circle cx="960" cy="315" r="280" stroke="rgba(29,185,84,0.12)" stroke-width="1.5"/>
+  <circle cx="960" cy="315" r="190" stroke="rgba(29,185,84,0.08)" stroke-width="1"/>
+  <circle cx="960" cy="315" r="96"  stroke="rgba(29,185,84,0.06)" stroke-width="1"/>
+  <circle cx="960" cy="315" r="7"   fill="rgba(29,185,84,0.22)"/>
+
+  <!-- Horizontal midline -->
+  <line x1="580" y1="315" x2="1200" y2="315" stroke="rgba(29,185,84,0.06)" stroke-width="1"/>
+
+  <!-- Corner arc -->
+  <circle cx="1200" cy="0" r="110" stroke="rgba(29,185,84,0.15)" stroke-width="1.5" fill="none"/>
+
+  <!-- Left lime bar accent -->
+  <rect x="0" y="0" width="6" height="630" fill="rgba(29,185,84,0.7)"/>
+
+  <!-- Eyebrow label -->
+  <text x="72" y="196" font-family="'Chakra Petch', monospace" font-size="18" font-weight="500"
+        letter-spacing="6" text-transform="uppercase" fill="rgba(29,185,84,0.85)">PARTNER WITH US</text>
+
+  <!-- Main headline -->
+  <text x="68" y="306" font-family="'Chakra Petch', monospace" font-size="82" font-weight="700"
+        letter-spacing="-1" fill="#F5F7F6">BECOME A</text>
+  <text x="68" y="400" font-family="'Chakra Petch', monospace" font-size="82" font-weight="700"
+        letter-spacing="-1" fill="#1db954">FUSION FC</text>
+  <text x="68" y="494" font-family="'Chakra Petch', monospace" font-size="82" font-weight="700"
+        letter-spacing="-1" fill="#F5F7F6">SPONSOR</text>
+
+  <!-- Season tag -->
+  <rect x="68" y="534" width="220" height="40" rx="20" fill="rgba(29,185,84,0.12)" stroke="rgba(29,185,84,0.35)" stroke-width="1"/>
+  <text x="178" y="559" font-family="'Chakra Petch', monospace" font-size="14" font-weight="500"
+        letter-spacing="3" fill="rgba(29,185,84,0.9)" text-anchor="middle">2026/27 SEASON</text>
+</svg>

@@ -39,8 +39,8 @@ const articleSchema = createBlogPostingJsonLd({
 });
 
 const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
-  day: 'numeric',
-  month: 'long',
+  day: '2-digit',
+  month: '2-digit',
   year: 'numeric'
 });
 ---
