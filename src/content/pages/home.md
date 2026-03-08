@@ -3,7 +3,7 @@ title: Fusion Football Club
 description: Discover our teams, community focus, and opportunities for local sponsors.
 seoTitle: Fusion FC | Grassroots Football Club
 seoDescription: Fusion FC is a UK grassroots football club focused on player growth, team culture, and strong local partnerships.
-ogImage: /brand/og-default.svg
+ogImage: /brand/logo.jpeg
 showInNav: false
 ---
 Fusion FC was built to give young players a positive football pathway where development, discipline, and confidence grow together.
