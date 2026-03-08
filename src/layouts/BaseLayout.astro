@@ -121,7 +121,7 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
   /* ─── 3D card tilt on hover ─────────────────────────── */
   const TILT_MAX = 6; // degrees
 
-  document.querySelectorAll<HTMLElement>('.dark-card, .section-card, .sponsor-featured, .sponsor-secondary').forEach((card) => {
+  document.querySelectorAll<HTMLElement>('.dark-card, .sponsor-featured, .sponsor-secondary').forEach((card) => {
     card.addEventListener('mousemove', (e: MouseEvent) => {
       const rect = card.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
