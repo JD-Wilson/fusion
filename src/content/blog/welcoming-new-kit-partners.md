@@ -1,6 +1,6 @@
 ---
 title: Welcoming New Kit Partners
-date: 2026-08-12
+date: 2026-01-14
 excerpt: Two local businesses have joined Fusion FC to support matchday and training kit investment.
 coverImage: /brand/blog/kit-partners.svg
 tags:

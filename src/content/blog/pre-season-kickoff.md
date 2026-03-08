@@ -1,7 +1,7 @@
 ---
 title: Pre-Season Kickoff for 2026/27
-date: 2026-07-05
-updatedDate: 2026-07-08
+date: 2026-02-03
+updatedDate: 2026-02-06
 excerpt: Training blocks are live and each age group now has a pre-season session calendar.
 coverImage: /brand/blog/pre-season.svg
 tags:

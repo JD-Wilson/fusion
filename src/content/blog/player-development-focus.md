@@ -1,6 +1,6 @@
 ---
 title: Player Development Focus This Quarter
-date: 2026-09-03
+date: 2025-11-10
 excerpt: Coaching plans this quarter center on confidence in possession and quick decision-making.
 coverImage: /brand/blog/development-focus.svg
 tags:
