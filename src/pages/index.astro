@@ -341,12 +341,14 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     padding: var(--space-l);
     position: relative;
     overflow: hidden;
-    transition: border-color var(--transition), background var(--transition);
+    transition: border-color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
   }
 
   .sponsor-featured:hover {
     background: rgba(255, 255, 255, 0.06);
     border-color: rgba(29, 185, 84, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(29, 185, 84, 0.15);
   }
 
   /* Green shine on hover from left */
@@ -460,12 +462,14 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     gap: 0.4rem;
     position: relative;
     overflow: hidden;
-    transition: background var(--transition), border-color var(--transition);
+    transition: background var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
   }
 
   .sponsor-secondary:hover {
     background: rgba(255, 255, 255, 0.06);
     border-top-color: var(--color-lime);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(29, 185, 84, 0.15);
   }
 
   .sponsor-num-sm {

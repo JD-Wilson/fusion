@@ -118,22 +118,6 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
     });
   });
 
-  /* ─── 3D card tilt on hover ─────────────────────────── */
-  const TILT_MAX = 6; // degrees
-
-  document.querySelectorAll<HTMLElement>('.dark-card, .sponsor-featured, .sponsor-secondary').forEach((card) => {
-    card.addEventListener('mousemove', (e: MouseEvent) => {
-      const rect = card.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / (rect.width / 2);
-      const dy = (e.clientY - cy) / (rect.height / 2);
-      card.style.transform = `perspective(600px) rotateY(${dx * TILT_MAX}deg) rotateX(${-dy * TILT_MAX}deg) translateY(-3px)`;
-    });
-    card.addEventListener('mouseleave', () => {
-      card.style.transform = '';
-    });
-  });
 </script>
 
 <style>

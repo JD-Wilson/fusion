@@ -380,21 +380,25 @@ section {
   color: var(--color-paper);
   position: relative;
   overflow: hidden;
-  transition: border-top-color var(--transition);
+  transition: border-top-color var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
 .dark-card:hover {
   border-top-color: var(--color-lime);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(29, 185, 84, 0.15);
 }
 
 /* Translucent when layered inside a dark band */
 .dark-band .dark-card {
   background: rgba(255, 255, 255, 0.03);
-  transition: background var(--transition), border-top-color var(--transition);
+  transition: background var(--transition), border-top-color var(--transition), transform var(--transition), box-shadow var(--transition);
 }
 
 .dark-band .dark-card:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.055);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(29, 185, 84, 0.18);
 }
 
 /* Chips on dark backgrounds */
