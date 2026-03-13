@@ -8,11 +8,16 @@ import { requirePageEntry } from '../lib/pages';
 const agePage = await requirePageEntry('age-groups');
 const { Content } = await render(agePage);
 
-const teams = (await getCollection('teams', ({ data }) => !data.noindex)).sort((a, b) => {
+const allTeams = (await getCollection('teams', ({ data }) => !data.noindex)).sort((a, b) => {
   const ageA = Number.parseInt(a.data.ageGroup.replace(/\D/g, ''), 10) || 99;
   const ageB = Number.parseInt(b.data.ageGroup.replace(/\D/g, ''), 10) || 99;
-  return ageA - ageB;
+  if (ageA !== ageB) return ageA - ageB;
+  return (a.data.teamName).localeCompare(b.data.teamName);
 });
+
+const saturdayTeams = allTeams.filter(t => t.data.matchday === 'Saturday');
+const sundayTeams = allTeams.filter(t => t.data.matchday === 'Sunday');
+const ungroupedTeams = allTeams.filter(t => !t.data.matchday);
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -45,35 +50,107 @@ const breadcrumbs = createBreadcrumbJsonLd([
       <a class="band-link" href="/leagues/">View leagues →</a>
     </div>
 
-    <div class="grid grid-3">
-      {teams.map((team) => (
-        <article class="dark-card team-card">
-          <span class="team-ghost">{team.data.ageGroup}</span>
-          <h3 class="team-name">{team.data.teamName}</h3>
-          <p class="team-age-label">{team.data.ageGroup}</p>
-          <div class="chip-list">
-            <span class="chip">Season {team.data.season}</span>
-            <span class="chip">{team.data.league}</span>
-          </div>
-          {(team.data.training || team.data.coach) && (
-            <div class="team-details">
-              {team.data.training && (
-                <div class="detail-item">
-                  <span class="detail-label">Training</span>
-                  <span class="detail-value">{team.data.training}</span>
+    {saturdayTeams.length > 0 && (
+      <div class="matchday-group">
+        <h3 class="matchday-heading">Saturday Teams</h3>
+        <div class="grid grid-3">
+          {saturdayTeams.map((team) => (
+            <article class="dark-card team-card">
+              <span class="team-ghost">{team.data.ageGroup}</span>
+              <h3 class="team-name">{team.data.teamName}</h3>
+              <p class="team-age-label">{team.data.ageGroup}</p>
+              <div class="chip-list">
+                <span class="chip">Season {team.data.season}</span>
+                <span class="chip">{team.data.league}</span>
+              </div>
+              {(team.data.training || team.data.coach) && (
+                <div class="team-details">
+                  {team.data.training && (
+                    <div class="detail-item">
+                      <span class="detail-label">Training</span>
+                      <span class="detail-value">{team.data.training}</span>
+                    </div>
+                  )}
+                  {team.data.coach && (
+                    <div class="detail-item">
+                      <span class="detail-label">Coach</span>
+                      <span class="detail-value">{team.data.coach}</span>
+                    </div>
+                  )}
                 </div>
               )}
-              {team.data.coach && (
-                <div class="detail-item">
-                  <span class="detail-label">Coach</span>
-                  <span class="detail-value">{team.data.coach}</span>
+            </article>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {sundayTeams.length > 0 && (
+      <div class="matchday-group">
+        <h3 class="matchday-heading">Sunday Teams</h3>
+        <div class="grid grid-3">
+          {sundayTeams.map((team) => (
+            <article class="dark-card team-card">
+              <span class="team-ghost">{team.data.ageGroup}</span>
+              <h3 class="team-name">{team.data.teamName}</h3>
+              <p class="team-age-label">{team.data.ageGroup}</p>
+              <div class="chip-list">
+                <span class="chip">Season {team.data.season}</span>
+                <span class="chip">{team.data.league}</span>
+              </div>
+              {(team.data.training || team.data.coach) && (
+                <div class="team-details">
+                  {team.data.training && (
+                    <div class="detail-item">
+                      <span class="detail-label">Training</span>
+                      <span class="detail-value">{team.data.training}</span>
+                    </div>
+                  )}
+                  {team.data.coach && (
+                    <div class="detail-item">
+                      <span class="detail-label">Coach</span>
+                      <span class="detail-value">{team.data.coach}</span>
+                    </div>
+                  )}
                 </div>
               )}
+            </article>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {ungroupedTeams.length > 0 && (
+      <div class="grid grid-3">
+        {ungroupedTeams.map((team) => (
+          <article class="dark-card team-card">
+            <span class="team-ghost">{team.data.ageGroup}</span>
+            <h3 class="team-name">{team.data.teamName}</h3>
+            <p class="team-age-label">{team.data.ageGroup}</p>
+            <div class="chip-list">
+              <span class="chip">Season {team.data.season}</span>
+              <span class="chip">{team.data.league}</span>
             </div>
-          )}
-        </article>
-      ))}
-    </div>
+            {(team.data.training || team.data.coach) && (
+              <div class="team-details">
+                {team.data.training && (
+                  <div class="detail-item">
+                    <span class="detail-label">Training</span>
+                    <span class="detail-value">{team.data.training}</span>
+                  </div>
+                )}
+                {team.data.coach && (
+                  <div class="detail-item">
+                    <span class="detail-label">Coach</span>
+                    <span class="detail-value">{team.data.coach}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    )}
   </section>
 </BaseLayout>
 
@@ -130,5 +207,24 @@ const breadcrumbs = createBreadcrumbJsonLd([
     display: grid;
     gap: 0.5rem;
     margin-top: 0.3rem;
+  }
+
+  .matchday-group {
+    display: grid;
+    gap: var(--space-m);
+  }
+
+  .matchday-group + .matchday-group {
+    margin-top: var(--space-l);
+  }
+
+  .matchday-heading {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-lime);
+    margin: 0;
   }
 </style>

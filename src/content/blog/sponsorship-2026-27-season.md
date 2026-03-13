@@ -1,7 +1,7 @@
 ---
 title: "Partner With Us: Sponsorship Opportunities for the 2026/27 Season"
 date: 2026-03-08
-excerpt: Fusion FC is actively looking for local businesses to partner with for the upcoming season. With five teams, development sessions, and a growing online presence, there has never been a better time to get involved.
+excerpt: Fusion FC is actively looking for local businesses to partner with for the upcoming season. With sixteen teams, development sessions, and a growing online presence, there has never been a better time to get involved.
 coverImage: /brand/blog/sponsorship-2026-27.svg
 tags:
   - Sponsors
@@ -17,17 +17,31 @@ Grassroots football runs on community support. The pitches, the kit, the coachin
 
 As we head into the 2026/27 season, Fusion FC is actively looking for local businesses to come on board as partners. Whether you are a sole trader, a small business, or an established company, there is a sponsorship package that works for you — and a genuine opportunity to make a meaningful difference to young players in your area.
 
-## Five Teams. Hundreds of Touchpoints.
+## Sixteen Teams. Hundreds of Touchpoints.
 
-We are fielding five teams this season across a range of age groups:
+We are fielding sixteen teams this season across two matchday programmes:
 
-- **Under 7s** — our youngest group, representing the club's grassroots roots
-- **Under 9s** — developing technique and game awareness
-- **Under 11s** — building competitive habits and team identity
-- **Under 13s** — stepping into more structured, tactical football
-- **Under 15s** — the top end of our current pathway
+**Saturday — Staffordshire Junior Football League**
+- U10 Playing Up — coached by Russ Leadbetter
+- U10 Black Playing Up — coached by Ali Johnson
+- U10 — coached by Mark Woolridge
+- U9 White — coached by Sam Rosillo
+- U8 — coached by Ryan Foster
+- U8 White — coached by James Wilson
 
-Each team plays regularly across the season, trains weekly, and is supported by qualified coaches invested in each player's development. That is a lot of touchpoints — matchdays, training sessions, social posts, kit days, and end-of-season events — where your brand can be part of the story.
+**Sunday — NSJYL (North Staffs Junior Youth League)**
+- U11 — coached by Tom Pope
+- U10 Green — coached by Sam Cummins
+- U10 Black — coached by Mark Woolridge
+- U10 Green Playing Up — coached by Ben Chapman
+- U10 White — coached by Jake Hodgkinson
+- U9 — coached by Lee Ralphson
+- U9 Green — coached by Greg Woodcock
+- U9 Black — coached by Jon Bloor
+- U8 Green — coached by Ryan Foster
+- U8 Black — coached by Tom Kilgariff
+
+Each team plays regularly across the season, trains weekly, and is supported by coaches invested in each player's development. That is a lot of touchpoints — matchdays, training sessions, social posts, kit days, and end-of-season events — where your brand can be part of the story.
 
 ## What Sponsors Receive
 
@@ -49,7 +63,7 @@ This is one that does not show up in a spreadsheet but matters enormously. Being
 
 The honest answer: because it matters.
 
-Professional football gets the headlines, but grassroots is where the game actually lives. It is where a seven-year-old kicks a ball for the first time and decides they love it. It is where teenagers learn to lose gracefully and win with humility. It is where families spend their Saturday mornings, standing on touchlines, cheering each other on.
+Professional football gets the headlines, but grassroots is where the game actually lives. It is where a child kicks a ball for the first time and decides they love it. It is where young players learn to lose gracefully and win with humility. It is where families spend their Saturday and Sunday mornings, standing on touchlines, cheering each other on.
 
 When you sponsor Fusion FC, your money does not disappear into a marketing budget. It buys kit that keeps a child warm in January. It covers pitch hire so a team can train. It funds equipment that makes sessions better. Every pound is visible and every pound counts.
 
@@ -75,4 +89,4 @@ Thank you to our existing sponsors — Atlas Accounting, Greenfield Plumbing & H
 
 ---
 
-*Fusion FC is a grassroots football club supporting players aged 3 to 15+ across five registered teams and open development sessions. We are committed to player welfare, community connection, and making football accessible to every child who wants to play.*
+*Fusion FC is a grassroots football club supporting players aged 8 to 11 across sixteen registered teams competing in the Staffordshire Junior Football League on Saturdays and the North Staffs Junior Youth League on Sundays.*

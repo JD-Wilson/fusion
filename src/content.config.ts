@@ -45,6 +45,7 @@ const teams = defineCollection({
     ageGroup: z.string(),
     league: z.string(),
     season: z.string(),
+    matchday: z.enum(['Saturday', 'Sunday']).optional(),
     training: z.string().optional(),
     coach: z.string().optional(),
     ...seoFields
