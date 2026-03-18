@@ -28,6 +28,51 @@ img {
   display: block;
 }
 
+/* ─── Lazy image fade-in ─────────────────────────────── */
+
+img[loading="lazy"] {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+img[loading="lazy"].img-loaded {
+  opacity: 1;
+}
+
+/*
+ * Placeholder backgrounds on the *containers* of lazy images.
+ * These are div/grid wrappers — the dark background shows through
+ * while the image is transparent, then the image fades in over it.
+ * A shimmer is applied to .age-card-img (a proper div) for a more
+ * polished loading state. Photo strip and about grids get a flat dark tone.
+ */
+.photo-grid,
+.about-img-grid {
+  background: #1a1e1e;
+}
+
+.age-card-img {
+  background-color: rgba(255, 255, 255, 0.05);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: img-shimmer 1.6s ease infinite;
+}
+
+.age-card-img:has(.img-loaded) {
+  animation: none;
+  background: none;
+}
+
+@keyframes img-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 h1,
 h2,
 h3,

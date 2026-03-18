@@ -113,6 +113,17 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
     counterObserver.observe(statsStrip);
   }
 
+  /* ─── Lazy image fade-in ────────────────────────────── */
+  document.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((img) => {
+    const show = () => img.classList.add('img-loaded');
+    if (img.complete && img.naturalHeight !== 0) {
+      show();
+    } else {
+      img.addEventListener('load', show);
+      img.addEventListener('error', show);
+    }
+  });
+
   /* ─── Cursor glow on dark sections ──────────────────── */
   document.querySelectorAll<HTMLElement>('.dark-band').forEach((section) => {
     section.addEventListener('mousemove', (e: MouseEvent) => {
