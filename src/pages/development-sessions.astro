@@ -24,6 +24,7 @@ const ageGroups = [
     image: '/images/mini-fusions.jpg',
     imageAlt: 'Coaches working with young children at Mini Fusions',
     imagePosition: 'center 25%',
+    bookingUrl: 'https://ffc.hivelink.co.uk/365/7904',
   },
   {
     range: '5–7',
@@ -35,6 +36,7 @@ const ageGroups = [
     image: '/images/player-dribbling.jpg',
     imageAlt: 'Young player dribbling with the ball',
     imagePosition: 'center 60%',
+    bookingUrl: 'https://ffc.hivelink.co.uk/365/7905',
   },
   {
     range: '7–12',
@@ -46,6 +48,7 @@ const ageGroups = [
     image: '/images/player-shooting.jpg',
     imageAlt: 'Player shooting at goal during a Fusion session',
     imagePosition: 'center center',
+    bookingUrl: 'https://ffc.hivelink.co.uk/365/8178',
   },
   {
     range: '7+',
@@ -57,6 +60,7 @@ const ageGroups = [
     image: '/images/girls-session.jpg',
     imageAlt: 'Girl player at a Fusion girls session',
     imagePosition: '30% center',
+    bookingUrl: 'https://ffc.hivelink.co.uk/365/10261',
   },
 ];
 ---
@@ -108,6 +112,11 @@ const ageGroups = [
             <div class="chip-list age-tags">
               {group.tags.map((tag) => <span class="chip">{tag}</span>)}
             </div>
+            {group.bookingUrl && (
+              <a class="card-book-btn" href={group.bookingUrl} target="_blank" rel="noreferrer noopener">
+                Book this session ↗
+              </a>
+            )}
           </div>
         </article>
       ))}
@@ -257,6 +266,29 @@ const ageGroups = [
     font-size: 0.82rem;
     color: rgba(29, 185, 84, 0.7);
     font-style: italic;
+  }
+
+  .card-book-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: var(--space-s);
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(29, 185, 84, 0.45);
+    background: rgba(29, 185, 84, 0.07);
+    color: var(--color-lime);
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background var(--transition), border-color var(--transition);
+  }
+
+  .card-book-btn:hover {
+    background: rgba(29, 185, 84, 0.16);
+    border-color: rgba(29, 185, 84, 0.75);
   }
 
   .age-description {
