@@ -153,6 +153,15 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   const submitBtn = document.getElementById('contact-submit') as HTMLButtonElement | null;
   const statusEl = document.getElementById('contact-status') as HTMLElement | null;
 
+  declare const gtag: (...args: unknown[]) => void;
+
+  // Track email and phone link clicks
+  document.querySelectorAll<HTMLAnchorElement>('a[href^="mailto:"]').forEach((link) => {
+    link.addEventListener('click', () => {
+      if (typeof gtag !== 'undefined') gtag('event', 'click', { event_category: 'Contact', event_label: 'email_link' });
+    });
+  });
+
   if (form && submitBtn && statusEl) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -174,6 +183,10 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
         if (res.ok && json.success) {
           statusEl.innerHTML = `<div class="status-success"><span class="status-icon" aria-hidden="true">✓</span><div><strong>Message sent!</strong><p>Thanks for getting in touch. We'll be back to you within two working days.</p></div></div>`;
           statusEl.className = 'form-status is-visible';
+          const enquiryType = (form.elements.namedItem('enquiry_type') as HTMLSelectElement)?.value ?? 'unknown';
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'generate_lead', { form_type: 'contact', enquiry_type: enquiryType });
+          }
           form.reset();
         } else {
           throw new Error(json.message ?? 'Submission failed');

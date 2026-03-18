@@ -15,32 +15,36 @@ const bookingUrl = 'https://ffc.hivelink.co.uk/365/';
 
 const ageGroups = [
   {
-    range: '3–4',
-    label: 'Toddler Kicks',
+    range: '3–5',
+    label: 'Mini Fusions',
+    coaches: 'With Jozsef',
     description:
-      'An introduction to football through fun movement, ball familiarity, and play-based activities. Sessions focus on coordination and confidence in a safe, encouraging setting.',
-    tags: ['First touch', 'Movement skills', 'Play-based'],
+      'A fun and friendly introduction to football, helping young players build confidence, coordination, and a love for the game through play. Every Wednesday, 17:30–18:30 indoors at Northwood Stadium. Wear trainers and shin pads, and bring a drink.',
+    tags: ['First steps', 'Northwood Stadium', 'Wednesdays 5:30pm'],
   },
   {
     range: '5–7',
-    label: 'Mini Fusion',
+    label: 'Mega Fusions',
+    coaches: 'With Jack, Ryan & Gary',
     description:
-      'Fundamental football skills in a fun, low-pressure environment. Children learn dribbling, passing, and basic game understanding through small-sided games and activities.',
-    tags: ['Dribbling', 'Passing', 'Small-sided games'],
+      'Developing the basics in a supportive environment, where players grow their skills, confidence, and understanding of how to play together. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
+    tags: ['Basic skills', 'Excel Academy', 'Wednesdays 5:30pm'],
   },
   {
-    range: '8–10',
-    label: 'Foundation',
+    range: '7–12',
+    label: 'Mighty Fusions',
+    coaches: 'With Karl & Craig',
     description:
-      'Structured sessions focused on developing core technique and football intelligence. Players are challenged to improve decision-making, positioning, and teamwork.',
-    tags: ['Technique', 'Game intelligence', 'Teamwork'],
+      'Taking the next step, refining skills and building game awareness, while encouraging players to express themselves and grow in confidence. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
+    tags: ['Skill refinement', 'Excel Academy', 'Wednesdays 5:30pm'],
   },
   {
-    range: '11–12+',
-    label: 'Development',
+    range: '7+',
+    label: 'Girls Sessions',
+    coaches: 'All abilities welcome',
     description:
-      'Advanced sessions for older players looking to develop their game further. Emphasis on tactical awareness, competitive scenarios, and individual improvement.',
-    tags: ['Tactics', 'Competitive play', 'Individual development'],
+      'An inclusive and welcoming space for girls of all abilities to enjoy football, develop their skills, and be part of a supportive team environment. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
+    tags: ['All abilities', 'Excel Academy', 'Wednesdays 5:30pm'],
   },
 ];
 ---
@@ -67,10 +71,10 @@ const ageGroups = [
   <section class="dark-band reveal" data-delay="1">
     <div class="band-head">
       <div>
-        <p class="band-eyebrow">Sessions for every age</p>
-        <h2 class="band-title">Ages 3 to 12+</h2>
+        <p class="band-eyebrow">Sessions for every player</p>
+        <h2 class="band-title">Ages 3+, every Wednesday</h2>
         <p class="band-description">
-          Each session is tailored to the age group, so children are always learning at the right pace with the right challenge.
+          Each session is tailored to the age group, so players are always learning at the right pace with the right challenge. Including a dedicated girls session for ages 7 and above.
         </p>
       </div>
     </div>
@@ -80,8 +84,9 @@ const ageGroups = [
         <article class="dark-card age-card reveal" data-delay={String(Math.min(i + 1, 4))}>
           <span class="age-ghost" aria-hidden="true">{group.range}</span>
           <div class="age-card-body">
-            <p class="age-range">{group.range} years</p>
+            <p class="age-range">Ages {group.range}</p>
             <h3 class="age-label">{group.label}</h3>
+            {group.coaches && <p class="age-coaches">{group.coaches}</p>}
             <p class="age-description">{group.description}</p>
             <div class="chip-list age-tags">
               {group.tags.map((tag) => <span class="chip">{tag}</span>)}
@@ -208,6 +213,12 @@ const ageGroups = [
     font-size: 1.2rem;
     color: var(--color-paper);
     line-height: 1.2;
+  }
+
+  .age-coaches {
+    font-size: 0.82rem;
+    color: rgba(29, 185, 84, 0.7);
+    font-style: italic;
   }
 
   .age-description {

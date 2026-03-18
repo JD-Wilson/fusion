@@ -17,6 +17,8 @@ const encoded = phone.split('').reverse().join('');
 </span>
 
 <script>
+  declare const gtag: (...args: unknown[]) => void;
+
   document.querySelectorAll<HTMLElement>('.phone-reveal').forEach((el) => {
     const btn = el.querySelector('.pr-btn');
     if (!btn) return;
@@ -29,6 +31,9 @@ const encoded = phone.split('').reverse().join('');
       a.textContent = phone;
       a.className = 'pr-revealed';
       el.replaceChild(a, btn);
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'click', { event_category: 'Contact', event_label: 'phone_reveal' });
+      }
     });
   });
 </script>

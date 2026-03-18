@@ -1,10 +1,10 @@
 ---
 title: Development Sessions
-description: Open football sessions for children aged 3 to 12+. No club membership needed — just turn up, get involved, and enjoy the game.
+description: Weekly football sessions for children aged 3 and above. No club membership needed—just show up, get involved, and enjoy the game.
 seoTitle: Development Sessions | Fusion FC
-seoDescription: Fusion FC development sessions are open to all children aged 3–12+, whether they're in a club or just starting out. Book online today.
+seoDescription: Weekly Fusion FC development sessions for children aged 3+. Fun, structured, and coached—every Wednesday. Book your child's place today.
 showInNav: false
 ---
-Fusion FC runs open development sessions for children who want to play football in a structured, supportive environment — no club membership required.
+Fusion FC runs weekly development sessions for children who want to play football in a structured, supportive environment—no club membership required.
 
-Sessions are designed to build confidence, improve technique, and most importantly make football enjoyable for every child, from their very first kick to more advanced development.
+Sessions run every Wednesday from 17:30–18:30, with groups for ages 3 through to 12+ and a dedicated girls session for ages 7 and above.

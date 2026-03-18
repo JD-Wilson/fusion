@@ -95,6 +95,19 @@ const breadcrumbs = createBreadcrumbJsonLd([
   </section>
 </BaseLayout>
 
+<script>
+  declare const gtag: (...args: unknown[]) => void;
+
+  document.querySelectorAll<HTMLAnchorElement>('.card-website-link').forEach((link) => {
+    link.addEventListener('click', () => {
+      if (typeof gtag !== 'undefined') {
+        const name = link.closest('article')?.querySelector('.sponsor-name')?.textContent ?? 'unknown';
+        gtag('event', 'click', { event_category: 'Sponsor', event_label: name, link_url: link.href });
+      }
+    });
+  });
+</script>
+
 <style>
   .band-cta {
     color: rgba(245, 247, 246, 0.4);

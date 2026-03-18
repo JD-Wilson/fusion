@@ -344,15 +344,30 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
 </style>
 
 <script>
+  declare const gtag: (...args: unknown[]) => void;
+
   /* ─── Reading progress ───────────────────────────────── */
   const bar = document.getElementById('reading-bar');
   const articleBody = document.getElementById('article-body');
 
   if (bar && articleBody) {
+    const depthFired = new Set<number>();
     const updateProgress = () => {
       const top = articleBody.getBoundingClientRect().top + window.scrollY;
       const progress = Math.min(Math.max((window.scrollY - top) / articleBody.offsetHeight, 0), 1);
       bar.style.width = `${progress * 100}%`;
+      [25, 50, 75, 100].forEach((milestone) => {
+        if (!depthFired.has(milestone) && progress * 100 >= milestone) {
+          depthFired.add(milestone);
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'scroll_depth', {
+              event_category: 'Blog',
+              event_label: document.title,
+              percent_scrolled: milestone
+            });
+          }
+        }
+      });
     };
     window.addEventListener('scroll', updateProgress, { passive: true });
     updateProgress();
@@ -376,6 +391,9 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
         await navigator.clipboard.writeText(window.location.href);
         copyBtn.classList.add('copied');
         if (label) label.textContent = 'Copied!';
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'share', { method: 'copy_link', content_type: 'blog_post', item_id: window.location.pathname });
+        }
         setTimeout(() => {
           copyBtn.classList.remove('copied');
           if (label) label.textContent = 'Copy link';

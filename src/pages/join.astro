@@ -221,6 +221,8 @@ const experienceLevels = [
 </BaseLayout>
 
 <script>
+  declare const gtag: (...args: unknown[]) => void;
+
   const form = document.getElementById('join-form') as HTMLFormElement | null;
   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement | null;
   const statusEl = document.getElementById('form-status') as HTMLElement | null;
@@ -260,6 +262,10 @@ const experienceLevels = [
               </div>
             </div>`;
           statusEl.className = 'form-status is-visible';
+          const ageGroup = (form.elements.namedItem('age_group') as HTMLSelectElement)?.value ?? 'unknown';
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'generate_lead', { form_type: 'join', age_group: ageGroup });
+          }
           form.reset();
         } else {
           throw new Error(json.message ?? 'Submission failed');

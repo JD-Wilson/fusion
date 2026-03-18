@@ -11,9 +11,6 @@ const { Content } = await render(homePage);
 const teams = await getCollection('teams', ({ data }) => !data.noindex);
 const leagues = await getCollection('leagues', ({ data }) => !data.noindex);
 const sponsors = await getCollection('sponsors', ({ data }) => !data.noindex);
-const latestPosts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex))
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 3);
 
 const featuredSponsors = [...sponsors]
   .sort((a, b) => {
@@ -41,8 +38,8 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
 >
   <PageHero
     eyebrow="Fusion Football Club"
-    title="Growing local football pathways for every young player"
-    summary="Fusion FC gives players, parents, and volunteers a structured, supportive club experience from first kick to competitive football."
+    title="Where players grow. Where people belong."
+    summary="Fusion Football Club is built around one simple idea: football should help young people develop—not just as players, but as people. Whether it's their first session or they've been playing for years, we create a space where every child can grow in confidence, ability, and love for the game."
     actions={[
       { href: '/join/', label: 'Join Us' },
       { href: '/about/', label: 'Discover the Club', ghost: true },
@@ -71,30 +68,12 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     </div>
   </section>
 
-  <section class="grid grid-2">
-    <article class="section-card reveal" data-delay="2">
-      <h2 class="section-title">Inside the Club</h2>
-      <div class="prose">
-        <Content />
-      </div>
-      <a class="link-arrow" href="/age-groups/">View age groups</a>
-    </article>
-
-    <article class="section-card reveal" data-delay="3">
-      <h2 class="section-title">Latest from the Blog</h2>
-      <div class="mini-list">
-        {
-          latestPosts.map((post) => (
-            <a class="mini-item" href={`/blog/${post.id}/`}>
-              <span class="mini-date">{post.data.date.toLocaleDateString('en-GB')}</span>
-              <strong class="mini-title">{post.data.title}</strong>
-              <p class="mini-excerpt">{post.data.excerpt}</p>
-            </a>
-          ))
-        }
-      </div>
-      <a class="link-arrow" href="/blog/">Read all updates</a>
-    </article>
+  <section class="section-card reveal" data-delay="2">
+    <h2 class="section-title">Inside the Club</h2>
+    <div class="prose">
+      <Content />
+    </div>
+    <a class="link-arrow" href="/age-groups/">View age groups</a>
   </section>
 
   <section class="sponsors-section reveal" data-delay="4">
@@ -220,56 +199,6 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     height: 52px;
     background: rgba(245, 247, 246, 0.12);
     flex-shrink: 0;
-  }
-
-  /* ─── Blog mini-list ───────────────────────────────── */
-
-  .mini-list {
-    display: grid;
-    margin-top: var(--space-m);
-    margin-bottom: var(--space-xs);
-  }
-
-  .mini-item {
-    display: grid;
-    gap: 0.2rem;
-    padding: var(--space-s) 0;
-    border-bottom: 1px solid var(--color-border);
-    transition: background var(--transition);
-  }
-
-  .mini-item:first-child {
-    padding-top: 0;
-  }
-
-  .mini-item:last-child {
-    border-bottom: none;
-  }
-
-  .mini-date {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    color: var(--color-forest);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .mini-title {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    line-height: 1.3;
-    color: var(--color-charcoal);
-    transition: color var(--transition);
-  }
-
-  .mini-item:hover .mini-title {
-    color: var(--color-forest-deep);
-  }
-
-  .mini-excerpt {
-    color: var(--color-muted);
-    font-size: 0.87rem;
-    line-height: 1.5;
   }
 
   /* ─── Sponsors band ────────────────────────────────── */
