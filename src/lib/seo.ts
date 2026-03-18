@@ -29,3 +29,41 @@ export const createOrganizationJsonLd = (): StructuredData => ({
   sport: 'Football'
 });
 
+interface BlogPostingOptions {
+  title: string;
+  description: string;
+  slug: string;
+  publishedTime: string;
+  modifiedTime?: string;
+  image?: string;
+}
+
+export const createBlogPostingJsonLd = ({
+  title,
+  description,
+  slug,
+  publishedTime,
+  modifiedTime,
+  image
+}: BlogPostingOptions): StructuredData => ({
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description,
+  datePublished: publishedTime,
+  dateModified: modifiedTime ?? publishedTime,
+  mainEntityOfPage: toAbsoluteUrl(`/blog/${slug}/`),
+  image: toAbsoluteUrl(image ?? siteConfig.defaultOgImage),
+  author: {
+    '@type': 'Organization',
+    name: siteConfig.siteName
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: siteConfig.siteName,
+    logo: {
+      '@type': 'ImageObject',
+      url: toAbsoluteUrl('/brand/logo.jpeg')
+    }
+  }
+});
