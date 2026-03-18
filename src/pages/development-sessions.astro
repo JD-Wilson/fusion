@@ -23,6 +23,7 @@ const ageGroups = [
     tags: ['First steps', 'Northwood Stadium', 'Wednesdays 5:30pm'],
     image: '/images/mini-fusions.jpg',
     imageAlt: 'Coaches working with young children at Mini Fusions',
+    imagePosition: 'center 25%',
   },
   {
     range: '5–7',
@@ -33,6 +34,7 @@ const ageGroups = [
     tags: ['Basic skills', 'Excel Academy', 'Wednesdays 5:30pm'],
     image: '/images/player-dribbling.jpg',
     imageAlt: 'Young player dribbling with the ball',
+    imagePosition: 'center 60%',
   },
   {
     range: '7–12',
@@ -43,6 +45,7 @@ const ageGroups = [
     tags: ['Skill refinement', 'Excel Academy', 'Wednesdays 5:30pm'],
     image: '/images/player-shooting.jpg',
     imageAlt: 'Player shooting at goal during a Fusion session',
+    imagePosition: 'center center',
   },
   {
     range: '7+',
@@ -53,6 +56,7 @@ const ageGroups = [
     tags: ['All abilities', 'Excel Academy', 'Wednesdays 5:30pm'],
     image: '/images/girls-session.jpg',
     imageAlt: 'Girl player at a Fusion girls session',
+    imagePosition: '30% center',
   },
 ];
 ---
@@ -92,7 +96,7 @@ const ageGroups = [
         <article class="dark-card age-card reveal" data-delay={String(Math.min(i + 1, 4))}>
           {group.image && (
             <div class="age-card-img">
-              <img src={group.image} alt={group.imageAlt} loading="lazy" />
+              <img src={group.image} alt={group.imageAlt} loading="lazy" style={`object-position: ${group.imagePosition ?? 'center center'}`} />
             </div>
           )}
           <span class="age-ghost" aria-hidden="true">{group.range}</span>
@@ -205,7 +209,6 @@ const ageGroups = [
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center top;
     display: block;
     transition: transform 0.4s ease;
   }
