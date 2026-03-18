@@ -9,21 +9,6 @@ const seoFields = {
   noindex: z.boolean().default(false)
 };
 
-const blog = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
-  schema: z.object({
-    title: z.string(),
-    date: z.coerce.date(),
-    updatedDate: z.coerce.date().optional(),
-    excerpt: z.string(),
-    coverImage: z.string(),
-    tags: z.array(z.string()).default([]),
-    draft: z.boolean().default(false),
-    author: z.string().default('Fusion Football Club'),
-    ...seoFields
-  })
-});
-
 const sponsors = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/sponsors' }),
   schema: z.object({
@@ -78,7 +63,6 @@ const pages = defineCollection({
 });
 
 export const collections = {
-  blog,
   sponsors,
   teams,
   leagues,
