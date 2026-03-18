@@ -24,9 +24,71 @@ const breadcrumbs = createBreadcrumbJsonLd([
 >
   <PageHero eyebrow="Our Story" title={aboutPage.data.title} summary={aboutPage.data.description} />
 
-  <section class="dark-band reveal" data-delay="1">
+  <section class="about-images reveal" data-delay="1">
+    <div class="about-img-grid">
+      <img
+        class="about-img-primary"
+        src="/images/coach-portrait.jpg"
+        alt="Fusion FC coach on the training pitch"
+        loading="lazy"
+      />
+      <img
+        class="about-img-secondary"
+        src="/images/fusion-kit-pitch.jpg"
+        alt="Fusion FC training session on the pitch"
+        loading="lazy"
+      />
+    </div>
+  </section>
+
+  <section class="dark-band reveal" data-delay="2">
     <div class="prose">
       <Content />
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .about-images {
+    border-radius: var(--radius-l);
+    overflow: hidden;
+  }
+
+  .about-img-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 4px;
+    height: 420px;
+  }
+
+  .about-img-primary,
+  .about-img-secondary {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .about-img-primary {
+    object-position: center top;
+  }
+
+  .about-img-secondary {
+    object-position: center center;
+  }
+
+  @media (max-width: 720px) {
+    .about-img-grid {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+
+    .about-img-primary {
+      height: 320px;
+    }
+
+    .about-img-secondary {
+      display: none;
+    }
+  }
+</style>

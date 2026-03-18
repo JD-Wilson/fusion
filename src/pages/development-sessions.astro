@@ -21,6 +21,8 @@ const ageGroups = [
     description:
       'A fun and friendly introduction to football, helping young players build confidence, coordination, and a love for the game through play. Every Wednesday, 17:30–18:30 indoors at Northwood Stadium. Wear trainers and shin pads, and bring a drink.',
     tags: ['First steps', 'Northwood Stadium', 'Wednesdays 5:30pm'],
+    image: '/images/mini-fusions.jpg',
+    imageAlt: 'Coaches working with young children at Mini Fusions',
   },
   {
     range: '5–7',
@@ -29,6 +31,8 @@ const ageGroups = [
     description:
       'Developing the basics in a supportive environment, where players grow their skills, confidence, and understanding of how to play together. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['Basic skills', 'Excel Academy', 'Wednesdays 5:30pm'],
+    image: '/images/player-dribbling.jpg',
+    imageAlt: 'Young player dribbling with the ball',
   },
   {
     range: '7–12',
@@ -37,6 +41,8 @@ const ageGroups = [
     description:
       'Taking the next step, refining skills and building game awareness, while encouraging players to express themselves and grow in confidence. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['Skill refinement', 'Excel Academy', 'Wednesdays 5:30pm'],
+    image: '/images/player-shooting.jpg',
+    imageAlt: 'Player shooting at goal during a Fusion session',
   },
   {
     range: '7+',
@@ -45,6 +51,8 @@ const ageGroups = [
     description:
       'An inclusive and welcoming space for girls of all abilities to enjoy football, develop their skills, and be part of a supportive team environment. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['All abilities', 'Excel Academy', 'Wednesdays 5:30pm'],
+    image: '/images/girls-session.jpg',
+    imageAlt: 'Girl player at a Fusion girls session',
   },
 ];
 ---
@@ -82,6 +90,11 @@ const ageGroups = [
     <div class="age-grid">
       {ageGroups.map((group, i) => (
         <article class="dark-card age-card reveal" data-delay={String(Math.min(i + 1, 4))}>
+          {group.image && (
+            <div class="age-card-img">
+              <img src={group.image} alt={group.imageAlt} loading="lazy" />
+            </div>
+          )}
           <span class="age-ghost" aria-hidden="true">{group.range}</span>
           <div class="age-card-body">
             <p class="age-range">Ages {group.range}</p>
@@ -177,6 +190,28 @@ const ageGroups = [
     position: relative;
     overflow: hidden;
     padding: var(--space-l) var(--space-m) var(--space-m);
+  }
+
+  .age-card-img {
+    margin-top: calc(-1 * var(--space-l));
+    margin-left: calc(-1 * var(--space-m));
+    margin-right: calc(-1 * var(--space-m));
+    margin-bottom: var(--space-m);
+    height: 200px;
+    overflow: hidden;
+  }
+
+  .age-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+
+  .age-card:hover .age-card-img img {
+    transform: scale(1.04);
   }
 
   /* Large ghost age range */
