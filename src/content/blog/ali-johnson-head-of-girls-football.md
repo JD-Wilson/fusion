@@ -17,19 +17,19 @@ We're excited to announce that **Ali Johnson** has been appointed as our **Head 
 
 Ali will oversee the launch and development of our girls section, marking an exciting new chapter for the club.
 
-Following the success of our girls development sessions on Wednesday evenings, we're now preparing to launch our girls teams ahead of the **2026/27 season**.
+Following the success of our [girls development sessions](/development-sessions) on Wednesday evenings, we're now preparing to launch our girls teams ahead of the **2026/27 season**.
 
 Ali has played a huge role in getting us to this point, and it's fantastic to have someone so passionate and dedicated leading the way as we continue to grow the girls game at our club.
 
 ## Building on Strong Foundations
 
-Our Wednesday evening development sessions have been running successfully, providing a welcoming and supportive environment for girls of all abilities to develop their skills and love for the game.
+Our [Wednesday evening development sessions](/development-sessions) have been running successfully, providing a welcoming and supportive environment for girls of all abilities to develop their skills and love for the game.
 
 With Ali now leading the programme, we're excited to build on this foundation and establish competitive teams that will represent Fusion FC in the 2026/27 season.
 
 ## Get Involved
 
-If you're interested in joining our girls football programme, or would like more information about upcoming sessions, please get in touch through our [contact page](/contact) or speak to Ali at our Wednesday evening sessions.
+If you're interested in joining our girls football programme, or would like more information about upcoming sessions, please get in touch through our [contact page](/contact) or speak to Ali at our [Wednesday evening development sessions](/development-sessions).
 
 We're looking for players of all abilities who want to be part of something special as we launch this exciting new chapter for Fusion FC.
 
