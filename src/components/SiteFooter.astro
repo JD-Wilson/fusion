@@ -1,6 +1,5 @@
 ---
 import { siteConfig } from '../config/site';
-import PhoneReveal from './PhoneReveal.astro';
 
 const year = new Date().getFullYear();
 
@@ -42,10 +41,6 @@ const footerLinks = [
         <div class="footer-contact-item">
           <span class="contact-label">Email</span>
           <a href={`mailto:${siteConfig.clubContactEmail}`}>{siteConfig.clubContactEmail}</a>
-        </div>
-        <div class="footer-contact-item">
-          <span class="contact-label">Phone</span>
-          <PhoneReveal phone={siteConfig.clubPhone} />
         </div>
       </div>
       <a href="/new-sponsors/" class="footer-cta">Sponsor the Club →</a>

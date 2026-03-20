@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { siteConfig } from '../config/site';
-import PhoneReveal from '../components/PhoneReveal.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
 import { requirePageEntry } from '../lib/pages';
 
@@ -82,7 +81,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
         <p class="band-eyebrow">Send a message</p>
         <h2 class="band-title">Get in touch directly</h2>
         <p class="form-intro-body">
-          Use the form and we'll get back to you within two working days. For urgent matters you can also reach us by phone or email directly.
+          Use the form and we'll get back to you within two working days. For urgent matters you can also reach us by email directly.
         </p>
         <div class="direct-contact">
           <div class="direct-item">
@@ -90,10 +89,6 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
             <a href={`mailto:${siteConfig.clubContactEmail}`} class="direct-value direct-link">
               {siteConfig.clubContactEmail}
             </a>
-          </div>
-          <div class="direct-item">
-            <span class="direct-label">Phone</span>
-            <span class="direct-value"><PhoneReveal phone={siteConfig.clubPhone} /></span>
           </div>
         </div>
       </div>

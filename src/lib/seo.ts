@@ -24,7 +24,6 @@ export const createOrganizationJsonLd = (): StructuredData => ({
   url: siteConfig.siteUrl,
   logo: toAbsoluteUrl('/brand/logo.jpeg'),
   email: siteConfig.clubContactEmail,
-  telephone: siteConfig.clubPhone,
   areaServed: 'United Kingdom',
   sport: 'Football'
 });

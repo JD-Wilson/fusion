@@ -14,8 +14,7 @@ export const siteConfig = {
     'Fusion Football Club is a growing grassroots football community in the UK, supporting player development, team spirit, and local partnerships.',
   defaultOgImage: '/brand/logo.jpeg',
   locale: 'en_GB',
-  clubContactEmail: 'info@fusionfc.co.uk',
-  clubPhone: '07852 344421'
+  clubContactEmail: 'info@fusionfc.co.uk'
 } as const;
 
 export const toAbsoluteUrl = (pathOrUrl: string) => {
