@@ -162,6 +162,16 @@ const experienceLevels = [
             </div>
 
             <div class="field">
+              <label class="field-label" for="child_gender">Gender <span class="required" aria-hidden="true">*</span></label>
+              <select class="field-input field-select" id="child_gender" name="child_gender" required>
+                <option value="" disabled selected>Select gender…</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="prefer-not-to-say">Prefer not to say</option>
+              </select>
+            </div>
+
+            <div class="field">
               <label class="field-label" for="age_group">Interested age group / team <span class="required" aria-hidden="true">*</span></label>
               <select class="field-input field-select" id="age_group" name="age_group" required>
                 <option value="" disabled selected>Select an age group…</option>
