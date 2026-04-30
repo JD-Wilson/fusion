@@ -31,6 +31,21 @@ const ageGroups = [
   { value: 'unsure', label: "Not sure — I'd like advice" },
 ];
 
+const schoolYears = [
+  { value: 'reception', label: 'Reception' },
+  { value: 'year-1', label: 'Year 1' },
+  { value: 'year-2', label: 'Year 2' },
+  { value: 'year-3', label: 'Year 3' },
+  { value: 'year-4', label: 'Year 4' },
+  { value: 'year-5', label: 'Year 5' },
+  { value: 'year-6', label: 'Year 6' },
+  { value: 'year-7', label: 'Year 7' },
+  { value: 'year-8', label: 'Year 8' },
+  { value: 'year-9', label: 'Year 9' },
+  { value: 'year-10', label: 'Year 10' },
+  { value: 'year-11', label: 'Year 11' },
+];
+
 const experienceLevels = [
   { value: 'none', label: 'No experience — brand new to football' },
   { value: 'informal', label: 'Played informally (kickabouts, PE, etc.)' },
@@ -147,17 +162,11 @@ const experienceLevels = [
                 />
               </div>
               <div class="field">
-                <label class="field-label" for="child_age">Child's age <span class="required" aria-hidden="true">*</span></label>
-                <input
-                  class="field-input"
-                  type="number"
-                  id="child_age"
-                  name="child_age"
-                  min="3"
-                  max="18"
-                  required
-                  placeholder="9"
-                />
+                <label class="field-label" for="child_school_year">School year <span class="required" aria-hidden="true">*</span></label>
+                <select class="field-input field-select" id="child_school_year" name="child_school_year" required>
+                  <option value="" disabled selected>Select school year…</option>
+                  {schoolYears.map((y) => <option value={y.value}>{y.label}</option>)}
+                </select>
               </div>
             </div>
 
