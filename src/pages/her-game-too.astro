@@ -1,0 +1,290 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="Her Game Too Partnership"
+  description="Fusion FC is proud to announce a partnership with Her Game Too — a UK campaign tackling sexism in football and making the game more inclusive for women and girls."
+  canonical="/her-game-too/"
+  noindex={true}
+>
+
+  <div class="preview-banner" role="note">
+    <span class="preview-icon" aria-hidden="true">&#9679;</span>
+    Internal preview — not yet publicly announced
+  </div>
+
+  <PageHero
+    eyebrow="Partnership Announcement"
+    title="Fusion FC × Her Game Too"
+    summary="We're proud to be partnering with Her Game Too — a UK-wide campaign committed to tackling sexism in football and making the game a more welcoming place for women and girls at every level."
+  />
+
+  <section class="dark-band content-section reveal" data-delay="1">
+    <div class="content-grid">
+
+      <div class="content-block reveal" data-delay="1">
+        <p class="block-eyebrow">About Her Game Too</p>
+        <h2 class="block-heading">Making football everyone's game</h2>
+        <p class="block-body">
+          Her Game Too was founded in 2021 by Caz May and Lucy Ford in response to the sexist abuse and discrimination female football fans regularly face — in grounds, online, and throughout the game.
+        </p>
+        <p class="block-body">
+          Since then, the campaign has grown into a national movement, partnering with clubs from the Premier League to non-league to raise awareness, educate, and create lasting change. Their mission is simple: football is for everyone.
+        </p>
+      </div>
+
+      <div class="content-block reveal" data-delay="2">
+        <p class="block-eyebrow">Why This Matters to Us</p>
+        <h2 class="block-heading">Putting values into action</h2>
+        <p class="block-body">
+          At Fusion FC, inclusion isn't just a word — it's part of how we run our club. We have a growing girls' section, dedicated female coaches, and a commitment to building an environment where every player feels they belong.
+        </p>
+        <p class="block-body">
+          Partnering with Her Game Too is the natural next step. It gives us a framework to formalise that commitment, signals our values to the wider community, and helps us become an even better club for the girls and women involved with Fusion.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="pillars-section reveal" data-delay="2">
+    <p class="section-eyebrow">What This Looks Like</p>
+    <h2 class="section-heading">Our commitments as a partner club</h2>
+    <div class="pillars-grid">
+      <div class="pillar reveal" data-delay="1">
+        <span class="pillar-num" aria-hidden="true">01</span>
+        <h3 class="pillar-title">Visible support</h3>
+        <p class="pillar-body">Displaying Her Game Too branding across our channels and at sessions — making it clear that Fusion FC takes sexism seriously.</p>
+      </div>
+      <div class="pillar reveal" data-delay="2">
+        <span class="pillar-num" aria-hidden="true">02</span>
+        <h3 class="pillar-title">Education &amp; awareness</h3>
+        <p class="pillar-body">Sharing the campaign's resources with players, coaches, and parents — helping everyone understand why inclusion matters and how to play their part.</p>
+      </div>
+      <div class="pillar reveal" data-delay="3">
+        <span class="pillar-num" aria-hidden="true">03</span>
+        <h3 class="pillar-title">A better environment</h3>
+        <p class="pillar-body">Continuing to build a club culture where every girl and woman — player, coach, or supporter — is respected and valued.</p>
+      </div>
+      <div class="pillar reveal" data-delay="4">
+        <span class="pillar-num" aria-hidden="true">04</span>
+        <h3 class="pillar-title">Growing the girls' game</h3>
+        <p class="pillar-body">Working alongside Ali Johnson and our girls' coaching team to provide more opportunities for female players across all age groups.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="announce-callout reveal" data-delay="3">
+    <div class="callout-inner">
+      <div>
+        <p class="callout-eyebrow">Coming soon</p>
+        <p class="callout-text">The full public announcement is on its way. Thank you for being part of this before it goes live.</p>
+      </div>
+      <div class="callout-actions">
+        <a class="button" href="/about/">About Fusion FC</a>
+        <a class="link-arrow" href="/contact/">Get in touch</a>
+      </div>
+    </div>
+  </section>
+
+</BaseLayout>
+
+<style>
+  /* ─── Preview banner ────────────────────────────────── */
+
+  .preview-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(29, 185, 84, 0.08);
+    border-bottom: 1px solid rgba(29, 185, 84, 0.2);
+    color: rgba(245, 247, 246, 0.5);
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.6rem var(--space-m);
+  }
+
+  .preview-icon {
+    color: var(--color-lime);
+    font-size: 0.45rem;
+    animation: blink 1.8s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ─── Content section ───────────────────────────────── */
+
+  .content-section {
+    padding-top: 0;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+    align-items: start;
+  }
+
+  .content-block {
+    display: grid;
+    gap: var(--space-s);
+  }
+
+  .block-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-lime);
+  }
+
+  .block-heading {
+    font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+    color: var(--color-paper);
+    line-height: 1.2;
+  }
+
+  .block-body {
+    font-size: 0.95rem;
+    color: rgba(245, 247, 246, 0.6);
+    line-height: 1.75;
+  }
+
+  /* ─── Pillars section ───────────────────────────────── */
+
+  .pillars-section {
+    padding: var(--space-xl) var(--space-page, 5vw);
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+
+  .section-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--color-forest);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-heading {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    color: var(--color-charcoal);
+    margin-bottom: var(--space-l);
+    line-height: 1.2;
+  }
+
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-m);
+  }
+
+  .pillar {
+    padding-top: var(--space-m);
+    border-top: 2px solid var(--color-lime);
+    display: grid;
+    gap: 0.5rem;
+    align-content: start;
+  }
+
+  .pillar-num {
+    font-family: var(--font-display);
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    color: rgba(2, 93, 36, 0.5);
+  }
+
+  .pillar-title {
+    font-size: 1rem;
+    color: var(--color-charcoal);
+    line-height: 1.25;
+  }
+
+  .pillar-body {
+    font-size: 0.875rem;
+    color: var(--color-muted, #666);
+    line-height: 1.65;
+  }
+
+  /* ─── Callout ───────────────────────────────────────── */
+
+  .announce-callout {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-l) var(--space-xl);
+    margin: 0 var(--space-page, 5vw) var(--space-xl);
+    max-width: 1120px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .callout-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  .callout-eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-forest);
+    margin-bottom: 0.25rem;
+  }
+
+  .callout-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+    color: var(--color-charcoal);
+  }
+
+  .callout-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-m);
+    flex-wrap: wrap;
+  }
+
+  /* ─── Responsive ────────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .pillars-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .pillars-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .announce-callout {
+      padding: var(--space-m);
+    }
+
+    .callout-inner {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
