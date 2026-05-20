@@ -30,7 +30,7 @@ Their mission is straightforward: **football is for everyone**.
 
 ## Why This Matters to Fusion
 
-At Fusion FC, inclusion is not a slogan. It's how we run the club. We have a growing girls' section, dedicated female coaches, and a commitment to creating an environment where every player, parent, and supporter feels they belong.
+At Fusion FC, inclusion is not a slogan. It's how we run the club. We have a growing girls' section and a commitment to creating an environment where every player, parent, and supporter feels they belong.
 
 Partnering with Her Game Too gives us a framework to formalise that commitment. It puts our name alongside hundreds of other clubs across the country who have publicly said: *this matters, and we're going to do something about it.*
 
