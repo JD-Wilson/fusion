@@ -40,9 +40,9 @@ Our **Head of Girls Football, Ali Johnson**, has been driving the growth of the 
 
 > "Becoming a Her Game Too partner club is a really proud moment for us. Every girl who walks into one of our sessions deserves to feel like she belongs on that pitch — no questions, no caveats. This partnership says exactly that, and it holds us to it."
 
-> "When I started coaching, I was often the only woman on the touchline. That's changing, and it has to keep changing. The more visible we are as a club about what we stand for, the easier it gets for the next girl, the next coach, the next mum on the sideline to feel part of the game."
+> "I got into coaching the girls' game because of my daughter. Watching her fall in love with football made me realise how important it is that the environment around her matches the talent and enthusiasm she brings to it. Every girl deserves that, and as a club we have a responsibility to make sure it happens."
 
-> "I want parents to know — if you've ever felt unsure about whether grassroots football is a welcoming place for your daughter, we want to show you that it can be. Come down to a session. See for yourself."
+> "I want other parents to know — if you've ever felt unsure about whether grassroots football is a welcoming place for your daughter, we want to show you that it can be. Come down to a session. See for yourself."
 
 ## What This Looks Like in Practice
 
