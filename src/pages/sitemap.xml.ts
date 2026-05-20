@@ -26,6 +26,7 @@ export async function GET() {
   const staticPaths = [
     { path: '/', id: 'home' },
     { path: '/about/', id: 'about' },
+    { path: '/her-game-too/', id: 'her-game-too' },
     { path: '/age-groups/', id: 'age-groups' },
     { path: '/development-sessions/', id: 'development-sessions' },
     { path: '/leagues/', id: 'leagues' },

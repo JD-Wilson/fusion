@@ -9,13 +9,7 @@ export const prerender = true;
   title="Her Game Too Partnership"
   description="Fusion FC is proud to announce a partnership with Her Game Too — a UK campaign tackling sexism in football and making the game more inclusive for women and girls."
   canonical="/her-game-too/"
-  noindex={true}
 >
-
-  <div class="preview-banner" role="note">
-    <span class="preview-icon" aria-hidden="true"></span>
-    Internal preview — not yet publicly announced
-  </div>
 
   <PageHero
     eyebrow="Partnership Announcement"
@@ -81,8 +75,8 @@ export const prerender = true;
   <section class="announce-callout reveal" data-delay="3">
     <div class="callout-inner">
       <div>
-        <p class="callout-eyebrow">Coming soon</p>
-        <p class="callout-text">The full public announcement is on its way. Thank you for being part of this before it goes live.</p>
+        <p class="callout-eyebrow">Join us</p>
+        <p class="callout-text">Be part of a club where every player, coach, and supporter belongs — on and off the pitch.</p>
       </div>
       <div class="callout-actions">
         <a class="button" href="/about/">About Fusion FC</a>
@@ -94,37 +88,6 @@ export const prerender = true;
 </BaseLayout>
 
 <style>
-  /* ─── Preview banner ────────────────────────────────── */
-
-  .preview-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background: var(--color-ink);
-    border-bottom: 1px solid rgba(29, 185, 84, 0.3);
-    color: var(--color-lime);
-    font-family: var(--font-display);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 0.7rem var(--space-m);
-  }
-
-  .preview-icon {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--color-lime);
-    flex-shrink: 0;
-    animation: blink 1.8s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.2; }
-  }
-
   /* ─── Content section ───────────────────────────────── */
 
   .content-grid {
