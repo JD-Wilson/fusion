@@ -4,6 +4,6 @@ ageGroup: U10
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Ben Chapman
+coach: Coach Ben
 ---
 Sunday U10 Green Playing Up squad.

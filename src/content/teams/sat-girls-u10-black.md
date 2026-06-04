@@ -1,9 +1,9 @@
 ---
-teamName: U10 Black Playing Up
+teamName: Girls U10 Black
 ageGroup: U10
 league: Staffordshire Junior Football League
 season: 2026/27
 matchday: Saturday
-coach: Coach Kris
+coach: Coach Kieron
 ---
-Saturday U10 Black Playing Up squad.
+Saturday Girls U10 Black squad.

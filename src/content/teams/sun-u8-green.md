@@ -4,6 +4,6 @@ ageGroup: U8
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Ryan Foster
+coach: Coach Ryan
 ---
 Sunday U8 Green squad.

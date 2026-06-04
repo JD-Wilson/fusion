@@ -4,6 +4,6 @@ ageGroup: U8
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Tom Kilgariff
+coach: Coach Tom
 ---
 Sunday U8 Black squad.

@@ -4,6 +4,6 @@ ageGroup: U9
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Lee Ralphson
+coach: Coach Lee/Gary
 ---
 Sunday U9 squad.

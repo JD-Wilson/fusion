@@ -1,9 +1,9 @@
 ---
-teamName: U9 Green
+teamName: Girls U9
 ageGroup: U9
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Coach Greg
+coach: Coach Jon
 ---
-Sunday U9 Green squad.
+Sunday Girls U9 squad.

@@ -4,6 +4,6 @@ ageGroup: U10
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Sam Cummins
+coach: Coach Sam
 ---
 Sunday U10 Green squad.

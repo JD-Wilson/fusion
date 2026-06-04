@@ -1,9 +1,9 @@
 ---
-teamName: U10 White
+teamName: U10 Silver
 ageGroup: U10
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Jake Hodgkinson
+coach: Coach Chris
 ---
-Sunday U10 White squad.
+Sunday U10 Silver squad.

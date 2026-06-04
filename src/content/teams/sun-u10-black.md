@@ -4,6 +4,6 @@ ageGroup: U10
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Mark Woolridge
+coach: Coach Mark
 ---
 Sunday U10 Black squad.

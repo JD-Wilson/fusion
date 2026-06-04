@@ -4,6 +4,6 @@ ageGroup: U11
 league: NSJYL
 season: 2026/27
 matchday: Sunday
-coach: Tom Pope
+coach: Coach Tom
 ---
 Sunday U11 squad.
