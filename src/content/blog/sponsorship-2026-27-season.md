@@ -85,8 +85,6 @@ If you are interested in becoming a Fusion FC sponsor for the 2026/27 season, th
 
 We will get back to you quickly, answer any questions, and talk through what a partnership could look like for your business.
 
-Thank you to our existing sponsors — Atlas Accounting, Greenfield Plumbing & Heating, and Riverside Garage — for the support they have already shown this season. You set the standard for what a good club partnership looks like.
-
 ---
 
 *Fusion FC is a grassroots football club supporting players aged 8 to 11 across sixteen registered teams competing in the Staffordshire Junior Football League on Saturdays and the North Staffs Junior Youth League on Sundays.*
