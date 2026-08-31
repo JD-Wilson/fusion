@@ -31,7 +31,6 @@ export async function GET() {
     { path: '/development-sessions/', id: 'development-sessions' },
     { path: '/leagues/', id: 'leagues' },
     { path: '/new-sponsors/', id: 'new-sponsors' },
-    { path: '/sponsors/', id: 'sponsors' },
     { path: '/blog/', id: 'blog' },
     { path: '/contact/', id: 'contact' },
     { path: '/join/', id: 'join' }
@@ -54,12 +53,7 @@ export async function GET() {
     lastmod: (entry.data.updatedDate ?? entry.data.date).toISOString()
   }));
 
-  const sponsorPaths = (await getCollection('sponsors', ({ data }) => !data.noindex)).map((entry) => ({
-    path: `/sponsors/${entry.id}/`,
-    lastmod: undefined
-  }));
-
-  const urls = [...staticPaths, ...extraClubPaths, ...blogPaths, ...sponsorPaths];
+  const urls = [...staticPaths, ...extraClubPaths, ...blogPaths];
   const uniqueUrls = Array.from(new Map(urls.map((url) => [url.path, url])).values());
 
   const xml = [

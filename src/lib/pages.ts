@@ -7,7 +7,6 @@ export const CORE_PAGE_SLUGS = new Set([
   'development-sessions',
   'leagues',
   'new-sponsors',
-  'sponsors',
   'blog',
   'contact',
   'join'
