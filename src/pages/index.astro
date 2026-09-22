@@ -11,7 +11,6 @@ const joinPage = await requirePageEntry('join');
 await render(homePage);
 
 const teams = await getCollection('teams', ({ data }) => !data.noindex);
-const leagues = await getCollection('leagues', ({ data }) => !data.noindex);
 const ageGroupCount = new Set(teams.map((team) => team.data.ageGroup)).size;
 
 const latestPosts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex))
@@ -71,10 +70,6 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
       <div class="stat-item">
         <span class="stat-number" data-count={ageGroupCount}>{ageGroupCount}</span>
         <span class="stat-name">Age Groups</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number" data-count={leagues.length}>{leagues.length}</span>
-        <span class="stat-name">League Pathways</span>
       </div>
       <div class="stat-item">
         <span class="stat-number">2024</span>
@@ -165,7 +160,7 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
 
   .stats-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-m);
   }
 
@@ -373,10 +368,6 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
   }
 
   @media (max-width: 720px) {
-    .stats-row {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      row-gap: var(--space-l);
-    }
 
     .photo-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -395,6 +386,22 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
   @media (max-width: 480px) {
     .photo-grid {
       height: 260px;
+    }
+
+    .stats-row {
+      gap: var(--space-s);
+    }
+
+    .stat-item {
+      padding-left: var(--space-xs);
+    }
+
+    .stat-number {
+      font-size: 2rem;
+    }
+
+    .stat-name {
+      font-size: 0.85rem;
     }
   }
 </style>
