@@ -12,53 +12,88 @@ const href = `/blog/${post.id}/`;
 const date = post.data.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 // Cards show the lead tag only; the full list stays on the post page
 const leadTag = post.data.tags[0];
+// Logos (e.g. partner crests) are shown whole on a white panel rather than
+// cropped to fill the frame like a photo
+const isLogo = /\.png$/i.test(post.data.coverImage) || post.data.coverImage.includes('/partners/');
 ---
 
-<article class:list={['dark-card', 'post-card', featured && 'post-card--featured']}>
-  <a href={href} class="post-cover-link" tabindex="-1" aria-hidden="true">
+<article class:list={['post-card', featured && 'post-card--featured']}>
+  <a href={href} class:list={['post-cover-link', isLogo && 'is-logo']} tabindex="-1" aria-hidden="true">
     <img src={post.data.coverImage} alt="" class="post-cover" loading="lazy" />
   </a>
   <div class="post-body">
     <p class="post-meta">
+      {leadTag && <span class="post-tag">{leadTag}</span>}
       <time datetime={post.data.date.toISOString()}>{date}</time>
-      {leadTag && <span class="chip">{leadTag}</span>}
     </p>
     <h3 class="post-title">
       <a href={href}>{post.data.title}</a>
     </h3>
     <p class="post-excerpt">{post.data.excerpt}</p>
-    <a class="link-arrow" href={href}>Read post</a>
+    <span class="post-read" aria-hidden="true">Read post →</span>
   </div>
 </article>
 
 <style>
+  /* Light by default; switches to dark when placed inside a .dark-band */
   .post-card {
-    padding: 0;
+    position: relative;
     display: grid;
-    align-content: start;
+    grid-template-rows: auto 1fr;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  }
+
+  .post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  :global(.dark-band) .post-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  :global(.dark-band) .post-card:hover {
+    border-color: rgba(29, 185, 84, 0.35);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   }
 
   .post-cover-link {
     display: block;
     overflow: hidden;
+    aspect-ratio: 16 / 9;
+    background: var(--color-charcoal);
   }
 
   .post-cover {
     width: 100%;
-    aspect-ratio: 16 / 9;
+    height: 100%;
     object-fit: cover;
     display: block;
     transition: transform 0.5s ease;
   }
 
   .post-card:hover .post-cover {
-    transform: scale(1.03);
+    transform: scale(1.04);
+  }
+
+  .post-cover-link.is-logo {
+    background: #ffffff;
+    padding: 8% 0;
+  }
+
+  .post-cover-link.is-logo .post-cover {
+    object-fit: contain;
   }
 
   .post-body {
     padding: var(--space-m);
     display: grid;
-    gap: 0.5rem;
+    gap: 0.6rem;
     align-content: start;
   }
 
@@ -68,7 +103,19 @@ const leadTag = post.data.tags[0];
     flex-wrap: wrap;
     gap: 0.6rem;
     font-size: 0.85rem;
-    color: rgba(245, 247, 246, 0.65);
+    color: var(--text-muted);
+  }
+
+  .post-tag {
+    font-weight: 600;
+    color: var(--color-lime);
+  }
+
+  .post-tag::after {
+    content: '·';
+    margin-left: 0.6rem;
+    color: var(--line);
+    font-weight: 400;
   }
 
   .post-title {
@@ -76,45 +123,87 @@ const leadTag = post.data.tags[0];
     line-height: 1.3;
   }
 
-  .post-title a {
-    color: var(--color-paper);
-    transition: color var(--transition);
+  /* Whole card is clickable via the title link */
+  .post-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
   }
 
-  .post-title a:hover {
-    color: var(--color-lime);
+  .post-title a:focus-visible {
+    outline: none;
+  }
+
+  .post-card:has(.post-title a:focus-visible) {
+    outline: 2px solid var(--color-lime);
+    outline-offset: 3px;
   }
 
   .post-excerpt {
     font-size: 0.95rem;
-    color: rgba(245, 247, 246, 0.68);
+    color: var(--text-muted);
     line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
+
+  .post-read {
+    margin-top: 0.2rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--color-lime);
+  }
+
+  /* Dark-context colours */
+  :global(.dark-band) .post-meta { color: rgba(245, 247, 246, 0.65); }
+  :global(.dark-band) .post-tag { color: var(--color-lime); }
+  :global(.dark-band) .post-tag::after { color: rgba(245, 247, 246, 0.3); }
+  :global(.dark-band) .post-title a { color: var(--color-paper); }
+  :global(.dark-band) .post-excerpt { color: rgba(245, 247, 246, 0.68); }
+  :global(.dark-band) .post-read { color: var(--color-lime); }
 
   /* ─── Featured ──────────────────────────────────────── */
 
   .post-card--featured {
     grid-column: 1 / -1;
-    grid-template-columns: 1.3fr 1fr;
-    align-items: stretch;
+    grid-template-columns: 1.25fr 1fr;
+    grid-template-rows: auto;
   }
 
-  .post-card--featured .post-cover-link,
-  .post-card--featured .post-cover {
-    height: 100%;
+  .post-card--featured .post-cover-link {
+    aspect-ratio: auto;
+    min-height: 340px;
+  }
+
+  .post-card--featured .post-cover-link.is-logo {
+    padding: var(--space-l);
+    display: grid;
+    place-items: center;
+  }
+
+  .post-card--featured .is-logo .post-cover {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 240px;
   }
 
   .post-card--featured .post-body {
-    padding: var(--space-l);
+    padding: var(--space-xl) var(--space-l);
     align-content: center;
+    gap: var(--space-s);
   }
 
   .post-card--featured .post-title {
-    font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    line-height: 1.15;
   }
 
   .post-card--featured .post-excerpt {
-    font-size: 1.02rem;
+    font-size: 1.05rem;
+    -webkit-line-clamp: 5;
   }
 
   @media (max-width: 720px) {
@@ -122,8 +211,9 @@ const leadTag = post.data.tags[0];
       grid-template-columns: 1fr;
     }
 
-    .post-card--featured .post-cover {
-      height: auto;
+    .post-card--featured .post-cover-link {
+      aspect-ratio: 16 / 9;
+      min-height: 0;
     }
 
     .post-card--featured .post-body {

@@ -12,6 +12,15 @@
   --color-muted: #4a4f4d;
   --color-border: #dde4e0;
 
+  /* Site theme: one continuous dark canvas */
+  --bg: #0a0d0d;
+  --surface: #121818;
+  --surface-raised: #182020;
+  --text: #f5f7f6;
+  --text-muted: rgba(245, 247, 246, 0.7);
+  --line: rgba(255, 255, 255, 0.09);
+  --pitch-line: rgba(29, 185, 84, 0.22);
+
   --font-display: 'Chakra Petch', 'Trebuchet MS', sans-serif;
   --font-body: 'Work Sans', 'Segoe UI', sans-serif;
 
@@ -27,8 +36,8 @@
   --space-xl: 3.4rem;
   --space-2xl: 5rem;
 
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-card-hover: 0 2px 4px rgba(0,0,0,0.04), 0 12px 28px -12px rgba(2,93,36,0.18);
+  --shadow-card: none;
+  --shadow-card-hover: 0 16px 40px -16px rgba(0,0,0,0.7), 0 0 0 1px rgba(29,185,84,0.25);
   --shadow-hero: none;
 
   --content-width: 1120px;

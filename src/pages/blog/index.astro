@@ -29,18 +29,16 @@ const breadcrumbs = createBreadcrumbJsonLd([
 >
   <PageHero eyebrow="Club Updates" title={blogPage.data.title} summary={blogPage.data.description} />
 
-  <section class="section-card reveal" data-delay="1">
+  <section class="blog-intro reveal" data-delay="1">
     <div class="prose">
       <Content />
     </div>
   </section>
 
-  <section class="dark-band reveal" data-delay="2">
-    <div class="band-head">
-      <div>
-        <p class="band-eyebrow">Latest Posts</p>
-        <h2 class="band-title">Club Updates</h2>
-      </div>
+  <section class="blog-posts reveal" data-delay="2" aria-labelledby="posts-heading">
+    <div class="posts-head">
+      <p class="eyebrow">Latest Posts</p>
+      <h2 class="section-title" id="posts-heading">Club Updates</h2>
     </div>
 
     <div class="posts-grid">
@@ -50,6 +48,55 @@ const breadcrumbs = createBreadcrumbJsonLd([
 </BaseLayout>
 
 <style>
+  /* ─── Intro: the curated blog.md copy as a slim row, list as pills ── */
+
+  .blog-intro {
+    margin-top: var(--space-l);
+  }
+
+  .blog-intro .prose {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs) var(--space-s);
+    color: var(--text-muted);
+  }
+
+  .blog-intro .prose :global(p:first-child) {
+    flex: 0 0 100%;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+
+  .blog-intro .prose :global(ul) {
+    display: contents;
+  }
+
+  .blog-intro .prose :global(li) {
+    list-style: none;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(3, 122, 47, 0.08);
+    color: var(--color-lime);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* ─── Posts ─────────────────────────────────────────── */
+
+  .posts-head {
+    margin-bottom: var(--space-m);
+  }
+
+  .posts-head .eyebrow {
+    color: var(--color-lime);
+    margin-bottom: var(--space-2xs);
+  }
+
+  .posts-head .eyebrow::before {
+    background: var(--color-lime);
+  }
+
   .posts-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

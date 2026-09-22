@@ -1,6 +1,7 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import BlogCard from '../../components/BlogCard.astro';
 import { createBlogPostingJsonLd, createBreadcrumbJsonLd } from '../../lib/seo';
 
 export async function getStaticPaths() {
@@ -20,7 +21,7 @@ const { entry } = Astro.props as Props;
 const { Content } = await render(entry);
 
 // Estimated reading time
-const wordCount = entry.body.split(/\s+/).length;
+const wordCount = (entry.body ?? '').split(/\s+/).length;
 const readingTime = Math.max(1, Math.round(wordCount / 200));
 
 const breadcrumbs = createBreadcrumbJsonLd([
@@ -39,10 +40,21 @@ const articleSchema = createBlogPostingJsonLd({
 });
 
 const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
-  day: '2-digit',
-  month: '2-digit',
+  day: 'numeric',
+  month: 'long',
   year: 'numeric'
 });
+
+// Logos are shown whole on a white panel instead of stretched like a photo
+const coverIsLogo = /\.png$/i.test(entry.data.coverImage) || entry.data.coverImage.includes('/partners/');
+// Skip the cover if the post body already opens with the same image
+const showCover = !(entry.body ?? '').includes(entry.data.coverImage);
+
+// Up to two other posts to keep reading
+const morePosts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex))
+  .filter((post) => post.id !== entry.id)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 2);
 ---
 
 <BaseLayout
@@ -62,8 +74,8 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   </div>
 
   <article>
-    <section class="page-hero reveal">
-      <p class="eyebrow">Fusion Blog</p>
+    <section class="page-hero article-hero reveal">
+      <a class="eyebrow eyebrow-link" href="/blog/">Fusion Blog</a>
       <h1 class="hero-title">{entry.data.title}</h1>
       <p class="hero-summary">{entry.data.excerpt}</p>
       <div class="article-meta">
@@ -80,12 +92,17 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       )}
     </section>
 
-    <section class="dark-band article-band reveal" data-delay="1" id="article-body">
-      <img
-        src={entry.data.coverImage}
-        alt={entry.data.title}
-        class="article-cover"
-      />
+    <section class:list={['article-band', !showCover && 'no-cover']} id="article-body">
+      {showCover && (
+        <figure class:list={['article-cover-wrap', coverIsLogo && 'is-logo']}>
+          <img
+            src={entry.data.coverImage}
+            alt={entry.data.title}
+            class="article-cover"
+            fetchpriority="high"
+          />
+        </figure>
+      )}
 
       <div class="prose article-prose">
         <Content />
@@ -102,6 +119,21 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       </div>
     </section>
   </article>
+
+  {morePosts.length > 0 && (
+    <section class="dark-band more-posts" aria-labelledby="more-heading">
+      <div class="band-head">
+        <div>
+          <p class="band-eyebrow">Latest Posts</p>
+          <h2 class="band-title" id="more-heading">Club Updates</h2>
+        </div>
+        <a class="more-all" href="/blog/">Blog →</a>
+      </div>
+      <div class="more-grid">
+        {morePosts.map((post) => <BlogCard post={post} />)}
+      </div>
+    </section>
+  )}
 
   <!-- Scroll to top -->
   <button class="scroll-top" id="scroll-top" type="button" aria-label="Back to top">
@@ -145,8 +177,6 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   .meta-sep { color: rgba(245, 247, 246, 0.45); }
 
   .meta-read {
-    font-family: var(--font-display);
-    font-size: 0.78rem;
     color: var(--color-lime);
   }
 
@@ -154,23 +184,97 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     margin-top: var(--space-s);
   }
 
-  /* ─── Article band ───────────────────────────────────── */
+  .eyebrow-link:hover {
+    color: var(--color-lime-bright);
+  }
+
+  .page-hero .hero-title {
+    max-width: 22ch;
+  }
+
+  /* Chips on the dark hero */
+  .article-hero .chip {
+    border-color: rgba(29, 185, 84, 0.35);
+    background: rgba(29, 185, 84, 0.12);
+    color: var(--color-lime);
+  }
+
+  .no-cover {
+    margin-top: 0;
+  }
+
+  .article-band.no-cover .article-prose {
+    margin-top: var(--space-l);
+  }
+
+  .article-hero:has(+ .no-cover) {
+    padding-bottom: clamp(2.5rem, 5vw, 5rem);
+  }
+
+  /* Room at the bottom for the cover image to overlap */
+  .article-hero {
+    min-height: 0;
+    padding-bottom: calc(var(--space-xl) + var(--space-l));
+  }
+
+  /* ─── Article: centred reading column on the light page ─ */
 
   .article-band {
-    padding: 0;
+    --reading-width: 68ch;
+    margin-top: calc(-1 * var(--space-xl));
+    position: relative;
+  }
+
+  /* Cover overlaps the bottom of the hero, capped at its native-ish width */
+  .article-cover-wrap {
+    margin: 0 auto;
+    max-width: 960px;
+    width: calc(100% - 2 * var(--space-l));
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-m);
     overflow: hidden;
+    background: var(--color-charcoal);
+    border: 1px solid var(--line);
   }
 
   .article-cover {
     width: 100%;
-    aspect-ratio: 16 / 7;
+    height: 100%;
     object-fit: cover;
     display: block;
   }
 
+  .article-cover-wrap.is-logo {
+    max-width: 520px;
+    aspect-ratio: 4 / 3;
+    background: #ffffff;
+    padding: var(--space-l);
+  }
+
+  .article-cover-wrap.is-logo .article-cover {
+    object-fit: contain;
+  }
+
   .article-prose {
-    padding: var(--space-l) var(--space-xl);
-    max-width: 72ch;
+    max-width: var(--reading-width);
+    margin: var(--space-xl) auto 0;
+    font-size: 1.1rem;
+    gap: var(--space-m);
+  }
+
+  .article-prose :global(p),
+  .article-prose :global(li) {
+    line-height: 1.75;
+  }
+
+  .article-prose :global(h2) {
+    font-size: 1.6rem;
+    margin-top: var(--space-m);
+  }
+
+  .article-prose :global(h3) {
+    font-size: 1.25rem;
+    margin-top: var(--space-s);
   }
 
   /* ─── Prose enhancements ─────────────────────────────── */
@@ -181,7 +285,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     margin: var(--space-l) 0;
     padding: var(--space-m) var(--space-l);
     border-left: 3px solid var(--color-lime);
-    background: rgba(29, 185, 84, 0.05);
+    background: rgba(3, 122, 47, 0.06);
     border-radius: 0 var(--radius-s) var(--radius-s) 0;
   }
 
@@ -193,41 +297,28 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     font-family: var(--font-display);
     font-size: 5rem;
     line-height: 1;
-    color: rgba(29, 185, 84, 0.2);
+    color: rgba(3, 122, 47, 0.2);
     pointer-events: none;
   }
 
   .article-prose :global(blockquote p) {
-    font-size: 1.08rem;
+    font-size: 1.15rem;
     font-style: italic;
-    color: rgba(245, 247, 246, 0.85);
+    color: var(--text);
     line-height: 1.65;
   }
 
-  /* Section headings — lime left tick */
-  .article-prose :global(h2),
-  .article-prose :global(h3) {
-    position: relative;
-    padding-left: var(--space-m);
-  }
-
-  .article-prose :global(h2)::before,
-  .article-prose :global(h3)::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0.2em;
-    bottom: 0.2em;
-    width: 3px;
-    background: var(--color-lime);
-    border-radius: 2px;
+  .article-prose :global(strong) {
+    color: var(--text);
   }
 
   /* ─── Article footer ─────────────────────────────────── */
 
   .article-footer {
-    padding: var(--space-m) var(--space-xl) var(--space-xl);
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    max-width: var(--reading-width);
+    margin: var(--space-xl) auto 0;
+    padding-top: var(--space-m);
+    border-top: 1px solid var(--line);
   }
 
   .footer-row {
@@ -239,8 +330,8 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
   }
 
   .back-link {
-    font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.62);
+    font-size: 0.95rem;
+    color: var(--color-lime);
     font-weight: 600;
     transition: color var(--transition);
   }
@@ -255,27 +346,52 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(29, 185, 84, 0.08);
-    border: 1px solid rgba(29, 185, 84, 0.25);
+    background: var(--surface);
+    border: 1px solid var(--line);
     border-radius: 999px;
-    padding: 0.4rem 0.9rem;
+    padding: 0.45rem 1rem;
     font-family: var(--font-display);
-    font-size: 0.75rem;
-    color: rgba(245, 247, 246, 0.6);
+    font-size: 0.88rem;
+    color: var(--text);
     cursor: pointer;
     transition: background var(--transition), border-color var(--transition), color var(--transition);
   }
 
   .copy-btn:hover {
-    background: rgba(29, 185, 84, 0.14);
-    border-color: rgba(29, 185, 84, 0.5);
+    border-color: var(--color-lime);
     color: var(--color-lime);
   }
 
   .copy-btn.copied {
-    background: rgba(29, 185, 84, 0.18);
+    background: rgba(3, 122, 47, 0.08);
     border-color: var(--color-lime);
     color: var(--color-lime);
+  }
+
+  /* ─── More posts ─────────────────────────────────────── */
+
+  .more-posts {
+    /* Run straight into the footer */
+    margin-bottom: calc(-1 * var(--space-2xl));
+  }
+
+  .more-all {
+    color: rgba(245, 247, 246, 0.72);
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color var(--transition);
+  }
+
+  .more-all:hover {
+    color: var(--color-lime);
+  }
+
+  .more-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-m);
+    position: relative;
   }
 
   /* ─── Scroll to top ──────────────────────────────────── */
@@ -312,24 +428,24 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     transform: translateY(-2px);
   }
 
-  /* ─── Prose element stagger (applied via JS) ─────────── */
-
-  :global(.prose-item) {
-    transition: opacity 0.55s ease, transform 0.55s ease;
-  }
-
-  :global(.prose-item.prose-hidden) {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-
   /* ─── Responsive ─────────────────────────────────────── */
 
   @media (max-width: 720px) {
-    .article-prose,
-    .article-footer {
-      padding-left: var(--space-m);
-      padding-right: var(--space-m);
+    .article-band {
+      margin-top: calc(-1 * var(--space-l));
+    }
+
+    .article-cover-wrap {
+      width: calc(100% - 2 * var(--space-s));
+    }
+
+    .article-prose {
+      font-size: 1.05rem;
+      margin-top: var(--space-l);
+    }
+
+    .more-grid {
+      grid-template-columns: 1fr;
     }
 
     .scroll-top {
@@ -400,28 +516,4 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     });
   }
 
-  /* ─── Staggered prose element reveals ───────────────── */
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const proseEl = document.querySelector('.article-prose');
-    if (proseEl) {
-      const items = Array.from(proseEl.children);
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.remove('prose-hidden');
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        { threshold: 0.1, rootMargin: '0px 0px -24px 0px' }
-      );
-
-      items.forEach((el, i) => {
-        el.classList.add('prose-item', 'prose-hidden');
-        (el as HTMLElement).style.transitionDelay = `${Math.min(i * 0.05, 0.3)}s`;
-        observer.observe(el);
-      });
-    }
-  }
 </script>
