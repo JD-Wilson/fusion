@@ -57,14 +57,14 @@ Use `.env.example` as a reference for local/production env values.
 - `/age-groups/`
 - `/leagues/`
 - `/new-sponsors/`
-- `/sponsors/`
 - `/contact/`
 
 ### Dynamic pages
 
 - `/blog/[slug]/` from `src/content/blog/*.md`
-- `/sponsors/[slug]/` from `src/content/sponsors/*.md`
 - `/club/[slug]/` from `src/content/pages/*.md` (non-core slugs)
+
+The `sponsors` content collection and its `/sponsors/[slug]/` route were removed until there are real sponsors to list; `src/content.config.ts` still defines the schema so it's ready to reinstate.
 
 ## Content editing
 
@@ -165,14 +165,14 @@ Rules:
 
 ## Brand assets
 
-Temporary brand assets live in `public/brand/`.
+Brand assets live in `public/brand/`.
 
-- Current crest uses `public/brand/logo-placeholder.svg`
+- Current crest is `public/brand/logo.jpeg`.
 - Replace with official logo files when available.
 - Update any markdown frontmatter image paths as needed.
 
 ## Important placeholders to update before launch
 
-- `clubContactEmail` and `clubPhone` in `src/config/site.ts`
+- `clubContactEmail` in `src/config/site.ts`
 - `SITE_URL` environment variable
 - Temporary logo/images in `public/brand/`
