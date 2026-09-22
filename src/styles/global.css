@@ -12,7 +12,10 @@ body {
 
 body {
   min-height: 100vh;
+  overflow-x: clip;
   font-family: var(--font-body);
+  font-size: 1.0625rem;
+  -webkit-font-smoothing: antialiased;
   color: var(--color-charcoal);
   background-color: #f3f6f4;
 }
@@ -39,11 +42,8 @@ img[loading="lazy"].img-loaded {
 }
 
 /*
- * Placeholder backgrounds on the *containers* of lazy images.
- * These are div/grid wrappers — the dark background shows through
- * while the image is transparent, then the image fades in over it.
- * A shimmer is applied to .age-card-img (a proper div) for a more
- * polished loading state. Photo strip and about grids get a flat dark tone.
+ * Flat placeholder tone on the *containers* of lazy images: it shows
+ * through while the image is transparent, then the image fades in over it.
  */
 .photo-grid,
 .about-img-grid {
@@ -52,24 +52,6 @@ img[loading="lazy"].img-loaded {
 
 .age-card-img {
   background-color: rgba(255, 255, 255, 0.05);
-  background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: img-shimmer 1.6s ease infinite;
-}
-
-.age-card-img:has(.img-loaded) {
-  animation: none;
-  background: none;
-}
-
-@keyframes img-shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
 }
 
 h1,
@@ -89,7 +71,7 @@ li {
 }
 
 main {
-  width: min(1120px, 92vw);
+  width: min(var(--content-width), 92vw);
   margin: 0 auto;
   padding: var(--space-l) 0 var(--space-2xl);
 }
@@ -113,6 +95,13 @@ section {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+
+/* Full-bleed: break out of <main> to the viewport edges */
+.full-bleed {
+  margin-inline: calc(50% - 50vw);
+  border-radius: 0;
+  padding-inline: max(var(--space-m), calc(50vw - var(--content-width) / 2));
 }
 
 /* Diagonal green wash from bottom-right */
@@ -161,7 +150,7 @@ section {
   margin-top: var(--space-s);
   max-width: 52ch;
   color: rgba(245, 247, 246, 0.78);
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   line-height: 1.6;
 }
 
@@ -271,8 +260,6 @@ section {
   color: var(--color-forest-deep);
   font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   padding: 0.25rem 0.65rem;
 }
 
@@ -311,9 +298,7 @@ section {
   color: var(--color-ink);
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   transition: background var(--transition), transform var(--transition), border-color var(--transition);
 }
 
@@ -324,7 +309,7 @@ section {
 
 .button.ghost {
   background: transparent;
-  border-color: rgba(245, 247, 246, 0.45);
+  border-color: rgba(245, 247, 246, 0.62);
   color: var(--color-paper);
 }
 
@@ -363,20 +348,32 @@ section {
 
 .dark-band {
   background: var(--color-charcoal);
-  border-radius: var(--radius-l);
-  padding: var(--space-xl);
+  margin-inline: calc(50% - 50vw);
+  padding: var(--space-2xl) max(var(--space-m), calc(50vw - var(--content-width) / 2));
   color: var(--color-paper);
   position: relative;
   overflow: hidden;
+}
+
+.dark-band + .dark-band {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.dark-band + .dark-band::before {
+  display: none;
+}
+
+/* A page ending on a dark band runs straight into the footer */
+main:has(> .dark-band:last-child) {
+  padding-bottom: 0;
 }
 
 .dark-band::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 100% 0%, rgba(3, 122, 47, 0.14) 0%, transparent 55%),
-    radial-gradient(500px circle at var(--cursor-x, -200%) var(--cursor-y, -200%), rgba(29, 185, 84, 0.055), transparent 70%);
+  background: radial-gradient(ellipse at 100% 0%, rgba(3, 122, 47, 0.14) 0%, transparent 55%);
   pointer-events: none;
 }
 
@@ -405,8 +402,8 @@ section {
 }
 
 .band-description {
-  color: rgba(245, 247, 246, 0.5);
-  font-size: 0.9rem;
+  color: rgba(245, 247, 246, 0.62);
+  font-size: 0.95rem;
   line-height: 1.6;
   margin-top: 0.4rem;
   max-width: 65ch;
@@ -501,10 +498,8 @@ section {
 }
 
 .detail-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(245, 247, 246, 0.3);
+  font-size: 0.75rem;
+  color: rgba(245, 247, 246, 0.62);
   font-family: var(--font-display);
 }
 
@@ -515,7 +510,7 @@ section {
 
 @media (max-width: 720px) {
   .dark-band {
-    padding: var(--space-l) var(--space-m);
+    padding-block: var(--space-xl);
   }
 
   .band-head {
@@ -527,13 +522,14 @@ section {
 
 /* ─── Reveal animation (scroll-triggered) ────────────── */
 
-.reveal {
+/* Only hide when JS is running (html.js), so content never stays invisible */
+.js .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.7s ease, transform 0.7s ease;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
 }
 
-.reveal.is-visible {
+.js .reveal.is-visible {
   opacity: 1;
   transform: none;
 }
@@ -553,7 +549,7 @@ section {
 
 @media (max-width: 720px) {
   main {
-    width: min(95vw, 95vw);
+    width: calc(100vw - 2rem);
     padding-top: var(--space-m);
   }
 
@@ -572,7 +568,7 @@ section {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
+  .js .reveal {
     opacity: 1;
     transform: none;
     transition: none;

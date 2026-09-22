@@ -27,9 +27,11 @@
   --space-xl: 3.4rem;
   --space-2xl: 5rem;
 
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px -8px rgba(0,0,0,0.10);
-  --shadow-card-hover: 0 4px 8px rgba(0,0,0,0.08), 0 20px 48px -12px rgba(2,93,36,0.22);
-  --shadow-hero: 0 8px 24px rgba(0,0,0,0.18), 0 40px 80px -20px rgba(0,0,0,0.40);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card-hover: 0 2px 4px rgba(0,0,0,0.04), 0 12px 28px -12px rgba(2,93,36,0.18);
+  --shadow-hero: none;
+
+  --content-width: 1120px;
 
   --transition: 0.22s ease;
 }

@@ -19,6 +19,28 @@ const saturdayTeams = allTeams.filter(t => t.data.matchday === 'Saturday');
 const sundayTeams = allTeams.filter(t => t.data.matchday === 'Sunday');
 const ungroupedTeams = allTeams.filter(t => !t.data.matchday);
 
+const teamGroups = [
+  { heading: 'Saturday Teams', teams: saturdayTeams },
+  { heading: 'Sunday Teams', teams: sundayTeams },
+  { heading: '', teams: ungroupedTeams }
+].filter((group) => group.teams.length > 0);
+
+const teamFilters = [
+  { value: 'all', label: 'All' },
+  { value: 'Saturday', label: 'Saturday' },
+  { value: 'Sunday', label: 'Sunday' },
+  { value: 'girls', label: 'Girls' }
+];
+
+// Long league names become initials on the chip (full name in the tooltip),
+// e.g. "Staffordshire Junior Football League" -> "SJFL"
+const shortLeagueName = (name: string) => {
+  const words = name.split(/\s+/);
+  return words.length >= 3 ? words.map((word) => word[0].toUpperCase()).join('') : name;
+};
+
+const seasons = [...new Set(allTeams.map((team) => team.data.season))];
+
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
   { name: 'Age Groups', path: '/age-groups/' }
@@ -44,24 +66,35 @@ const breadcrumbs = createBreadcrumbJsonLd([
   <section class="dark-band reveal" data-delay="2">
     <div class="band-head">
       <div>
-        <p class="band-eyebrow">Registered Teams</p>
+        <p class="band-eyebrow">Registered Teams{seasons.length === 1 && ` · Season ${seasons[0]}`}</p>
         <h2 class="band-title">Current Team Groups</h2>
       </div>
       <a class="band-link" href="/leagues/">View leagues →</a>
     </div>
 
-    {saturdayTeams.length > 0 && (
-      <div class="matchday-group">
-        <h3 class="matchday-heading">Saturday Teams</h3>
+    <div class="team-filters" role="group" aria-label="Filter teams" hidden>
+      {teamFilters.map((filter, i) => (
+        <button type="button" class="filter-btn" data-filter={filter.value} aria-pressed={i === 0 ? 'true' : 'false'}>
+          {filter.label}
+        </button>
+      ))}
+    </div>
+
+    {teamGroups.map((group) => (
+      <div class="matchday-group" data-group>
+        {group.heading && <h3 class="matchday-heading">{group.heading}</h3>}
         <div class="grid grid-3">
-          {saturdayTeams.map((team) => (
-            <article class="dark-card team-card">
-              <span class="team-ghost">{team.data.ageGroup}</span>
+          {group.teams.map((team) => (
+            <article
+              class="dark-card team-card"
+              data-matchday={team.data.matchday ?? ''}
+              data-girls={/girls/i.test(team.data.teamName) ? 'true' : 'false'}
+            >
+              <span class="team-ghost" aria-hidden="true">{team.data.ageGroup}</span>
               <h3 class="team-name">{team.data.teamName}</h3>
               <p class="team-age-label">{team.data.ageGroup}</p>
               <div class="chip-list">
-                <span class="chip">Season {team.data.season}</span>
-                <span class="chip">{team.data.league}</span>
+                <span class="chip" title={team.data.league}>{shortLeagueName(team.data.league)}</span>
               </div>
               {(team.data.training || team.data.coach) && (
                 <div class="team-details">
@@ -83,80 +116,73 @@ const breadcrumbs = createBreadcrumbJsonLd([
           ))}
         </div>
       </div>
-    )}
-
-    {sundayTeams.length > 0 && (
-      <div class="matchday-group">
-        <h3 class="matchday-heading">Sunday Teams</h3>
-        <div class="grid grid-3">
-          {sundayTeams.map((team) => (
-            <article class="dark-card team-card">
-              <span class="team-ghost">{team.data.ageGroup}</span>
-              <h3 class="team-name">{team.data.teamName}</h3>
-              <p class="team-age-label">{team.data.ageGroup}</p>
-              <div class="chip-list">
-                <span class="chip">Season {team.data.season}</span>
-                <span class="chip">{team.data.league}</span>
-              </div>
-              {(team.data.training || team.data.coach) && (
-                <div class="team-details">
-                  {team.data.training && (
-                    <div class="detail-item">
-                      <span class="detail-label">Training</span>
-                      <span class="detail-value">{team.data.training}</span>
-                    </div>
-                  )}
-                  {team.data.coach && (
-                    <div class="detail-item">
-                      <span class="detail-label">Coach</span>
-                      <span class="detail-value">{team.data.coach}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
-      </div>
-    )}
-
-    {ungroupedTeams.length > 0 && (
-      <div class="grid grid-3">
-        {ungroupedTeams.map((team) => (
-          <article class="dark-card team-card">
-            <span class="team-ghost">{team.data.ageGroup}</span>
-            <h3 class="team-name">{team.data.teamName}</h3>
-            <p class="team-age-label">{team.data.ageGroup}</p>
-            <div class="chip-list">
-              <span class="chip">Season {team.data.season}</span>
-              <span class="chip">{team.data.league}</span>
-            </div>
-            {(team.data.training || team.data.coach) && (
-              <div class="team-details">
-                {team.data.training && (
-                  <div class="detail-item">
-                    <span class="detail-label">Training</span>
-                    <span class="detail-value">{team.data.training}</span>
-                  </div>
-                )}
-                {team.data.coach && (
-                  <div class="detail-item">
-                    <span class="detail-label">Coach</span>
-                    <span class="detail-value">{team.data.coach}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
-    )}
+    ))}
   </section>
 </BaseLayout>
 
+<script>
+  const filters = document.querySelector<HTMLElement>('.team-filters');
+  if (filters) {
+    filters.hidden = false;
+    const buttons = filters.querySelectorAll<HTMLButtonElement>('.filter-btn');
+    const cards = document.querySelectorAll<HTMLElement>('.team-card');
+    const groups = document.querySelectorAll<HTMLElement>('[data-group]');
+
+    buttons.forEach((button) => button.addEventListener('click', () => {
+      const filter = button.dataset.filter;
+      buttons.forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+      cards.forEach((card) => {
+        const show =
+          filter === 'all' ||
+          (filter === 'girls' ? card.dataset.girls === 'true' : card.dataset.matchday === filter);
+        card.hidden = !show;
+      });
+      groups.forEach((group) => {
+        group.hidden = !group.querySelector('.team-card:not([hidden])');
+      });
+    }));
+  }
+</script>
+
 <style>
+  .team-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--space-l);
+    position: relative;
+  }
+
+  .filter-btn {
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(245, 247, 246, 0.18);
+    background: transparent;
+    color: rgba(245, 247, 246, 0.8);
+    cursor: pointer;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+  }
+
+  .filter-btn:hover {
+    border-color: rgba(29, 185, 84, 0.6);
+  }
+
+  .filter-btn[aria-pressed='true'] {
+    background: var(--color-lime);
+    border-color: var(--color-lime);
+    color: var(--color-ink);
+  }
+
+  .matchday-group[hidden],
+  .team-card[hidden] {
+    display: none;
+  }
+
   .band-link {
-    color: rgba(245, 247, 246, 0.45);
+    color: rgba(245, 247, 246, 0.62);
     font-size: 0.85rem;
     font-weight: 600;
     white-space: nowrap;
@@ -198,9 +224,7 @@ const breadcrumbs = createBreadcrumbJsonLd([
   .team-age-label {
     font-family: var(--font-display);
     font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(245, 247, 246, 0.38);
+    color: rgba(245, 247, 246, 0.62);
   }
 
   .team-details {

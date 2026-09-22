@@ -4,14 +4,30 @@ interface Props {
   title: string;
   summary: string;
   actions?: { href: string; label: string; ghost?: boolean }[];
+  /** Optional full-bleed photo background (used on the homepage) */
+  image?: string;
+  imagePosition?: string;
 }
 
-const { eyebrow = 'Fusion Football Club', title, summary, actions = [] } = Astro.props as Props;
+const {
+  eyebrow = 'Fusion Football Club',
+  title,
+  summary,
+  actions = [],
+  image,
+  imagePosition = 'center center'
+} = Astro.props as Props;
 ---
 
-<section class="page-hero reveal">
+<section class:list={['page-hero', 'reveal', image && 'page-hero--photo full-bleed']}>
+  {image && (
+    <div class="hero-photo" aria-hidden="true">
+      <img src={image} alt="" fetchpriority="high" style={`object-position: ${imagePosition}`} />
+    </div>
+  )}
+
   <!-- Football pitch geometry: angled fill + center circle -->
-  <div class="hero-decor" aria-hidden="true">
+  <div class="hero-decor" aria-hidden="true" hidden={Boolean(image)}>
     <svg
       class="hero-svg"
       viewBox="0 0 700 480"
@@ -24,12 +40,12 @@ const { eyebrow = 'Fusion Football Club', title, summary, actions = [] } = Astro
       <path d="M 700 0 L 440 0 L 320 480 L 700 480 Z" fill="rgba(2,93,36,0.10)" />
 
       <!-- Center circle -->
-      <circle class="ring ring-1" cx="560" cy="240" r="190" stroke="rgba(29,185,84,0.14)" stroke-width="1.5" />
-      <circle class="ring ring-2" cx="560" cy="240" r="130" stroke="rgba(29,185,84,0.09)" stroke-width="1" />
-      <circle class="ring ring-3" cx="560" cy="240" r="68" stroke="rgba(29,185,84,0.06)" stroke-width="1" />
+      <circle cx="560" cy="240" r="190" stroke="rgba(29,185,84,0.14)" stroke-width="1.5" />
+      <circle cx="560" cy="240" r="130" stroke="rgba(29,185,84,0.09)" stroke-width="1" />
+      <circle cx="560" cy="240" r="68" stroke="rgba(29,185,84,0.06)" stroke-width="1" />
 
       <!-- Center spot -->
-      <circle class="center-spot" cx="560" cy="240" r="5" fill="rgba(29,185,84,0.25)" />
+      <circle cx="560" cy="240" r="5" fill="rgba(29,185,84,0.25)" />
 
       <!-- Horizontal midline -->
       <line x1="260" y1="240" x2="700" y2="240" stroke="rgba(29,185,84,0.07)" stroke-width="1" />
@@ -88,38 +104,54 @@ const { eyebrow = 'Fusion Football Club', title, summary, actions = [] } = Astro
     gap: 0.75rem;
   }
 
-  /* ─── SVG ring animations ────────────────────────────── */
+  /* ─── Photo variant ─────────────────────────────────── */
 
-  .ring {
-    transform-origin: 560px 240px;
-    animation: breathe 6s ease-in-out infinite;
+  /* Sit flush under the header (cancels <main>'s top padding) */
+  .page-hero--photo {
+    margin-top: calc(-1 * var(--space-l));
+    min-height: min(78vh, 680px);
+    padding-block: var(--space-2xl);
   }
 
-  .ring-2 { animation-delay: -2s; animation-duration: 8s; }
-  .ring-3 { animation-delay: -4s; animation-duration: 10s; }
-
-  @keyframes breathe {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(1.04); }
+  /* The diagonal wash is replaced by a legibility gradient over the photo */
+  .page-hero--photo::before {
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgba(8, 10, 10, 0.92) 0%, rgba(8, 10, 10, 0.7) 45%, rgba(8, 10, 10, 0.15) 100%),
+      linear-gradient(0deg, rgba(2, 93, 36, 0.35) 0%, transparent 40%);
   }
 
-  .center-spot {
-    transform-origin: 560px 240px;
-    animation: pulse-spot 3s ease-in-out infinite;
+  .hero-photo {
+    position: absolute;
+    inset: 0;
   }
 
-  @keyframes pulse-spot {
-    0%, 100% { r: 5; opacity: 1; }
-    50%       { r: 8; opacity: 0.5; }
+  .hero-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .ring, .center-spot { animation: none; }
+  .page-hero--photo .hero-content {
+    z-index: 2;
+  }
+
+  .page-hero--photo .hero-title {
+    font-size: clamp(2.4rem, 6vw, 4.6rem);
   }
 
   @media (max-width: 720px) {
     .hero-content {
       max-width: 100%;
+    }
+
+    .page-hero--photo {
+      margin-top: calc(-1 * var(--space-m));
+      min-height: 560px;
+    }
+
+    .page-hero--photo::before {
+      background: linear-gradient(0deg, rgba(8, 10, 10, 0.95) 0%, rgba(8, 10, 10, 0.75) 55%, rgba(8, 10, 10, 0.35) 100%);
     }
 
     .hero-svg {

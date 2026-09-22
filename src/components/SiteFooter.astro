@@ -18,7 +18,10 @@ const footerLinks = [
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand">
-      <p class="footer-name">Fusion FC</p>
+      <p class="footer-name">
+        <img src="/brand/logo.jpeg" alt="" width="48" height="48" loading="lazy" />
+        Fusion FC
+      </p>
       <p class="footer-tagline">
         Community-first football pathways for players, families, and local partners across the region.
       </p>
@@ -53,25 +56,32 @@ const footerLinks = [
 
 <style>
   .site-footer {
-    margin-top: var(--space-2xl);
-    background: var(--color-charcoal);
+    background: var(--color-ink);
     color: var(--color-paper);
-    padding: var(--space-2xl) 0 0;
+    padding: var(--space-xl) 0 0;
+    border-top: 1px solid rgba(29, 185, 84, 0.25);
   }
 
   .footer-inner {
     width: min(1120px, 92vw);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: 2fr 1fr 1.2fr;
-    gap: var(--space-xl);
-    padding-bottom: var(--space-xl);
+    grid-template-columns: 1.3fr 1.5fr 1fr;
+    gap: var(--space-l);
+    padding-bottom: var(--space-l);
     border-bottom: 1px solid rgba(245, 247, 246, 0.1);
   }
 
+  .footer-name img {
+    border-radius: 50%;
+  }
+
   .footer-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     font-family: var(--font-display);
-    font-size: 1.7rem;
+    font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     color: var(--color-lime);
@@ -79,7 +89,7 @@ const footerLinks = [
   }
 
   .footer-tagline {
-    color: rgba(245, 247, 246, 0.55);
+    color: rgba(245, 247, 246, 0.62);
     font-size: 0.92rem;
     line-height: 1.6;
     max-width: 28ch;
@@ -100,10 +110,9 @@ const footerLinks = [
 
   .footer-heading {
     font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: rgba(245, 247, 246, 0.35);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(245, 247, 246, 0.62);
     margin: 0 0 var(--space-s);
   }
 
@@ -112,7 +121,8 @@ const footerLinks = [
     padding: 0;
     margin: 0;
     display: grid;
-    gap: 0.5rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem var(--space-m);
   }
 
   .footer-nav a {
@@ -154,10 +164,8 @@ const footerLinks = [
   }
 
   .contact-label {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(245, 247, 246, 0.35);
+    font-size: 0.8rem;
+    color: rgba(245, 247, 246, 0.62);
   }
 
   .footer-contact-item a,
@@ -202,7 +210,7 @@ const footerLinks = [
 
   .footer-bottom p {
     font-size: 0.78rem;
-    color: rgba(245, 247, 246, 0.3);
+    color: rgba(245, 247, 246, 0.62);
   }
 
   @media (max-width: 900px) {

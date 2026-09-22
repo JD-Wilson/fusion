@@ -2,14 +2,40 @@
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
+import BlogCard from '../components/BlogCard.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
 import { requirePageEntry } from '../lib/pages';
 
 const homePage = await requirePageEntry('home');
-const { Content } = await render(homePage);
+const joinPage = await requirePageEntry('join');
+await render(homePage);
 
 const teams = await getCollection('teams', ({ data }) => !data.noindex);
 const leagues = await getCollection('leagues', ({ data }) => !data.noindex);
+const ageGroupCount = new Set(teams.map((team) => team.data.ageGroup)).size;
+
+const latestPosts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+// Split the curated home copy at its "##" headings so each section can sit in
+// its own card. The words are rendered exactly as written in home.md.
+const homeHtml = homePage.rendered?.html ?? '';
+const [introHtml, ...sectionChunks] = homeHtml.split(/(?=<h2\b)/);
+const homeSections = sectionChunks.map((chunk) => {
+  const match = chunk.match(/^<h2[^>]*>([\s\S]*?)<\/h2>/);
+  return {
+    titleHtml: match?.[1] ?? '',
+    bodyHtml: match ? chunk.slice(match[0].length) : chunk
+  };
+});
+
+// Simple line icons for the section cards (target, whistle-style play, people)
+const sectionIcons = [
+  '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
+  '<path d="M4 18 L10 12 L14 15 L20 7"/><path d="M15 7 H20 V12"/>',
+  '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M15.5 14c2.6 0 5 1.6 5 4.5"/>'
+];
 
 const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
 ---
@@ -26,25 +52,33 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     eyebrow="Fusion Football Club"
     title="Where players grow. Where people belong."
     summary="Fusion Football Club is built around one simple idea: football should help young people develop—not just as players, but as people. Whether it's their first session or they've been playing for years, we create a space where every child can grow in confidence, ability, and love for the game."
+    image="/images/girls-session-evening.jpg"
+    imagePosition="60% 40%"
     actions={[
       { href: '/join/', label: 'Join Us' },
-      { href: '/about/', label: 'Discover the Club', ghost: true },
-      { href: '/new-sponsors/', label: 'Sponsor Us', ghost: true }
+      { href: '/about/', label: 'Discover the Club', ghost: true }
     ]}
   />
 
-  <!-- Bold stats strip -->
+  <!-- Stats strip -->
   <section class="stats-strip reveal" data-delay="1">
     <p class="stats-label">Club Snapshot — 2026/27 Season</p>
     <div class="stats-row">
       <div class="stat-item">
-        <span class="stat-number" data-count={teams.length}>0</span>
+        <span class="stat-number" data-count={teams.length}>{teams.length}</span>
         <span class="stat-name">Active Teams</span>
       </div>
-      <div class="stat-divider" aria-hidden="true"></div>
       <div class="stat-item">
-        <span class="stat-number" data-count={leagues.length}>0</span>
+        <span class="stat-number" data-count={ageGroupCount}>{ageGroupCount}</span>
+        <span class="stat-name">Age Groups</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" data-count={leagues.length}>{leagues.length}</span>
         <span class="stat-name">League Pathways</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">2024</span>
+        <span class="stat-name">Est.</span>
       </div>
     </div>
   </section>
@@ -53,17 +87,62 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     <div class="photo-grid">
       <img class="photo-item" src="/images/session-group-young.jpg" alt="Coach working with young Fusion players" loading="lazy" style="object-position: center 40%" />
       <img class="photo-item" src="/images/players-training-bibs.jpg" alt="Players training together" loading="lazy" style="object-position: center 35%" />
-      <img class="photo-item" src="/images/girls-session-evening.jpg" alt="Girls session in action" loading="lazy" style="object-position: 40% center" />
+      <img class="photo-item" src="/images/mini-fusions.jpg" alt="Coaches working with young children at Mini Fusions" loading="lazy" style="object-position: center 25%" />
       <img class="photo-item" src="/images/coach-directing.jpg" alt="Fusion coach directing a session" loading="lazy" style="object-position: center 30%" />
     </div>
   </section>
 
-  <section class="section-card reveal" data-delay="3">
+  <section class="inside-club reveal" data-delay="1">
     <h2 class="section-title">Inside the Club</h2>
-    <div class="prose">
-      <Content />
+    <div class="prose inside-intro" set:html={introHtml} />
+    <div class="inside-grid">
+      {homeSections.map((section, i) => (
+        <article class="inside-card">
+          <span class="inside-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" set:html={sectionIcons[i % sectionIcons.length]} />
+          </span>
+          <h3 class="inside-title" set:html={section.titleHtml} />
+          <div class="prose inside-body" set:html={section.bodyHtml} />
+        </article>
+      ))}
     </div>
     <a class="link-arrow" href="/age-groups/">View age groups</a>
+  </section>
+
+  {latestPosts.length > 0 && (
+    <section class="dark-band reveal">
+      <div class="band-head">
+        <div>
+          <p class="band-eyebrow">Latest Posts</p>
+          <h2 class="band-title">Club Updates</h2>
+        </div>
+        <a class="band-link" href="/blog/">Blog →</a>
+      </div>
+      <div class="home-posts">
+        {latestPosts.map((post) => <BlogCard post={post} />)}
+      </div>
+    </section>
+  )}
+
+  <section class="partner-strip reveal">
+    <a class="partner-logo" href="/her-game-too/" tabindex="-1" aria-hidden="true">
+      <img src="/brand/partners/her-game-too.png" alt="" loading="lazy" />
+    </a>
+    <div class="partner-copy">
+      <p class="eyebrow">Partnership Announcement</p>
+      <h2 class="section-title">Fusion FC × Her Game Too</h2>
+      <p class="section-copy">We're proud to be partnering with Her Game Too — a UK-wide campaign committed to tackling sexism in football and making the game a more welcoming place for women and girls at every level.</p>
+      <a class="link-arrow" href="/her-game-too/">Her Game Too</a>
+    </div>
+  </section>
+
+  <section class="join-banner full-bleed reveal">
+    <div>
+      <p class="eyebrow">Get Involved</p>
+      <h2 class="join-title">{joinPage.data.title}</h2>
+      <p class="join-copy">{joinPage.data.description}</p>
+    </div>
+    <a class="button" href="/join/">Join Us</a>
   </section>
 </BaseLayout>
 
@@ -71,61 +150,50 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
   /* ─── Stats strip ──────────────────────────────────── */
 
   .stats-strip {
-    border-radius: var(--radius-m);
-    background: var(--color-ink);
-    color: var(--color-paper);
-    padding: var(--space-l) var(--space-xl);
-    display: flex;
-    flex-direction: column;
+    padding: var(--space-l) 0 0;
+    display: grid;
     gap: var(--space-m);
   }
 
   .stats-label {
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--color-lime);
+    color: var(--color-forest);
   }
 
   .stats-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xl);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-m);
   }
 
   .stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
+    display: grid;
+    gap: 0.35rem;
+    padding-left: var(--space-s);
+    border-left: 2px solid var(--color-lime);
   }
 
   .stat-number {
     font-family: var(--font-display);
-    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
     line-height: 1;
-    color: var(--color-lime);
+    color: var(--color-charcoal);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-name {
-    font-size: 0.82rem;
-    color: rgba(245, 247, 246, 0.5);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .stat-divider {
-    width: 1px;
-    height: 52px;
-    background: rgba(245, 247, 246, 0.12);
-    flex-shrink: 0;
+    font-size: 0.95rem;
+    color: var(--color-muted);
   }
 
   /* ─── Photo strip ──────────────────────────────────── */
 
   .photo-strip {
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-m);
     overflow: hidden;
   }
 
@@ -144,35 +212,189 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
     display: block;
   }
 
+  /* ─── Inside the club ──────────────────────────────── */
+
+  .inside-intro {
+    max-width: 70ch;
+    color: var(--color-muted);
+    font-size: 1.1rem;
+  }
+
+  .inside-grid {
+    margin-top: var(--space-l);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-m);
+  }
+
+  .inside-card {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-m);
+    display: grid;
+    gap: var(--space-xs);
+    align-content: start;
+  }
+
+  .inside-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: rgba(3, 122, 47, 0.08);
+    color: var(--color-forest);
+  }
+
+  .inside-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .inside-title {
+    font-size: 1.3rem;
+    margin-top: var(--space-2xs);
+  }
+
+  .inside-body {
+    font-size: 0.98rem;
+    color: var(--color-muted);
+  }
+
+  /* ─── Latest posts ─────────────────────────────────── */
+
+  .home-posts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-m);
+    position: relative;
+  }
+
+  .band-link {
+    color: rgba(245, 247, 246, 0.72);
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: color var(--transition);
+  }
+
+  .band-link:hover {
+    color: var(--color-lime);
+  }
+
+  /* ─── Partner strip ────────────────────────────────── */
+
+  .partner-strip {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: var(--space-l);
+    align-items: center;
+  }
+
+  .partner-logo {
+    background: var(--color-paper-strong);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-m);
+    padding: var(--space-m);
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+  }
+
+  .partner-logo img {
+    max-height: 140px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .partner-strip .eyebrow {
+    color: var(--color-forest);
+  }
+
+  .partner-strip .eyebrow::before {
+    background: var(--color-forest);
+  }
+
+  .partner-strip .section-copy {
+    margin-bottom: 0;
+  }
+
+  /* ─── Join banner ──────────────────────────────────── */
+
+  .join-banner {
+    margin-bottom: calc(-1 * var(--space-2xl));
+    padding-block: var(--space-2xl);
+    background:
+      linear-gradient(118deg, var(--color-forest-deep) 0%, var(--color-forest) 100%);
+    color: var(--color-paper);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-l);
+    flex-wrap: wrap;
+  }
+
+  .join-banner .eyebrow,
+  .join-banner .eyebrow::before {
+    color: var(--color-paper);
+  }
+
+  .join-banner .eyebrow::before {
+    background: var(--color-paper);
+  }
+
+  .join-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    line-height: 1.1;
+  }
+
+  .join-copy {
+    margin-top: var(--space-xs);
+    max-width: 52ch;
+    color: rgba(245, 247, 246, 0.88);
+  }
+
+  .join-banner .button {
+    background: var(--color-paper-strong);
+  }
+
+  .join-banner .button:hover {
+    background: var(--color-paper);
+  }
+
+  /* ─── Responsive ───────────────────────────────────── */
+
+  @media (max-width: 900px) {
+    .inside-grid,
+    .home-posts {
+      grid-template-columns: 1fr;
+    }
+  }
+
   @media (max-width: 720px) {
+    .stats-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: var(--space-l);
+    }
+
     .photo-grid {
       grid-template-columns: repeat(2, 1fr);
       height: 340px;
+    }
+
+    .partner-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .partner-logo {
+      width: 160px;
     }
   }
 
   @media (max-width: 480px) {
     .photo-grid {
-      grid-template-columns: repeat(2, 1fr);
       height: 260px;
-    }
-  }
-
-  /* ─── Responsive ───────────────────────────────────── */
-
-  @media (max-width: 720px) {
-    .stats-strip {
-      padding: var(--space-m);
-    }
-
-    .stats-row {
-      gap: var(--space-l);
-    }
-  }
-
-  @media (max-width: 500px) {
-    .stat-divider {
-      height: 36px;
     }
   }
 </style>

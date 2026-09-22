@@ -6,7 +6,6 @@ const normalizePath = (path: string) => (path.endsWith('/') ? path : `${path}/`)
 const currentPath = normalizePath(Astro.url.pathname);
 
 const staticNavLinks = [
-  { href: '/', label: 'Home' },
   { href: '/about/', label: 'About' },
   { href: '/her-game-too/', label: 'Her Game Too' },
   { href: '/age-groups/', label: 'Age Groups' },
@@ -14,7 +13,6 @@ const staticNavLinks = [
   { href: '/leagues/', label: 'Leagues' },
   { href: '/join/', label: 'Join Us' },
   { href: '/blog/', label: 'Blog' },
-  { href: '/contact/', label: 'Contact' },
 ];
 
 const customNavPages = (await getCollection(
@@ -55,19 +53,30 @@ const isLinkActive = (href: string) => {
               </a>
             </li>
           ))}
-          {customNavPages.map((page) => {
-            const href = `/club/${page.id}/`;
-            return (
-              <li>
-                <a
-                  class:list={['nav-link', isLinkActive(href) && 'active']}
-                  href={href}
-                >
-                  {page.data.navLabel ?? page.data.title}
-                </a>
-              </li>
-            );
-          })}
+          {customNavPages.length > 0 && (
+            <li class="nav-more-item">
+              <details class="nav-more">
+                <summary class:list={['nav-link', 'nav-more-toggle', customNavPages.some((page) => isLinkActive(`/club/${page.id}/`)) && 'active']}>
+                  More
+                </summary>
+                <ul class="nav-more-list">
+                  {customNavPages.map((page) => {
+                    const href = `/club/${page.id}/`;
+                    return (
+                      <li>
+                        <a
+                          class:list={['nav-link', isLinkActive(href) && 'active']}
+                          href={href}
+                        >
+                          {page.data.navLabel ?? page.data.title}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
+            </li>
+          )}
         </ul>
       </nav>
 
@@ -110,6 +119,7 @@ const isLinkActive = (href: string) => {
       !(navList instanceof HTMLElement)
     ) continue;
 
+    const more = header.querySelector<HTMLDetailsElement>('.nav-more');
     const isCondensed = () => header.getAttribute('data-condensed') === 'true';
 
     const closeMenu = () => {
@@ -124,6 +134,8 @@ const isLinkActive = (href: string) => {
       const shouldCondense = nav.scrollWidth > nav.clientWidth + 2;
 
       header.setAttribute('data-condensed', shouldCondense ? 'true' : 'false');
+      // The mobile panel lists the "More" pages flat, so keep it expanded there
+      if (more) more.open = shouldCondense;
       if (!shouldCondense || !wasOpen) closeMenu();
     };
 
@@ -144,7 +156,16 @@ const isLinkActive = (href: string) => {
       if (isCondensed() && !header.contains(e.target)) closeMenu();
     });
 
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+    // "More" dropdown: close on outside click / Escape
+    document.addEventListener('click', (e) => {
+      if (more && !isCondensed() && e.target instanceof Node && !more.contains(e.target)) more.open = false;
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      closeMenu();
+      if (more && !isCondensed()) more.open = false;
+    });
     window.addEventListener('resize', syncMode);
     window.addEventListener('load', syncMode);
     window.setTimeout(syncMode, 150);
@@ -163,7 +184,7 @@ const isLinkActive = (href: string) => {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 1px 0 rgba(3, 122, 47, 0.4), 0 8px 32px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 1px 0 rgba(3, 122, 47, 0.4);
   }
 
   .header-inner {
@@ -206,10 +227,8 @@ const isLinkActive = (href: string) => {
   }
 
   .brand small {
-    font-size: 0.6rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(245, 247, 246, 0.35);
+    font-size: 0.75rem;
+    color: rgba(245, 247, 246, 0.62);
   }
 
   /* ─── Right side wrapper ─────────────────────────────── */
@@ -241,15 +260,74 @@ const isLinkActive = (href: string) => {
   .nav-link {
     display: inline-flex;
     align-items: center;
-    padding: 0.5rem 0.65rem;
-    color: rgba(245, 247, 246, 0.55);
+    padding: 0.5rem 0.6rem;
+    color: rgba(245, 247, 246, 0.72);
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    white-space: nowrap;
     position: relative;
     transition: color var(--transition);
+  }
+
+  /* ─── "More" dropdown ───────────────────────────────── */
+
+  .nav-more-item {
+    position: relative;
+  }
+
+  .nav-more-toggle {
+    cursor: pointer;
+    list-style: none;
+    gap: 0.35rem;
+  }
+
+  .nav-more-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .nav-more-toggle::before {
+    content: '';
+    order: 1;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentcolor;
+    border-bottom: 1.5px solid currentcolor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform var(--transition);
+  }
+
+  .nav-more[open] .nav-more-toggle::before {
+    transform: translateY(1px) rotate(-135deg);
+  }
+
+  .nav-more-list {
+    list-style: none;
+    margin: 0;
+    padding: 0.4rem;
+    /* fixed (to the header) so the nav's overflow clipping doesn't cut it off */
+    position: fixed;
+    margin-top: 0.4rem;
+    min-width: 13rem;
+    background: #181c1c;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 24px 56px -16px rgba(0, 0, 0, 0.85);
+    display: grid;
+  }
+
+  .nav-more-list .nav-link {
+    width: 100%;
+    border-radius: 8px;
+    padding: 0.6rem 0.85rem;
+  }
+
+  .nav-more-list .nav-link:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .nav-more-list .nav-link::after {
+    display: none;
   }
 
   /* Underline indicator */
@@ -257,8 +335,8 @@ const isLinkActive = (href: string) => {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0.65rem;
-    right: 0.65rem;
+    left: 0.6rem;
+    right: 0.6rem;
     height: 1.5px;
     border-radius: 999px;
     background: var(--color-lime);
@@ -297,10 +375,8 @@ const isLinkActive = (href: string) => {
     padding: 0.42rem 1rem;
     color: var(--color-lime);
     font-family: var(--font-display);
-    font-size: 0.72rem;
+    font-size: 0.88rem;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     white-space: nowrap;
     flex-shrink: 0;
     margin-left: var(--space-xs);
@@ -367,11 +443,11 @@ const isLinkActive = (href: string) => {
 
   /* Animate burger → X */
   .site-header[data-condensed='true'][data-open='true'] .burger span:nth-child(1) {
-    transform: translateY(6.5px) rotate(45deg);
+    transform: translateY(3.25px) rotate(45deg);
   }
 
   .site-header[data-condensed='true'][data-open='true'] .burger span:nth-child(2) {
-    transform: translateY(-6.5px) rotate(-45deg);
+    transform: translateY(-3.25px) rotate(-45deg);
     width: 100%;
   }
 
@@ -412,7 +488,22 @@ const isLinkActive = (href: string) => {
     width: 100%;
     border-radius: 8px;
     padding: 0.65rem 0.85rem;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  /* In the mobile panel, "More" pages are listed flat */
+  .site-header[data-condensed='true'] .nav-more-toggle {
+    display: none;
+  }
+
+  .site-header[data-condensed='true'] .nav-more-list {
+    position: static;
+    display: grid;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: none;
+    min-width: 0;
   }
 
   /* In dropdown, indicator is a left border instead of underline */

@@ -31,6 +31,7 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -106,6 +107,8 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            // The real number is already in the HTML; only animate if motion is welcome
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
             entry.target.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
               const target = parseInt(el.getAttribute('data-count') ?? '0', 10);
               animateCount(el, target);
@@ -128,19 +131,6 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
       img.addEventListener('load', show);
       img.addEventListener('error', show);
     }
-  });
-
-  /* ─── Cursor glow on dark sections ──────────────────── */
-  document.querySelectorAll<HTMLElement>('.dark-band').forEach((section) => {
-    section.addEventListener('mousemove', (e: MouseEvent) => {
-      const rect = section.getBoundingClientRect();
-      section.style.setProperty('--cursor-x', `${e.clientX - rect.left}px`);
-      section.style.setProperty('--cursor-y', `${e.clientY - rect.top}px`);
-    });
-    section.addEventListener('mouseleave', () => {
-      section.style.setProperty('--cursor-x', '-200%');
-      section.style.setProperty('--cursor-y', '-200%');
-    });
   });
 
 </script>
