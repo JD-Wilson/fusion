@@ -96,7 +96,6 @@ const isLinkActive = (href: string) => {
 </header>
 
 <script>
-  const menuBreakpoint = 1600;
   const headers = document.querySelectorAll('.site-header');
 
   for (const header of headers) {
@@ -122,8 +121,7 @@ const isLinkActive = (href: string) => {
       const wasOpen = header.getAttribute('data-open') === 'true';
       header.setAttribute('data-condensed', 'false');
 
-      const shouldCondense =
-        window.innerWidth <= menuBreakpoint || nav.scrollWidth > nav.clientWidth + 2;
+      const shouldCondense = nav.scrollWidth > nav.clientWidth + 2;
 
       header.setAttribute('data-condensed', shouldCondense ? 'true' : 'false');
       if (!shouldCondense || !wasOpen) closeMenu();
