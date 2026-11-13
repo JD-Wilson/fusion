@@ -5,6 +5,7 @@ import { createBreadcrumbJsonLd } from '../../lib/seo';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import {
   EXPERIENCE,
+  LEVELS,
   POSITIONS,
   ageNumber,
   filterVacancies,
@@ -21,7 +22,8 @@ const filters = {
   position: url.searchParams.get('position') ?? '',
   day: url.searchParams.get('day') ?? '',
   gender: url.searchParams.get('gender') ?? '',
-  kind: url.searchParams.get('kind') ?? ''
+  kind: url.searchParams.get('kind') ?? '',
+  level: (LEVELS as readonly string[]).includes(url.searchParams.get('level') ?? '') ? url.searchParams.get('level')! : ''
 };
 const sent = url.searchParams.get('sent');
 const error = url.searchParams.get('error');
@@ -146,6 +148,15 @@ const expiry = (d: string) =>
               </select>
             </label>
             <label class="f">
+              <span>Level</span>
+              <select name="level">
+                <option value="">Any level</option>
+                {LEVELS.map((l) => (
+                  <option value={l} selected={filters.level === l}>{EXPERIENCE[l]}</option>
+                ))}
+              </select>
+            </label>
+            <label class="f">
               <span>Boys / girls</span>
               <select name="gender">
                 <option value="">Any</option>
@@ -156,7 +167,7 @@ const expiry = (d: string) =>
             <label class="f">
               <span>Looking for</span>
               <select name="kind">
-                <option value="">Players &amp; coaches</option>
+                <option value="">Everyone</option>
                 <option value="player" selected={filters.kind === 'player'}>Players</option>
                 <option value="coach" selected={filters.kind === 'coach'}>Coaches / helpers</option>
               </select>
@@ -376,7 +387,7 @@ const expiry = (d: string) =>
   .filter-card { margin-top: var(--space-m); }
   .filters {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: var(--space-s);
     align-items: end;
   }
@@ -453,9 +464,11 @@ const expiry = (d: string) =>
   .empty { position: relative; color: rgba(241, 244, 242, 0.75); display: grid; gap: var(--space-xs); }
   .empty a { color: var(--color-lime); text-decoration: underline; }
 
+  @media (max-width: 1100px) {
+    .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
   @media (max-width: 900px) {
     .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .filters .f:nth-child(5) { grid-column: 1 / -1; }
     .community { grid-template-columns: 1fr; }
   }
   @media (max-width: 720px) { .steps { grid-template-columns: 1fr; gap: var(--space-s); } }

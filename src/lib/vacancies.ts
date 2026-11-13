@@ -2,12 +2,19 @@ import { publicSupabase } from './supabase';
 
 export const POSITIONS = ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] as const;
 
+/**
+ * Playing level a vacancy is for. The keys are what's stored in the database
+ * (vacancies.experience); only the labels are shown.
+ */
 export const EXPERIENCE: Record<string, string> = {
-  any: 'All abilities welcome',
-  beginner: 'Beginners welcome',
-  some: 'Some experience',
-  experienced: 'Experienced'
+  any: 'All abilities',
+  beginner: 'Entry level',
+  some: 'Intermediate',
+  experienced: 'Advanced'
 };
+
+/** Levels parents can filter by ("All abilities" vacancies match every level). */
+export const LEVELS = ['beginner', 'some', 'experienced'] as const;
 
 export const KINDS: Record<string, string> = {
   player: 'Player',
@@ -43,6 +50,8 @@ export interface VacancyFilters {
   day?: string;
   gender?: string;
   kind?: string;
+  /** One of LEVELS. */
+  level?: string;
 }
 
 /** "U9" → 9, for sorting. */
@@ -72,6 +81,7 @@ export function filterVacancies(list: PublicVacancy[], f: VacancyFilters): Publi
     if (f.day && v.match_day !== f.day) return false;
     if (f.gender && v.gender !== f.gender && v.gender !== 'Mixed') return false;
     if (f.kind && v.kind !== f.kind) return false;
+    if (f.level && v.experience !== f.level && v.experience !== 'any') return false;
     if (f.position && v.positions.length > 0 && !v.positions.includes(f.position)) return false;
     return true;
   });
