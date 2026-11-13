@@ -1,0 +1,66 @@
+---
+import PortalLayout from '../../components/portal/PortalLayout.astro';
+import { line } from '../../lib/forms';
+import { countNewEnquiries } from '../../lib/portal';
+import { normaliseWhatsApp } from '../../lib/vacancies';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+
+let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('welcome')
+  ? { ok: true, text: 'Welcome! Choose a password below so you can sign in next time.' }
+  : null;
+let fullName = session.fullName;
+let phone = session.phone ?? '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('intent') === 'password') {
+    const password = String(form.get('password') ?? '');
+    if (password.length < 8) {
+      notice = { ok: false, text: 'Please use at least 8 characters.' };
+    } else {
+      const { error } = await supabase.auth.updateUser({ password });
+      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Password updated.' };
+    }
+  } else {
+    fullName = line(form, 'full_name', 80) ?? '';
+    const rawPhone = line(form, 'phone', 30);
+    if (rawPhone && !normaliseWhatsApp(rawPhone)) {
+      phone = rawPhone;
+      notice = { ok: false, text: "That phone number doesn't look right." };
+    } else {
+      phone = rawPhone ?? '';
+      const { error } = await supabase.from('profiles').update({ full_name: fullName, phone: rawPhone }).eq('id', session.userId);
+      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Saved.' };
+    }
+  }
+}
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="My account" session={session} active="account" newEnquiries={newEnquiries}>
+  <div class="p-head"><h1>My account</h1></div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+  <div class="card">
+    <h2>Your details</h2>
+    <form method="post" class="f">
+      <input type="hidden" name="intent" value="profile" />
+      <div class="two">
+        <label>Name<input type="text" name="full_name" value={fullName} maxlength="80" /></label>
+        <label>Mobile (used to pre-fill new vacancies)<input type="tel" name="phone" value={phone} placeholder="07700 900123" /></label>
+      </div>
+      <p class="hint">Signed in as {session.email}</p>
+      <div><button class="btn" type="submit">Save</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Password</h2>
+    <form method="post" class="f">
+      <input type="hidden" name="intent" value="password" />
+      <label>New password<input type="password" name="password" minlength="8" autocomplete="new-password" required /></label>
+      <div><button class="btn outline" type="submit">Change password</button></div>
+    </form>
+  </div>
+</PortalLayout>

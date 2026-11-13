@@ -1,0 +1,226 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import TeamFields from '../../../components/portal/TeamFields.astro';
+import { canEditTeam } from '../../../lib/auth';
+import { UUID, checked, line } from '../../../lib/forms';
+import { countNewEnquiries, type TeamRow } from '../../../lib/portal';
+import {
+  parseAdminTeamFields,
+  parseManagerTeamFields,
+  saveTeamContact,
+  uploadTeamPhoto
+} from '../../../lib/portal-teams';
+import type { VacancyRow } from '../../../lib/portal-vacancies';
+import { positionsLabel } from '../../../lib/vacancies';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+const id = Astro.params.id ?? '';
+if (!UUID.test(id) || !canEditTeam(session, id)) return Astro.redirect('/portal/teams/');
+
+let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('created')
+  ? { ok: true, text: 'Team created. Now add its managers below; they can fill in the team page.' }
+  : Astro.url.searchParams.get('saved')
+    ? { ok: true, text: 'Saved. The team page is updated.' }
+    : null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? 'save');
+
+  if (intent === 'save') {
+    const managed = parseManagerTeamFields(form);
+    const admin = session.isAdmin ? parseAdminTeamFields(form) : { values: {} };
+    if (!managed.values) notice = { ok: false, text: managed.error ?? 'Please check the form.' };
+    else if (!admin.values) notice = { ok: false, text: (admin as { error?: string }).error ?? 'Please check the form.' };
+    else {
+      const photo = await uploadTeamPhoto(supabase, id, form.get('photo'));
+      if (photo.error) {
+        notice = { ok: false, text: photo.error };
+      } else {
+        const values: Record<string, unknown> = { ...managed.values, ...admin.values };
+        if (photo.url) values.photo_url = photo.url;
+        else if (checked(form, 'remove_photo')) values.photo_url = null;
+        const { error } = await supabase.from('teams').update(values).eq('id', id);
+        const contactResult = error ? null : await saveTeamContact(supabase, id, managed.contact);
+        if (error || contactResult?.error) {
+          notice = { ok: false, text: (error ?? contactResult?.error)!.message };
+        } else {
+          return Astro.redirect(`/portal/teams/${id}/?saved=1`);
+        }
+      }
+    }
+  } else if (session.isAdmin && intent === 'add-manager') {
+    const userId = String(form.get('user_id') ?? '');
+    const { data: person } = UUID.test(userId)
+      ? await supabase.from('profiles').select('full_name, email').eq('id', userId).maybeSingle()
+      : { data: null };
+    if (!person) {
+      notice = { ok: false, text: 'Choose someone to add.' };
+    } else {
+      const { error } = await supabase.from('team_managers').insert({
+        team_id: id,
+        user_id: userId,
+        display_name: person.full_name || person.email,
+        role_title: line(form, 'role_title', 40) ?? 'Manager',
+        receives_enquiries: checked(form, 'receives_enquiries')
+      });
+      notice = error
+        ? { ok: false, text: error.code === '23505' ? 'They already manage this team.' : error.message }
+        : { ok: true, text: `${person.full_name || person.email} added. They can now edit this team.` };
+    }
+  } else if (session.isAdmin && intent === 'remove-manager') {
+    await supabase.from('team_managers').delete().eq('id', String(form.get('manager_id') ?? '')).eq('team_id', id);
+    notice = { ok: true, text: 'Removed.' };
+  } else if (session.isAdmin && intent === 'delete') {
+    await supabase.from('teams').delete().eq('id', id);
+    return Astro.redirect('/portal/teams/');
+  }
+}
+
+const [{ data: teamData }, { data: contactData }, { data: managerData }, { data: vacancyData }] = await Promise.all([
+  supabase.from('teams').select('*').eq('id', id).maybeSingle(),
+  supabase.from('team_contacts').select('whatsapp_number, email').eq('team_id', id).maybeSingle(),
+  supabase
+    .from('team_managers')
+    .select('id, display_name, role_title, receives_enquiries, profiles(email)')
+    .eq('team_id', id)
+    .order('sort_order'),
+  supabase.from('vacancies').select('*').eq('team_id', id).order('created_at', { ascending: false })
+]);
+const team = teamData as TeamRow | null;
+if (!team) return Astro.redirect('/portal/teams/');
+const contact = contactData as { whatsapp_number: string | null; email: string | null } | null;
+const managers = (managerData ?? []) as unknown as {
+  id: string; display_name: string; role_title: string; receives_enquiries: boolean; profiles: { email: string } | null;
+}[];
+const vacancies = (vacancyData ?? []) as unknown as VacancyRow[];
+const today = new Date().toISOString().slice(0, 10);
+const isLive = (v: VacancyRow) => v.status === 'open' && v.published && (!v.expires_on || v.expires_on >= today);
+
+const people = session.isAdmin
+  ? ((await supabase.from('profiles').select('id, full_name, email').order('full_name')).data ?? [])
+  : [];
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title={team.name} session={session} active="teams" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>{team.name} <span class="pill grey">{team.age_group}</span> {!team.published && <span class="pill warn">Hidden</span>}</h1>
+      <p class="p-sub">{session.isAdmin ? 'Everything about this team.' : 'Keep your team page up to date. Changes show on the website straight away.'}</p>
+    </div>
+    <div class="actions" style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      {team.published && <a class="btn outline" href={`/teams/${team.slug}/`} target="_blank" rel="noopener">View team page ↗</a>}
+    </div>
+  </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  <div class="card">
+    <h2>Looking for players</h2>
+    {vacancies.length === 0 && <p class="empty">No vacancies yet. Add one when the team has a space and it appears on the team page and the vacancies page.</p>}
+    {vacancies.map((v) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{v.headline ?? positionsLabel(v)}</h3>
+          <p>{positionsLabel(v)}{v.kind === 'player' && v.spaces > 1 ? ` · ${v.spaces} places` : ''}{v.whatsapp_enabled ? ` · ${v.whatsapp_clicks} WhatsApp taps` : ''}</p>
+        </div>
+        <div class="actions">
+          {isLive(v) ? <span class="pill">Live</span> : <span class="pill grey">{v.status === 'filled' ? 'Filled' : 'Not live'}</span>}
+          <a class="btn outline sm" href={`/portal/vacancies/${v.id}/`}>Edit</a>
+        </div>
+      </div>
+    ))}
+    <div style="margin-top:0.8rem"><a class="btn" href={`/portal/vacancies/new/?team=${team.id}`}>+ Add a vacancy</a></div>
+  </div>
+
+  <div class="card">
+    <h2>Team page</h2>
+    <form method="post" class="f" enctype="multipart/form-data">
+      <input type="hidden" name="intent" value="save" />
+      <TeamFields team={team} admin={session.isAdmin} contact={contact} />
+      <div><button class="btn" type="submit">Save team</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Managers</h2>
+    <p class="p-sub" style="margin-bottom:0.6rem">Managers can edit this team's page, post its vacancies and read its enquiries.</p>
+    {managers.length === 0 && <p class="empty">No managers assigned yet.</p>}
+    {managers.map((m) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{m.display_name} <span class="pill grey">{m.role_title}</span></h3>
+          <p>{m.profiles?.email ?? 'No login'}{m.receives_enquiries ? ' · gets enquiries' : ''}</p>
+        </div>
+        {session.isAdmin && (
+          <form method="post">
+            <input type="hidden" name="intent" value="remove-manager" />
+            <input type="hidden" name="manager_id" value={m.id} />
+            <button class="btn danger sm" type="submit">Remove</button>
+          </form>
+        )}
+      </div>
+    ))}
+    {session.isAdmin && (
+      <form method="post" class="f" style="margin-top:1rem">
+        <input type="hidden" name="intent" value="add-manager" />
+        <div class="two">
+          <label>
+            Add a manager
+            <select name="user_id" required>
+              <option value="" disabled selected>Choose a person…</option>
+              {people.map((p) => <option value={p.id}>{p.full_name || p.email} ({p.email})</option>)}
+            </select>
+          </label>
+          <label>Role<input type="text" name="role_title" value="Manager" maxlength="40" /></label>
+        </div>
+        <label class="check"><input type="checkbox" name="receives_enquiries" checked />Send them this team's enquiries by email</label>
+        <p class="hint">Not in the list? <a href="/portal/people/">Invite them first</a>.</p>
+        <div><button class="btn outline" type="submit">Add to team</button></div>
+      </form>
+    )}
+  </div>
+
+  {session.isAdmin && (
+    <div class="card">
+      <h2>Delete team</h2>
+      <p class="p-sub">Removes the team, its page and its vacancies. Enquiries are kept. To hide it for a while instead, untick "Show this team on the website".</p>
+      <form method="post" onsubmit="return confirm('Delete this team, its page and its vacancies?')" style="margin-top:0.8rem">
+        <input type="hidden" name="intent" value="delete" />
+        <button class="btn danger" type="submit">Delete team</button>
+      </form>
+    </div>
+  )}
+</PortalLayout>
+
+<script>
+  /*
+   * Shrink big phone photos in the browser before upload (max 1600px, JPEG),
+   * so uploads are quick and stay under the server's request size limit.
+   */
+  document.querySelectorAll<HTMLInputElement>('input[type="file"][data-resize]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+        if (scale === 1 && file.size < 1.5 * 1024 * 1024) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+        if (!blob) return;
+        const resized = new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+        const dt = new DataTransfer();
+        dt.items.add(resized);
+        input.files = dt.files;
+      } catch {
+        // Leave the original file; the server still checks type and size.
+      }
+    });
+  });
+</script>

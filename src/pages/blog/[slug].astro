@@ -1,27 +1,15 @@
 ---
-import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPost } from '../../lib/content';
+import { readingMinutes } from '../../lib/markdown';
 import { createBlogPostingJsonLd, createBreadcrumbJsonLd } from '../../lib/seo';
 
-export async function getStaticPaths() {
-  const blogEntries = await getCollection('blog', ({ data }) => !data.draft);
-
-  return blogEntries.map((entry) => ({
-    params: { slug: entry.id },
-    props: { entry }
-  }));
-}
-
-interface Props {
-  entry: CollectionEntry<'blog'>;
-}
-
-const { entry } = Astro.props as Props;
-const { Content } = await render(entry);
+// Posts are edited in the portal (Blog), so they're looked up per request.
+const entry = await getPost(Astro.params.slug ?? '');
+if (!entry) return Astro.rewrite('/404/');
 
 // Estimated reading time
-const wordCount = entry.body.split(/\s+/).length;
-const readingTime = Math.max(1, Math.round(wordCount / 200));
+const readingTime = readingMinutes(entry.body);
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -88,7 +76,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
       />
 
       <div class="prose article-prose">
-        <Content />
+        <Fragment set:html={entry.html} />
       </div>
 
       <div class="article-footer">
@@ -126,7 +114,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     height: 100%;
     width: 0%;
     background: var(--color-lime);
-    box-shadow: 0 0 10px rgba(29, 185, 84, 0.6);
+    box-shadow: 0 0 10px rgba(63, 209, 127, 0.6);
     transition: width 0.08s linear;
   }
 
@@ -139,17 +127,17 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     gap: 0.5rem;
     margin-top: var(--space-m);
     font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.55);
+    color: rgba(241, 244, 242, 0.55);
   }
 
-  .meta-sep { color: rgba(245, 247, 246, 0.2); }
+  .meta-sep { color: rgba(241, 244, 242, 0.2); }
 
   .meta-read {
-    font-family: var(--font-display);
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
     color: var(--color-lime);
+    font-weight: 500;
   }
 
   .article-hero-tags {
@@ -183,7 +171,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     margin: var(--space-l) 0;
     padding: var(--space-m) var(--space-l);
     border-left: 3px solid var(--color-lime);
-    background: rgba(29, 185, 84, 0.05);
+    background: rgba(63, 209, 127, 0.05);
     border-radius: 0 var(--radius-s) var(--radius-s) 0;
   }
 
@@ -195,14 +183,14 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     font-family: var(--font-display);
     font-size: 5rem;
     line-height: 1;
-    color: rgba(29, 185, 84, 0.2);
+    color: rgba(63, 209, 127, 0.2);
     pointer-events: none;
   }
 
   .article-prose :global(blockquote p) {
     font-size: 1.08rem;
     font-style: italic;
-    color: rgba(245, 247, 246, 0.85);
+    color: rgba(241, 244, 242, 0.85);
     line-height: 1.65;
   }
 
@@ -242,7 +230,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
 
   .back-link {
     font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.4);
+    color: rgba(241, 244, 242, 0.4);
     font-weight: 600;
     transition: color var(--transition);
   }
@@ -257,27 +245,27 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    background: rgba(29, 185, 84, 0.08);
-    border: 1px solid rgba(29, 185, 84, 0.25);
+    background: rgba(63, 209, 127, 0.08);
+    border: 1px solid rgba(63, 209, 127, 0.25);
     border-radius: 999px;
     padding: 0.4rem 0.9rem;
-    font-family: var(--font-display);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: rgba(245, 247, 246, 0.6);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    color: rgba(241, 244, 242, 0.6);
     cursor: pointer;
     transition: background var(--transition), border-color var(--transition), color var(--transition);
+    font-weight: 500;
   }
 
   .copy-btn:hover {
-    background: rgba(29, 185, 84, 0.14);
-    border-color: rgba(29, 185, 84, 0.5);
+    background: rgba(63, 209, 127, 0.14);
+    border-color: rgba(63, 209, 127, 0.5);
     color: var(--color-lime);
   }
 
   .copy-btn.copied {
-    background: rgba(29, 185, 84, 0.18);
+    background: rgba(63, 209, 127, 0.18);
     border-color: var(--color-lime);
     color: var(--color-lime);
   }

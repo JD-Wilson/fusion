@@ -2,11 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
-import { requirePageEntry } from '../lib/pages';
+import { requireSitePage } from '../lib/content';
 
 export const prerender = true;
 
-const page = await requirePageEntry('join');
+const page = await requireSitePage('join');
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -63,6 +63,8 @@ const experienceLevels = [
   structuredData={[breadcrumbs]}
 >
   <PageHero
+    image={page.heroImage ?? '/images/web/session-group-young.jpg'}
+    imagePosition="50% 40%"
     eyebrow="Get Involved"
     title="Join Fusion FC"
     summary={page.data.description}
@@ -333,7 +335,7 @@ const experienceLevels = [
   .context-block {
     position: relative;
     padding-top: var(--space-m);
-    border-top: 1px solid rgba(29, 185, 84, 0.2);
+    border-top: 1px solid rgba(63, 209, 127, 0.2);
     display: grid;
     gap: 0.4rem;
     align-content: start;
@@ -346,7 +348,7 @@ const experienceLevels = [
     font-family: var(--font-display);
     font-size: 0.65rem;
     letter-spacing: 0.1em;
-    color: rgba(29, 185, 84, 0.35);
+    color: rgba(63, 209, 127, 0.35);
   }
 
   .context-title {
@@ -357,7 +359,7 @@ const experienceLevels = [
 
   .context-body {
     font-size: 0.86rem;
-    color: rgba(245, 247, 246, 0.5);
+    color: rgba(241, 244, 242, 0.5);
     line-height: 1.6;
   }
 
@@ -379,8 +381,8 @@ const experienceLevels = [
   }
 
   .fieldset-legend {
-    font-family: var(--font-display);
-    font-size: 0.7rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--color-lime);
@@ -388,7 +390,8 @@ const experienceLevels = [
     padding: 0;
     width: 100%;
     padding-bottom: 0.6rem;
-    border-bottom: 1px solid rgba(29, 185, 84, 0.2);
+    border-bottom: 1px solid rgba(63, 209, 127, 0.2);
+    font-weight: 600;
   }
 
   /* ─── Fields ────────────────────────────────────────── */
@@ -416,11 +419,11 @@ const experienceLevels = [
   }
 
   .field-label {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(245, 247, 246, 0.6);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    color: rgba(241, 244, 242, 0.6);
+    font-weight: 500;
   }
 
   .required {
@@ -441,23 +444,24 @@ const experienceLevels = [
   }
 
   .field-input::placeholder {
-    color: rgba(245, 247, 246, 0.2);
+    color: rgba(241, 244, 242, 0.2);
   }
 
   .field-input:focus {
     outline: none;
-    border-color: rgba(29, 185, 84, 0.5);
-    background: rgba(29, 185, 84, 0.04);
+    border-color: rgba(63, 209, 127, 0.5);
+    background: rgba(63, 209, 127, 0.04);
   }
 
-  .field-input:invalid:not(:placeholder-shown) {
-    border-color: rgba(255, 80, 80, 0.5);
+  input.field-input:invalid:not(:placeholder-shown),
+  textarea.field-input:invalid:not(:placeholder-shown) {
+    border-color: rgba(240, 90, 90, 0.5);
   }
 
   .field-select {
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231db954' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233fd17f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.9rem center;
     padding-right: 2.5rem;
@@ -465,7 +469,7 @@ const experienceLevels = [
   }
 
   .field-select option {
-    background: #181c1c;
+    background: var(--color-band-deep);
     color: var(--color-paper);
   }
 
@@ -488,7 +492,7 @@ const experienceLevels = [
 
   .form-note {
     font-size: 0.78rem;
-    color: rgba(245, 247, 246, 0.3);
+    color: rgba(241, 244, 242, 0.3);
   }
 
   .submit-btn {
@@ -497,11 +501,10 @@ const experienceLevels = [
     gap: 0.6rem;
     background: var(--color-lime);
     color: var(--color-ink);
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     padding: 0.85rem 2rem;
     border: none;
     border-radius: 999px;
@@ -525,7 +528,7 @@ const experienceLevels = [
     display: none;
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(16, 20, 20, 0.3);
+    border: 2px solid rgba(9, 11, 10, 0.3);
     border-top-color: var(--color-ink);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
@@ -571,9 +574,9 @@ const experienceLevels = [
   }
 
   .status-success {
-    background: rgba(29, 185, 84, 0.1);
-    border: 1px solid rgba(29, 185, 84, 0.3);
-    color: rgba(245, 247, 246, 0.85);
+    background: rgba(63, 209, 127, 0.1);
+    border: 1px solid rgba(63, 209, 127, 0.3);
+    color: rgba(241, 244, 242, 0.85);
   }
 
   .status-success strong {
@@ -583,13 +586,13 @@ const experienceLevels = [
   }
 
   .status-error {
-    background: rgba(255, 80, 80, 0.08);
-    border: 1px solid rgba(255, 80, 80, 0.25);
-    color: rgba(245, 247, 246, 0.75);
+    background: rgba(240, 90, 90, 0.08);
+    border: 1px solid rgba(240, 90, 90, 0.25);
+    color: rgba(241, 244, 242, 0.75);
   }
 
   .status-error strong {
-    color: #ff8080;
+    color: #f5a3a3;
     display: block;
     margin-bottom: 0.2rem;
   }
@@ -623,12 +626,13 @@ const experienceLevels = [
   }
 
   .callout-eyebrow {
-    font-family: var(--font-display);
-    font-size: 0.68rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     color: var(--color-forest);
     margin-bottom: 0.25rem;
+    font-weight: 600;
   }
 
   .callout-text {

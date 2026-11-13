@@ -1,0 +1,68 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { countNewEnquiries, ukDate } from '../../../lib/portal';
+import { CORE_PAGE_NAMES, listEditablePages, publicPath } from '../../../lib/portal-pages';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+const { pages, tableReady } = await listEditablePages(supabase);
+const core = pages.filter((p) => p.core);
+const club = pages.filter((p) => !p.core);
+const newEnquiries = await countNewEnquiries(supabase);
+const saved = Astro.url.searchParams.get('saved');
+---
+
+<PortalLayout title="Pages" session={session} active="pages" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Pages</h1>
+      <p class="p-sub">Edit the words and photos on the website. Changes go live within a couple of minutes.</p>
+    </div>
+    {tableReady && <a class="btn" href="/portal/pages/new/">+ New page</a>}
+  </div>
+  {saved && <div class="msg ok" role="status">{saved === 'deleted' ? 'Page deleted.' : saved === 'restored' ? 'Restored to the original wording.' : 'Saved.'}</div>}
+  {!tableReady && (
+    <div class="msg bad">Page editing needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>
+  )}
+
+  <div class="card">
+    <h2>Club information and policies</h2>
+    <p class="p-sub" style="margin-bottom:0.4rem">Values, guides, codes of conduct and policies. Shown under the Club menu and in the footer.</p>
+    {club.length === 0 && <p class="empty">No pages yet.</p>}
+    {club.map((p) => (
+      <div class="row">
+        <div class="grow">
+          <h3>
+            {p.title} {!p.published && <span class="pill warn">Hidden</span>}
+            {p.attachment_url && <span class="pill grey">PDF</span>}
+          </h3>
+          <p>{publicPath(p.slug)}{p.updated_at ? ` · edited ${ukDate(p.updated_at)}` : ''}{p.show_in_nav ? ' · in menus' : ''}</p>
+        </div>
+        <div class="actions">
+          {p.published && <a class="btn outline sm" href={publicPath(p.slug)} target="_blank" rel="noopener">View ↗</a>}
+          {tableReady && <a class="btn outline sm" href={`/portal/pages/${p.slug}/`}>Edit</a>}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="card">
+    <h2>Main pages</h2>
+    <p class="p-sub" style="margin-bottom:0.4rem">Each page's title, introduction, main text and top photo. Some sections (like the forms and session cards) are part of the page design and changed in code.</p>
+    {core.map((p) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{CORE_PAGE_NAMES[p.slug] ?? p.title}</h3>
+          <p>{publicPath(p.slug)}{p.updated_at ? ` · edited ${ukDate(p.updated_at)}` : ''}</p>
+        </div>
+        <div class="actions">
+          <a class="btn outline sm" href={publicPath(p.slug)} target="_blank" rel="noopener">View ↗</a>
+          {tableReady && <a class="btn outline sm" href={`/portal/pages/${p.slug}/`}>Edit</a>}
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>

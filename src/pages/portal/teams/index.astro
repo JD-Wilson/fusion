@@ -1,0 +1,36 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+const teams = await loadTeams(supabase, session.isAdmin ? undefined : session.teamIds);
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="Teams" session={session} active="teams" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Teams</h1>
+      <p class="p-sub">{session.isAdmin ? 'Create teams and choose who manages them.' : 'Update training details for your teams.'}</p>
+    </div>
+    {session.isAdmin && <a class="btn" href="/portal/teams/new/">+ New team</a>}
+  </div>
+  <div class="card">
+    {teams.length === 0 && <p class="empty">No teams yet.</p>}
+    {teams.map((t) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{t.name} <span class="pill grey">{t.age_group}</span> {!t.published && <span class="pill warn">Hidden</span>}</h3>
+          <p>{[t.gender === 'Mixed' ? null : t.gender, t.match_day, t.league, t.training].filter(Boolean).join(' · ')}</p>
+        </div>
+        <div class="actions">
+          <a class="btn outline sm" href={`/portal/vacancies/new/?team=${t.id}`}>Add vacancy</a>
+          {t.published && <a class="btn outline sm" href={`/teams/${t.slug}/`} target="_blank" rel="noopener">View page ↗</a>}
+          <a class="btn outline sm" href={`/portal/teams/${t.id}/`}>Edit</a>
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>

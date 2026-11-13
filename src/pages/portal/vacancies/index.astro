@@ -1,0 +1,91 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { UUID } from '../../../lib/forms';
+import { countNewEnquiries } from '../../../lib/portal';
+import type { VacancyRow } from '../../../lib/portal-vacancies';
+import { positionsLabel } from '../../../lib/vacancies';
+
+export const prerender = false;
+
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+
+// Row actions. RLS stops anyone touching a vacancy for a team they don't manage.
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const id = String(form.get('id') ?? '');
+  const action = String(form.get('action') ?? '');
+  if (UUID.test(id)) {
+    if (action === 'fill') await supabase.from('vacancies').update({ status: 'filled' }).eq('id', id);
+    if (action === 'reopen') await supabase.from('vacancies').update({ status: 'open' }).eq('id', id);
+    if (action === 'delete') await supabase.from('vacancies').delete().eq('id', id);
+  }
+  return Astro.redirect('/portal/vacancies/');
+}
+
+const { data } = await supabase
+  .from('vacancies')
+  .select('*, teams(name, age_group)')
+  .order('created_at', { ascending: false });
+const vacancies = (data ?? []) as unknown as VacancyRow[];
+const today = new Date().toISOString().slice(0, 10);
+const isLive = (v: VacancyRow) => v.status === 'open' && v.published && (!v.expires_on || v.expires_on >= today);
+
+const origin = Astro.url.origin;
+const shareLink = (v: VacancyRow) =>
+  `https://wa.me/?text=${encodeURIComponent(`${v.teams?.name} (${v.teams?.age_group}) have a space for a new player. Take a look: ${origin}/vacancies/#v-${v.id}`)}`;
+
+const newEnquiries = await countNewEnquiries(supabase);
+const saved = Astro.url.searchParams.get('saved');
+---
+
+<PortalLayout title="Vacancies" session={session} active="vacancies" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Vacancies</h1>
+      <p class="p-sub">{session.isAdmin ? 'Every team’s vacancies.' : 'Vacancies for your teams.'} Parents see the live ones on the public page.</p>
+    </div>
+    <a class="btn" href="/portal/vacancies/new/">+ New vacancy</a>
+  </div>
+  {saved && <div class="msg ok" role="status">Saved.</div>}
+
+  <div class="card">
+    {vacancies.length === 0 && <p class="empty">No vacancies yet. Add one when your team has a space and share it in your parents' group chat.</p>}
+    {vacancies.map((v) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{v.teams?.name} <span class="pill grey">{v.teams?.age_group}</span></h3>
+          <p>
+            {v.kind === 'coach' ? 'Coach / helper' : positionsLabel(v)}
+            {v.kind === 'player' && v.spaces > 1 ? ` · ${v.spaces} places` : ''}
+            {v.expires_on ? ` · until ${v.expires_on}` : ''}
+            {v.whatsapp_enabled ? ` · ${v.whatsapp_clicks} WhatsApp taps` : ''}
+          </p>
+        </div>
+        <div class="actions">
+          {isLive(v) ? (
+            <span class="pill">Live</span>
+          ) : v.status === 'filled' ? (
+            <span class="pill grey">Filled</span>
+          ) : (
+            <span class="pill warn">{v.published ? 'Expired' : 'Hidden'}</span>
+          )}
+          {isLive(v) && <a class="btn outline sm" href={shareLink(v)} target="_blank" rel="noopener">Share on WhatsApp</a>}
+          <a class="btn outline sm" href={`/portal/vacancies/${v.id}/`}>Edit</a>
+          <form method="post">
+            <input type="hidden" name="id" value={v.id} />
+            {v.status === 'open' ? (
+              <button class="btn outline sm" name="action" value="fill" type="submit">Mark filled</button>
+            ) : (
+              <button class="btn outline sm" name="action" value="reopen" type="submit">Reopen</button>
+            )}
+          </form>
+          <form method="post" onsubmit="return confirm('Delete this vacancy?')">
+            <input type="hidden" name="id" value={v.id} />
+            <button class="btn danger sm" name="action" value="delete" type="submit">Delete</button>
+          </form>
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>

@@ -1,0 +1,54 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { countNewEnquiries } from '../../../lib/portal';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+const { data, error } = await supabase
+  .from('posts')
+  .select('id, slug, title, date, draft, cover_image, updated_at')
+  .order('date', { ascending: false });
+const posts = (data ?? []) as { id: string; slug: string; title: string; date: string; draft: boolean; cover_image: string | null }[];
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+const status = (p: (typeof posts)[number]) => (p.draft ? 'Draft' : p.date > today ? 'Scheduled' : 'Live');
+const ukDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const newEnquiries = await countNewEnquiries(supabase);
+const saved = Astro.url.searchParams.get('saved');
+---
+
+<PortalLayout title="Blog" session={session} active="blog" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Blog</h1>
+      <p class="p-sub">Club news and announcements. Posts appear on the blog page on their date.</p>
+    </div>
+    {!error && <a class="btn" href="/portal/blog/new/">+ New post</a>}
+  </div>
+  {saved && <div class="msg ok" role="status">{saved === 'deleted' ? 'Post deleted.' : 'Saved.'}</div>}
+  {error && <div class="msg bad">The blog needs migration <code>004_site_content.sql</code> and <code>seed-content.sql</code> to be run in Supabase (see the README).</div>}
+
+  <div class="card">
+    {!error && posts.length === 0 && <p class="empty">No posts yet. Run <code>seed-content.sql</code> to bring in the existing posts, or write a new one.</p>}
+    {posts.map((p) => (
+      <div class="row">
+        {p.cover_image && <img class="thumb" src={p.cover_image} alt="" />}
+        <div class="grow">
+          <h3>{p.title}</h3>
+          <p>{ukDay(p.date)}</p>
+        </div>
+        <div class="actions">
+          <span class:list={['pill', status(p) === 'Live' ? '' : status(p) === 'Draft' ? 'grey' : 'warn']}>{status(p)}</span>
+          {status(p) === 'Live' && <a class="btn outline sm" href={`/blog/${p.slug}/`} target="_blank" rel="noopener">View ↗</a>}
+          <a class="btn outline sm" href={`/portal/blog/${p.id}/`}>Edit</a>
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>
+
+<style>
+  .thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); }
+</style>

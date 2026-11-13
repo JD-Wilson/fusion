@@ -1,0 +1,463 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../../lib/seo';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import {
+  EXPERIENCE,
+  POSITIONS,
+  ageNumber,
+  filterVacancies,
+  getPublicVacancies,
+  positionsLabel
+} from '../../lib/vacancies';
+
+// Rendered per request so a new vacancy shows the moment a manager posts it.
+export const prerender = false;
+
+const url = Astro.url;
+const filters = {
+  age: url.searchParams.get('age') ?? '',
+  position: url.searchParams.get('position') ?? '',
+  day: url.searchParams.get('day') ?? '',
+  gender: url.searchParams.get('gender') ?? '',
+  kind: url.searchParams.get('kind') ?? ''
+};
+const sent = url.searchParams.get('sent');
+const error = url.searchParams.get('error');
+
+const all = await getPublicVacancies();
+const vacancies = all ? filterVacancies(all, filters) : [];
+const ageGroups = all
+  ? [...new Set(all.map((v) => v.age_group))].sort((a, b) => ageNumber(a) - ageNumber(b))
+  : [];
+const hasFilters = Object.values(filters).some(Boolean);
+
+const errors: Record<string, string> = {
+  invalid: 'Please add your name, a valid email and a short message.',
+  fast: 'That was quick! Please check your message and press send again.',
+  limit: "Thanks, we've already got your messages. Please give us a little time to reply.",
+  closed: "Sorry, that vacancy has just been filled. Have a look at the others below.",
+  failed: "Sorry, something went wrong sending your message. Please try again."
+};
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Vacancies', path: '/vacancies/' }
+]);
+
+const origin = Astro.url.origin;
+const shortName = (n: string) => (n.length <= 18 ? n : n.split(' ')[0]);
+const initial = (n: string) => (n.replace(/^(coach|manager|mr|mrs|ms|miss)\s+/i, '').trim()[0] ?? n[0] ?? '?').toUpperCase();
+const shareLink = (id: string, team: string, age: string) =>
+  `https://wa.me/?text=${encodeURIComponent(`Fusion FC ${team} (${age}) have a space for a new player. Take a look: ${origin}/vacancies/#v-${id}`)}`;
+const ageCounts = all
+  ? ageGroups.map((a) => [a, all.filter((v) => v.age_group === a).length] as const)
+  : [];
+
+const expiry = (d: string) =>
+  new Date(`${d}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+---
+
+<BaseLayout
+  title="Team Vacancies | Fusion FC"
+  description="See which Fusion FC teams are looking for new players, by age group and position, and message the manager directly on WhatsApp or email."
+  canonical="/vacancies/"
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    image="/images/web/girls-session.jpg"
+    imagePosition="50% 55%"
+    eyebrow="Join the Fusion family"
+    title="Find your team"
+    summary="Where players grow. Where people belong. These Fusion teams have a space right now: pick your age group and message the coach direct."
+    actions={[
+      { href: '#teams', label: 'See open spaces' },
+      { href: '/join/', label: 'Not sure? Ask the club', ghost: true }
+    ]}
+  />
+
+  {
+    !isSupabaseConfigured && (
+      <section class="section-card reveal">
+        <h2 class="section-title">Vacancies are coming soon</h2>
+        <p class="section-copy">
+          We're getting this page ready. In the meantime, <a class="inline-link" href="/join/">tell us about your player</a> and we'll
+          find the right team.
+        </p>
+      </section>
+    )
+  }
+
+  {
+    isSupabaseConfigured && all === null && (
+      <section class="section-card reveal">
+        <h2 class="section-title">We couldn't load vacancies</h2>
+        <p class="section-copy">
+          Please try again in a moment, or <a class="inline-link" href="/contact/">get in touch</a>.
+        </p>
+      </section>
+    )
+  }
+
+  {
+    all !== null && (
+      <>
+        <section class="steps reveal" aria-label="How it works">
+          <div class="step"><span class="step-n">1</span><div><h3>Pick an age group</h3><p>Find a team near your child's age and position.</p></div></div>
+          <div class="step"><span class="step-n">2</span><div><h3>Say hello to the coach</h3><p>Message them on WhatsApp or by email. A real person replies.</p></div></div>
+          <div class="step"><span class="step-n">3</span><div><h3>Come and meet the team</h3><p>Get to know the coaches, the players and other parents.</p></div></div>
+        </section>
+
+        <section class="section-card filter-card reveal" aria-label="Filter vacancies" id="teams">
+          {ageCounts.length > 1 && (
+            <nav class="age-chips" aria-label="Jump to an age group">
+              <a class:list={['age-chip', !filters.age && 'on']} href="/vacancies/#teams">All ages <small>{all.length}</small></a>
+              {ageCounts.map(([a, n]) => (
+                <a class:list={['age-chip', filters.age === a && 'on']} href={`/vacancies/?age=${a}#teams`}>{a} <small>{n}</small></a>
+              ))}
+            </nav>
+          )}
+          <form method="get" action="/vacancies/" class="filters">
+            <label class="f">
+              <span>Age group</span>
+              <select name="age">
+                <option value="">Any age</option>
+                {ageGroups.map((a) => (
+                  <option value={a} selected={filters.age === a}>{a}</option>
+                ))}
+              </select>
+            </label>
+            <label class="f">
+              <span>Position</span>
+              <select name="position">
+                <option value="">Any position</option>
+                {POSITIONS.map((p) => (
+                  <option value={p} selected={filters.position === p}>{p}</option>
+                ))}
+              </select>
+            </label>
+            <label class="f">
+              <span>Match day</span>
+              <select name="day">
+                <option value="">Any day</option>
+                <option value="Saturday" selected={filters.day === 'Saturday'}>Saturday</option>
+                <option value="Sunday" selected={filters.day === 'Sunday'}>Sunday</option>
+              </select>
+            </label>
+            <label class="f">
+              <span>Boys / girls</span>
+              <select name="gender">
+                <option value="">Any</option>
+                <option value="Girls" selected={filters.gender === 'Girls'}>Girls</option>
+                <option value="Boys" selected={filters.gender === 'Boys'}>Boys</option>
+              </select>
+            </label>
+            <label class="f">
+              <span>Looking for</span>
+              <select name="kind">
+                <option value="">Players &amp; coaches</option>
+                <option value="player" selected={filters.kind === 'player'}>Players</option>
+                <option value="coach" selected={filters.kind === 'coach'}>Coaches / helpers</option>
+              </select>
+            </label>
+            <div class="f-actions">
+              <button class="button" type="submit">Show vacancies</button>
+              {hasFilters && <a class="clear" href="/vacancies/">Clear filters</a>}
+            </div>
+          </form>
+        </section>
+
+        {sent && (
+          <div class="notice ok" role="status">
+            <strong>Message sent!</strong> The manager will reply by email soon.
+          </div>
+        )}
+        {error && (
+          <div class="notice bad" role="alert">{errors[error] ?? errors.failed}</div>
+        )}
+
+        <section class="dark-band reveal" data-delay="1">
+          <div class="band-head">
+            <div>
+              <p class="band-eyebrow">{vacancies.length} open {vacancies.length === 1 ? 'vacancy' : 'vacancies'}</p>
+              <h2 class="band-title">{hasFilters ? 'Matching vacancies' : 'Teams with a space for you'}</h2>
+            </div>
+          </div>
+
+          {
+            vacancies.length === 0 ? (
+              <div class="empty">
+                <p class="empty-title">
+                  {hasFilters ? 'Nothing matches those filters just yet.' : 'Every team is full right now.'}
+                </p>
+                <p>
+                  Spaces come up all season. Tell us about your player and we'll find them the right team and let you know the moment one opens.
+                </p>
+                <p><a class="button" href="/join/">Tell us about your player</a>{hasFilters && <a class="empty-clear" href="/vacancies/">Clear filters</a>}</p>
+              </div>
+            ) : (
+              <div class="vac-grid">
+                {vacancies.map((v) => (
+                  <article class="dark-card vac" id={`v-${v.id}`}>
+                    <div class="vac-top">
+                      <span class="vac-age">{v.age_group}</span>
+                      <div>
+                        <h3 class="vac-team"><a href={`/teams/${v.team_slug}/`}>{v.team_name}</a></h3>
+                        <p class="vac-sub">
+                          {[v.gender === 'Mixed' ? null : v.gender, v.match_day ? `${v.match_day} games` : null, v.league]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p class="vac-headline">
+                      {v.headline ??
+                        (v.kind === 'coach'
+                          ? 'Coach or helper wanted'
+                          : v.spaces > 1
+                            ? `${v.spaces} places available`
+                            : 'A place is available')}
+                    </p>
+
+                    <div class="chip-list">
+                      <span class="chip">{positionsLabel(v)}</span>
+                      {v.kind === 'player' && v.spaces > 1 && <span class="chip">{v.spaces} spaces</span>}
+                      <span class="chip">{EXPERIENCE[v.experience] ?? EXPERIENCE.any}</span>
+                    </div>
+
+                    {v.description && <p class="vac-desc">{v.description}</p>}
+
+                    <dl class="vac-facts">
+                      {v.training && (
+                        <div><dt>Training</dt><dd>{v.training}</dd></div>
+                      )}
+                      {v.expires_on && (
+                        <div><dt>Open until</dt><dd>{expiry(v.expires_on)}</dd></div>
+                      )}
+                    </dl>
+
+                    <div class="coach">
+                      <span class="coach-av" aria-hidden="true">{initial(v.contact_name)}</span>
+                      <div>
+                        <strong>{v.contact_name}</strong>
+                        <small>{v.kind === 'coach' ? 'Would love to hear from you' : 'Your first point of contact'}</small>
+                      </div>
+                    </div>
+
+                    <div class="vac-actions">
+                      {v.whatsapp_enabled && (
+                        <a
+                          class="wa-btn"
+                          href={`/vacancies/${v.id}/whatsapp/`}
+                          target="_blank"
+                          rel="nofollow noopener"
+                        >
+                          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.27-1.38A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.2 8.2 0 1 1 7 3.87Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.09-.39-.13-.56.12-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06a6.7 6.7 0 0 1-3.3-2.88c-.25-.44.25-.41.72-1.34.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47c-.16 0-.43.06-.65.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.16 1.73 2.64 4.19 3.7 1.56.67 2.17.73 2.95.61.47-.07 1.46-.6 1.66-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+                          WhatsApp {shortName(v.contact_name)}
+                        </a>
+                      )}
+                      {v.email_enabled && (
+                        <details class="enq">
+                          <summary class="button ghost">{v.whatsapp_enabled ? 'Or send a message' : `Message ${shortName(v.contact_name)}`}</summary>
+                          <form method="post" action="/api/enquiry/" class="enq-form">
+                            <input type="hidden" name="vacancy_id" value={v.id} />
+                            <input type="hidden" name="anchor" value={`v-${v.id}`} />
+                            <input type="hidden" name="started" value="" data-started />
+                            <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true" />
+                            <label>Your name<input name="name" required autocomplete="name" /></label>
+                            <label>Email<input name="email" type="email" required autocomplete="email" /></label>
+                            <label>Phone (optional)<input name="phone" type="tel" autocomplete="tel" /></label>
+                            <div class="two">
+                              <label>Player's name<input name="player_name" /></label>
+                              <label>Player's age<input name="player_age" inputmode="numeric" /></label>
+                            </div>
+                            <label>
+                              Message
+                              <textarea name="message" rows="3" required minlength="5">{`Hi, I'm interested in the ${v.age_group} vacancy. `}</textarea>
+                            </label>
+                            <p class="privacy">
+                              We only use your details to put you in touch with the team.
+                            </p>
+                            <button class="button" type="submit">Send</button>
+                          </form>
+                        </details>
+                      )}
+                    </div>
+                    <a class="share" href={shareLink(v.id, v.team_name, v.age_group)} target="_blank" rel="noopener">Know a family who'd love this? Share on WhatsApp</a>
+                  </article>
+                ))}
+              </div>
+            )
+          }
+        </section>
+
+        <section class="community reveal" data-delay="2" aria-labelledby="comm-h">
+          <div class="community-copy">
+            <p class="band-eyebrow">More than a team</p>
+            <h2 id="comm-h" class="community-title">Football for the whole family</h2>
+            <p>
+              Fusion is a community club. Parents, coaches and players look out for each other, on the touchline and off it.
+              New to grassroots football? Here's what to expect.
+            </p>
+          </div>
+          <ul class="community-links">
+            <li><a href="/club/parents-guide/"><strong>Parent guide</strong><span>What to expect on matchdays</span></a></li>
+            <li><a href="/club/club-values/"><strong>Our values</strong><span>How we play and how we behave</span></a></li>
+            <li><a href="/her-game-too/"><strong>Her Game Too</strong><span>Girls' football at Fusion</span></a></li>
+            <li><a href="/join/"><strong>Can't see your age group?</strong><span>Tell us about your player</span></a></li>
+          </ul>
+        </section>
+      </>
+    )
+  }
+</BaseLayout>
+
+<script>
+  // Spam check: real people take a few seconds to fill the form.
+  const stamp = String(Date.now());
+  document.querySelectorAll<HTMLInputElement>('[data-started]').forEach((el) => (el.value = stamp));
+</script>
+
+<style>
+  .steps { margin-top: var(--space-l); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-m); }
+  .step { display: flex; gap: var(--space-s); align-items: flex-start; }
+  .step-n {
+    flex: none; width: 2.4rem; height: 2.4rem; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); font-family: var(--font-display); font-weight: 700;
+  }
+  .step h3 { font-size: 1.05rem; }
+  .step p { color: var(--color-muted); font-size: 0.92rem; margin-top: 0.15rem; }
+
+  .age-chips { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: var(--space-s); margin-bottom: var(--space-s); border-bottom: 1px solid var(--color-border); scrollbar-width: thin; }
+  .age-chip {
+    flex: none; display: inline-flex; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0.35rem 0.95rem;
+    border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2);
+    font-weight: 500; font-size: 0.9rem; transition: background var(--transition), border-color var(--transition);
+  }
+  .age-chip small { background: var(--color-surface); border-radius: 999px; padding: 0 0.45rem; font-size: 0.72rem; color: var(--color-muted); }
+  .age-chip:hover { border-color: var(--line-strong); color: var(--text); }
+  .age-chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .age-chip.on small { background: rgba(0, 0, 0, 0.15); color: var(--on-accent); }
+
+  .coach { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; border-radius: var(--radius-s); background: rgba(255, 255, 255, 0.05); }
+  .coach-av {
+    flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center;
+    background: var(--color-lime); color: var(--color-ink); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+  }
+  .coach strong { display: block; color: var(--color-paper); font-family: var(--font-display); line-height: 1.2; }
+  .coach small { color: rgba(241, 244, 242, 0.55); font-size: 0.78rem; }
+  .share { font-size: 0.8rem; color: rgba(241, 244, 242, 0.55); text-decoration: underline; text-underline-offset: 3px; }
+  .share:hover { color: var(--color-lime); }
+
+  .empty-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--color-paper); }
+  .empty .button { color: var(--color-ink); text-decoration: none; }
+  .empty-clear { margin-left: var(--space-s); }
+
+  .community {
+    margin-top: var(--space-xl); display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-l); align-items: center;
+    padding: clamp(1.4rem, 3vw, 2.4rem); border-radius: var(--radius-l); color: var(--color-paper); position: relative; overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+  .community .band-eyebrow { color: var(--color-lime); }
+  .community-title { font-size: clamp(1.6rem, 3vw, 2.3rem); color: var(--text); margin-bottom: var(--space-xs); }
+  .community-copy p:last-child { color: var(--text-2); max-width: 52ch; }
+  .community-links { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-xs); position: relative; z-index: 1; }
+  .community-links a {
+    display: grid; gap: 0.1rem; padding: 0.75rem 1rem; border-radius: var(--radius-s); background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14); transition: background var(--transition), transform var(--transition);
+  }
+  .community-links a:hover { background: rgba(255, 255, 255, 0.14); transform: translateX(4px); }
+  .community-links strong { font-family: var(--font-display); }
+  .community-links span { font-size: 0.85rem; color: rgba(255, 255, 255, 0.75); }
+
+  .filter-card { margin-top: var(--space-m); }
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--space-s);
+    align-items: end;
+  }
+  .f { display: grid; gap: 0.3rem; }
+  .f span {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    color: var(--color-muted);
+    font-weight: 500;
+  }
+  .f select {
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: var(--surface-2);
+    color: var(--text);
+    min-height: 46px;
+  }
+  .f select:focus { outline: none; border-color: var(--accent-line); }
+  .f-actions { grid-column: 1 / -1; display: flex; gap: var(--space-s); align-items: center; flex-wrap: wrap; }
+  .f-actions .button { border: 0; cursor: pointer; }
+  .clear { font-weight: 600; color: var(--color-forest-deep); text-decoration: underline; }
+
+  .notice { margin-top: var(--space-m); padding: 0.9rem 1.1rem; border-radius: var(--radius-s); font-size: 0.95rem; }
+  .notice.ok { background: var(--accent-soft); border: 1px solid var(--accent-line); }
+  .notice.bad { background: rgba(240, 90, 90, 0.1); border: 1px solid rgba(240, 90, 90, 0.35); color: #f5a3a3; }
+  .inline-link { color: var(--color-forest-deep); text-decoration: underline; font-weight: 600; }
+
+  .vac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--space-m); position: relative; }
+  .vac { display: flex; flex-direction: column; gap: var(--space-s); }
+  .vac-top { display: flex; gap: var(--space-s); align-items: center; }
+  .vac-age {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--color-lime);
+    min-width: 3.2rem;
+    text-align: center;
+    border: 1px solid rgba(63, 209, 127, 0.35);
+    border-radius: var(--radius-s);
+    padding: 0.35rem 0.4rem;
+  }
+  .vac-team { font-size: 1.15rem; color: var(--color-paper); }
+  .vac-sub { font-size: 0.82rem; color: rgba(241, 244, 242, 0.55); line-height: 1.4; }
+  .vac-headline { font-family: var(--font-display); font-size: 1.05rem; color: var(--color-paper); }
+  .vac-desc { color: rgba(241, 244, 242, 0.72); font-size: 0.92rem; }
+  .vac-facts { margin: 0; display: grid; gap: 0.35rem; font-size: 0.88rem; }
+  .vac-facts div { display: flex; gap: 0.6rem; }
+  .vac-facts dt { min-width: 5.2rem; color: rgba(241, 244, 242, 0.45); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.08em; padding-top: 0.15rem; }
+  .vac-facts dd { margin: 0; color: rgba(241, 244, 242, 0.85); }
+  .vac-actions { margin-top: auto; display: grid; gap: var(--space-xs); padding-top: var(--space-xs); }
+  .wa-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    background: #25d366; color: #052e16; font-weight: 700; border-radius: 999px;
+    padding: 0.8rem 1.2rem; min-height: 44px; transition: filter var(--transition), transform var(--transition);
+  }
+  .wa-btn:hover { filter: brightness(1.08); transform: translateY(-2px); }
+  .enq summary { list-style: none; cursor: pointer; width: 100%; }
+  .enq summary::-webkit-details-marker { display: none; }
+  .enq[open] summary { margin-bottom: var(--space-s); }
+  .enq-form { display: grid; gap: var(--space-xs); }
+  .enq-form label { display: grid; gap: 0.25rem; font-size: 0.8rem; color: rgba(241, 244, 242, 0.7); }
+  .enq-form input, .enq-form textarea {
+    font: inherit; font-size: 16px; padding: 0.6rem 0.7rem; border-radius: var(--radius-s);
+    border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06); color: var(--color-paper);
+  }
+  .enq-form .two { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-xs); }
+  .enq-form .button { border: 0; cursor: pointer; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .privacy { font-size: 0.74rem; color: rgba(241, 244, 242, 0.45); line-height: 1.4; }
+  .empty { position: relative; color: rgba(241, 244, 242, 0.75); display: grid; gap: var(--space-xs); }
+  .empty a { color: var(--color-lime); text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .filters .f:nth-child(5) { grid-column: 1 / -1; }
+    .community { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; gap: var(--space-s); } }
+  @media (max-width: 720px) { .dark-band { padding: var(--space-m); } }
+</style>

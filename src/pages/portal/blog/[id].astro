@@ -1,0 +1,206 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import MarkdownField from '../../../components/portal/MarkdownField.astro';
+import Preview from '../../../components/portal/Preview.astro';
+import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
+import { clearContentCache } from '../../../lib/content';
+import { UUID, checked, line, slugify, text } from '../../../lib/forms';
+import { renderMarkdown } from '../../../lib/markdown';
+import { countNewEnquiries } from '../../../lib/portal';
+import { uploadMedia } from '../../../lib/portal-media';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+type PostForm = {
+  id?: string;
+  slug: string;
+  title: string;
+  date: string;
+  excerpt: string;
+  body: string;
+  cover_image: string | null;
+  tags: string[];
+  author: string;
+  draft: boolean;
+  seo_title: string | null;
+  seo_description: string | null;
+};
+
+// /portal/blog/new/ creates; /portal/blog/<uuid>/ edits.
+const param = Astro.params.id ?? '';
+const isNew = param === 'new';
+if (!isNew && !UUID.test(param)) return Astro.redirect('/portal/blog/');
+
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+let post: PostForm = {
+  slug: '',
+  title: '',
+  date: today,
+  excerpt: '',
+  body: '',
+  cover_image: null,
+  tags: [],
+  author: 'Fusion Football Club',
+  draft: true,
+  seo_title: null,
+  seo_description: null
+};
+if (!isNew) {
+  const { data } = await supabase.from('posts').select('*').eq('id', param).maybeSingle();
+  if (!data) return Astro.redirect('/portal/blog/');
+  post = data as PostForm;
+}
+
+let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('saved')
+  ? { ok: true, text: post.draft ? 'Saved as a draft.' : 'Saved. The blog updates within a couple of minutes.' }
+  : null;
+let previewHtml: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? 'save');
+
+  if (intent === 'delete' && !isNew) {
+    await supabase.from('posts').delete().eq('id', param);
+    clearContentCache();
+    return Astro.redirect('/portal/blog/?saved=deleted');
+  }
+
+  const date = text(form, 'date', 10) ?? today;
+  post = {
+    ...post,
+    title: line(form, 'title', 160) ?? '',
+    slug: slugify(line(form, 'slug', 80) || line(form, 'title', 160) || ''),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : today,
+    excerpt: text(form, 'excerpt', 400) ?? '',
+    body: String(form.get('body') ?? '').slice(0, 80000),
+    tags: (line(form, 'tags', 200) ?? '').split(',').map((t) => t.trim()).filter(Boolean).slice(0, 8),
+    author: line(form, 'author', 80) ?? 'Fusion Football Club',
+    draft: !checked(form, 'publish'),
+    seo_title: line(form, 'seo_title', 90),
+    seo_description: line(form, 'seo_description', 180)
+  };
+
+  if (intent === 'preview') {
+    previewHtml = renderMarkdown(post.body);
+  } else if (!post.title || !post.slug) {
+    notice = { ok: false, text: 'The post needs a title.' };
+  } else {
+    const cover = await uploadMedia(supabase, form.get('cover_file'), 'images', { imagesOnly: true });
+    if (cover.error) {
+      notice = { ok: false, text: cover.error };
+    } else {
+      if (cover.url) post.cover_image = cover.url;
+      else if (checked(form, 'remove_cover')) post.cover_image = null;
+      const values = { ...post, updated_by: session.userId };
+      delete (values as { id?: string }).id;
+      const result = isNew
+        ? await supabase.from('posts').insert(values).select('id').single()
+        : await supabase.from('posts').update(values).eq('id', param).select('id').single();
+      if (result.error) {
+        notice = { ok: false, text: result.error.code === '23505' ? 'Another post already uses that web address. Change the title or address.' : result.error.message };
+      } else {
+        clearContentCache();
+        return Astro.redirect(`/portal/blog/${result.data.id}/?saved=1`);
+      }
+    }
+  }
+}
+
+const live = !post.draft && post.date <= today;
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title={isNew ? 'New post' : 'Edit post'} session={session} active="blog" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <p class="p-sub"><a href="/portal/blog/">← Blog</a></p>
+      <h1>{isNew ? 'New post' : post.title}</h1>
+      {!isNew && <p class="p-sub">/blog/{post.slug}/ · {post.draft ? 'Draft' : live ? 'Live' : `Scheduled for ${post.date}`}</p>}
+    </div>
+    {!isNew && live && <a class="btn outline" href={`/blog/${post.slug}/`} target="_blank" rel="noopener">View post ↗</a>}
+  </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  <form method="post" class="f" enctype="multipart/form-data">
+    <div class="card stack">
+      <label>Title<input type="text" name="title" required maxlength="160" value={post.title} /></label>
+      <label>
+        Summary
+        <textarea name="excerpt" maxlength="400" rows="3">{post.excerpt}</textarea>
+        <span class="hint">Shown on the blog page and when the post is shared.</span>
+      </label>
+      <MarkdownField name="body" label="Post" value={post.body} rows={22} />
+    </div>
+
+    <div class="card stack">
+      <h2>Cover photo</h2>
+      <div class="photo-row">
+        {post.cover_image ? <img class="photo-preview" src={post.cover_image} alt="" /> : <div class="photo-preview empty">No cover photo</div>}
+        <div class="photo-fields">
+          <label>
+            {post.cover_image ? 'Replace the photo' : 'Add a photo'}
+            <input type="file" name="cover_file" accept="image/jpeg,image/png,image/webp" data-resize />
+          </label>
+          {post.cover_image && <label class="check"><input type="checkbox" name="remove_cover" />Remove the cover photo</label>}
+        </div>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <h2>Publishing</h2>
+      <div class="two">
+        <label>Date<input type="date" name="date" value={post.date} /><span class="hint">Choose a future date to schedule the post.</span></label>
+        <label>Author<input type="text" name="author" maxlength="80" value={post.author} /></label>
+      </div>
+      <label>Tags<input type="text" name="tags" maxlength="200" value={post.tags.join(', ')} placeholder="Club News, Girls Football" /><span class="hint">Separate with commas.</span></label>
+      <label>
+        Web address
+        <input type="text" name="slug" maxlength="80" value={post.slug} placeholder="Made from the title" />
+      </label>
+      <label class="check"><input type="checkbox" name="publish" checked={!post.draft} />Publish (untick to keep as a draft)</label>
+    </div>
+
+    <details class="card">
+      <summary><strong>Search engines (optional)</strong></summary>
+      <div class="stack" style="margin-top:0.9rem">
+        <label>Search title<input type="text" name="seo_title" maxlength="90" value={post.seo_title ?? ''} placeholder={post.title} /></label>
+        <label>Search description<input type="text" name="seo_description" maxlength="180" value={post.seo_description ?? ''} placeholder={post.excerpt} /></label>
+      </div>
+    </details>
+
+    <div class="save-bar">
+      <button class="btn" type="submit" name="intent" value="save">Save</button>
+      <button class="btn outline" type="submit" name="intent" value="preview" formnovalidate>Preview</button>
+    </div>
+  </form>
+
+  {previewHtml !== null && <Preview html={previewHtml} title={post.title} />}
+
+  {!isNew && (
+    <div class="card">
+      <h2>Delete post</h2>
+      <p class="p-sub">Removes the post from the website for good. To take it down for now, untick Publish instead.</p>
+      <form method="post" onsubmit="return confirm('Delete this post?')" style="margin-top:0.8rem">
+        <button class="btn danger" type="submit" name="intent" value="delete">Delete post</button>
+      </form>
+    </div>
+  )}
+</PortalLayout>
+
+<ResizeUploads />
+
+<style>
+  .save-bar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.9rem 0;
+    background: linear-gradient(0deg, var(--bg) 70%, transparent);
+  }
+  details.card summary { cursor: pointer; }
+</style>

@@ -1,0 +1,30 @@
+---
+/* Rendered preview of page or post content, using the live site's styles. */
+interface Props {
+  html: string;
+  title?: string;
+}
+const { html, title } = Astro.props as Props;
+---
+
+<div class="card preview" id="preview">
+  <h2>Preview</h2>
+  <p class="p-sub">Not saved yet. This is how it will look on the website.</p>
+  <article class="prose preview-body">
+    {title && <h1>{title}</h1>}
+    <Fragment set:html={html} />
+  </article>
+</div>
+
+<style>
+  .preview { border-color: var(--accent-line); }
+  .preview-body { margin-top: 1rem; display: grid; gap: 0.9rem; color: var(--text-2); line-height: 1.65; }
+  .preview-body :global(h1) { font-size: 2rem; color: var(--text); }
+  .preview-body :global(h2) { font-size: 1.5rem; color: var(--text); margin-top: 0.8rem; }
+  .preview-body :global(h3) { font-size: 1.2rem; color: var(--text); }
+  .preview-body :global(a) { color: var(--accent); text-decoration: underline; }
+  .preview-body :global(strong) { color: var(--text); }
+  .preview-body :global(ul), .preview-body :global(ol) { padding-left: 1.2rem; display: grid; gap: 0.3rem; margin: 0; }
+  .preview-body :global(blockquote) { margin: 0; padding-left: 1rem; border-left: 3px solid var(--accent); }
+  .preview-body :global(img) { max-width: 100%; border-radius: 10px; }
+</style>

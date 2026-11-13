@@ -1,0 +1,105 @@
+---
+import PortalLayout from '../../components/portal/PortalLayout.astro';
+import { isSiteUrlConfigured, siteConfig } from '../../config/site';
+import { EMAIL, UUID, line } from '../../lib/forms';
+import { countNewEnquiries } from '../../lib/portal';
+import { adminSupabase } from '../../lib/supabase';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+let notice: { ok: boolean; text: string } | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? '');
+  const userId = String(form.get('user_id') ?? '');
+
+  if (intent === 'invite') {
+    const email = line(form, 'email', 200)?.toLowerCase();
+    const fullName = line(form, 'full_name', 80) ?? '';
+    const admin = adminSupabase();
+    if (!email || !EMAIL.test(email)) notice = { ok: false, text: 'Please enter a valid email address.' };
+    else if (!admin) notice = { ok: false, text: 'Inviting needs SUPABASE_SERVICE_ROLE_KEY to be set on the server.' };
+    else {
+      const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
+      const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+        data: { full_name: fullName },
+        redirectTo: `${origin}/auth/confirm/?next=/portal/account/`
+      });
+      if (error) {
+        notice = { ok: false, text: /already/i.test(error.message) ? 'That person already has an account.' : error.message };
+      } else {
+        if (data.user && fullName) await admin.from('profiles').update({ full_name: fullName }).eq('id', data.user.id);
+        notice = { ok: true, text: `Invite sent to ${email}. Once they've accepted, add them to a team from the team's page.` };
+      }
+    }
+  } else if (UUID.test(userId) && userId === session.userId) {
+    notice = { ok: false, text: "You can't change or remove your own account here (so you can't lock yourself out)." };
+  } else if (intent === 'role' && UUID.test(userId)) {
+    const role = form.get('role') === 'club_admin' ? 'club_admin' : 'team_manager';
+    const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
+    notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Role updated.' };
+  } else if (intent === 'remove' && UUID.test(userId)) {
+    const admin = adminSupabase();
+    if (admin) await admin.auth.admin.deleteUser(userId);
+    notice = { ok: true, text: 'Person removed.' };
+  }
+}
+
+const { data } = await supabase.from('profiles').select('id, email, full_name, role').order('full_name');
+const people = (data ?? []) as { id: string; email: string; full_name: string; role: 'club_admin' | 'team_manager' }[];
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="People" session={session} active="people" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>People</h1>
+      <p class="p-sub">Invite team managers and club leaders. They get an email to set a password. Then add them to a team on the team's page.</p>
+    </div>
+  </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  <div class="card">
+    <h2>Invite someone</h2>
+    <form method="post" class="f">
+      <input type="hidden" name="intent" value="invite" />
+      <div class="two">
+        <label>Name<input type="text" name="full_name" maxlength="80" /></label>
+        <label>Email<input type="email" name="email" required /></label>
+      </div>
+      <div><button class="btn" type="submit">Send invite</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Everyone with a login</h2>
+    {people.map((p) => (
+      <div class="row">
+        <div class="grow">
+          <h3>{p.full_name || p.email} <span class:list={['pill', p.role === 'club_admin' ? '' : 'grey']}>{p.role === 'club_admin' ? 'Admin' : 'Manager'}</span></h3>
+          <p>{p.email}</p>
+        </div>
+        {p.id !== session.userId && (
+          <div class="actions">
+            <form method="post">
+              <input type="hidden" name="intent" value="role" />
+              <input type="hidden" name="user_id" value={p.id} />
+              <button class="btn outline sm" name="role" value={p.role === 'club_admin' ? 'team_manager' : 'club_admin'}>
+                {p.role === 'club_admin' ? 'Make manager' : 'Make admin'}
+              </button>
+            </form>
+            <form method="post" onsubmit="return confirm('Remove this person and their login?')">
+              <input type="hidden" name="intent" value="remove" />
+              <input type="hidden" name="user_id" value={p.id} />
+              <button class="btn danger sm" type="submit">Remove</button>
+            </form>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+</PortalLayout>

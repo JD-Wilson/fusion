@@ -1,19 +1,56 @@
+/*
+ * Fusion FC design tokens — dark theme.
+ *
+ * Near-black, slightly green-tinted surfaces; hairline borders; one emerald
+ * accent. Photography supplies the warmth.
+ *
+ * Note on naming: these token names come from the original light theme and
+ * are used throughout the pages' scoped styles, so they keep their names but
+ * now carry dark-theme values:
+ *   --color-charcoal / --color-paper  → primary text (light)
+ *   --color-paper-strong / --color-band → raised surfaces (dark)
+ *   --color-forest / --color-lime      → the accent
+ * Prefer the semantic aliases (--bg, --surface, --text, --accent…) in new code.
+ */
 :root {
-  --color-ink: #080a0a;
-  --color-charcoal: #101414;
-  --color-charcoal-mid: #1a2020;
-  --color-forest: #037a2f;
-  --color-forest-deep: #025d24;
-  --color-lime: #1db954;
-  --color-lime-bright: #22d163;
-  --color-paper: #f5f7f6;
-  --color-paper-strong: #ffffff;
-  --color-surface: #f0f4f2;
-  --color-muted: #4a4f4d;
-  --color-border: #dde4e0;
+  color-scheme: dark;
 
-  --font-display: 'Chakra Petch', 'Trebuchet MS', sans-serif;
-  --font-body: 'Work Sans', 'Segoe UI', sans-serif;
+  /* Semantic palette */
+  --bg: #090b0a;
+  --surface: #101412;
+  --surface-2: #151a17;
+  --surface-3: #1b211e;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.15);
+  --text: #f1f4f2;
+  --text-2: #a7b1ab;
+  --text-3: #808b84;              /* ≥4.5:1 on every surface (WCAG AA) */
+  --accent: #3fd17f;
+  --accent-strong: #2bb868;
+  --accent-soft: rgba(63, 209, 127, 0.12);
+  --accent-line: rgba(63, 209, 127, 0.35);
+  --on-accent: #04130a;
+
+  /* Legacy names (used across page styles) mapped onto the dark palette */
+  --color-ink: var(--on-accent);
+  --color-charcoal: var(--text);
+  --color-charcoal-mid: var(--text-2);
+  --color-band: var(--surface);
+  --color-band-deep: #0c0f0d;
+  --color-band-soft: var(--surface-2);
+  --color-forest: var(--accent-strong);
+  --color-forest-deep: var(--accent);
+  --color-lime: var(--accent);
+  --color-lime-bright: #6ee3a0;
+  --color-paper: var(--text);
+  --color-paper-strong: var(--surface);
+  --color-surface: var(--surface-2);
+  --color-muted: var(--text-2);
+  --color-border: var(--line);
+  --color-page: var(--bg);
+
+  --font-display: 'Inter Tight', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   --radius-s: 10px;
   --radius-m: 16px;
@@ -24,12 +61,15 @@
   --space-s: 0.9rem;
   --space-m: 1.4rem;
   --space-l: 2.2rem;
-  --space-xl: 3.4rem;
-  --space-2xl: 5rem;
+  --space-xl: 3.6rem;
+  --space-2xl: 6rem;
 
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px -8px rgba(0,0,0,0.10);
-  --shadow-card-hover: 0 4px 8px rgba(0,0,0,0.08), 0 20px 48px -12px rgba(2,93,36,0.22);
-  --shadow-hero: 0 8px 24px rgba(0,0,0,0.18), 0 40px 80px -20px rgba(0,0,0,0.40);
+  --container: 1180px;
+  --header-h: 68px;
 
-  --transition: 0.22s ease;
+  --shadow-card: none;
+  --shadow-card-hover: 0 20px 40px -20px rgba(0, 0, 0, 0.7);
+  --shadow-hero: none;
+
+  --transition: 0.2s ease;
 }

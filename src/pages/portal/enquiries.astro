@@ -1,0 +1,73 @@
+---
+import PortalLayout from '../../components/portal/PortalLayout.astro';
+import { UUID } from '../../lib/forms';
+import { ukDate } from '../../lib/portal';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+
+// RLS: managers can only update their own teams' enquiries; only admins can delete.
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const id = String(form.get('id') ?? '');
+  const action = String(form.get('action') ?? '');
+  if (UUID.test(id)) {
+    if (action === 'new' || action === 'replied' || action === 'closed') {
+      await supabase.from('enquiries').update({ status: action }).eq('id', id);
+    }
+    if (action === 'delete' && session.isAdmin) await supabase.from('enquiries').delete().eq('id', id);
+  }
+  return Astro.redirect('/portal/enquiries/');
+}
+
+const { data } = await supabase
+  .from('enquiries')
+  .select('*, teams(name, age_group)')
+  .order('created_at', { ascending: false })
+  .limit(200);
+type Enquiry = {
+  id: string; created_at: string; name: string; email: string; phone: string | null;
+  player_name: string | null; player_age: string | null; message: string; status: 'new' | 'replied' | 'closed';
+  teams: { name: string; age_group: string } | null;
+};
+const enquiries = (data ?? []) as unknown as Enquiry[];
+const newCount = enquiries.filter((e) => e.status === 'new').length;
+---
+
+<PortalLayout title="Enquiries" session={session} active="enquiries" newEnquiries={newCount}>
+  <div class="p-head">
+    <div>
+      <h1>Enquiries</h1>
+      <p class="p-sub">Messages from parents about your vacancies. They're also emailed to you: reply to that email to answer them directly.</p>
+    </div>
+  </div>
+  <div class="card">
+    {enquiries.length === 0 && <p class="empty">No enquiries yet.</p>}
+    {enquiries.map((e) => (
+      <div class="row" style="align-items:flex-start">
+        <div class="grow">
+          <h3>
+            {e.name}
+            <span class:list={['pill', e.status === 'new' ? 'warn' : 'grey']}>{e.status}</span>
+          </h3>
+          <p>
+            {e.teams ? `${e.teams.name} (${e.teams.age_group}) · ` : ''}{ukDate(e.created_at)}
+            {e.player_name ? ` · Player: ${e.player_name}${e.player_age ? ` (${e.player_age})` : ''}` : ''}
+          </p>
+          <p style="color:var(--color-charcoal);margin-top:0.4rem;white-space:pre-wrap">{e.message}</p>
+          <p style="margin-top:0.4rem">
+            <a href={`mailto:${e.email}`}>{e.email}</a>{e.phone ? <> · <a href={`tel:${e.phone}`}>{e.phone}</a></> : null}
+          </p>
+        </div>
+        <form method="post" class="actions">
+          <input type="hidden" name="id" value={e.id} />
+          {e.status !== 'replied' && <button class="btn outline sm" name="action" value="replied">Replied</button>}
+          {e.status !== 'closed' && <button class="btn outline sm" name="action" value="closed">Close</button>}
+          {e.status !== 'new' && <button class="btn outline sm" name="action" value="new">Mark new</button>}
+          {session.isAdmin && <button class="btn danger sm" name="action" value="delete" onclick="return confirm('Delete this enquiry?')">Delete</button>}
+        </form>
+      </div>
+    ))}
+  </div>
+</PortalLayout>

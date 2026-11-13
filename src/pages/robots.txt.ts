@@ -6,6 +6,12 @@ export function GET() {
   const lines = [
     'User-agent: *',
     isSiteUrlConfigured ? 'Allow: /' : 'Disallow: /',
+    'Disallow: /portal/',
+    'Disallow: /login/',
+    'Disallow: /auth/',
+    'Disallow: /api/',
+    'Disallow: /vacancies/*/whatsapp/',
+    'Disallow: /teams/*/whatsapp/',
     `Sitemap: ${siteConfig.siteUrl}/sitemap.xml`
   ];
 

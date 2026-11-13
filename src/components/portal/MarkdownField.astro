@@ -1,0 +1,44 @@
+---
+interface Props {
+  name: string;
+  label: string;
+  value?: string;
+  rows?: number;
+  hint?: string;
+}
+const { name, label, value = '', rows = 18, hint } = Astro.props as Props;
+---
+
+<label class="md-field">
+  {label}
+  <textarea name={name} rows={rows} spellcheck="true">{value}</textarea>
+  {hint && <span class="hint">{hint}</span>}
+</label>
+<details class="md-help">
+  <summary>Formatting help</summary>
+  <div class="md-help-grid">
+    <code>## Heading</code><span>Section heading</span>
+    <code>### Smaller heading</code><span>Sub-heading</span>
+    <code>**bold**</code><span><strong>bold</strong></span>
+    <code>*italic*</code><span><em>italic</em></span>
+    <code>[link text](https://…)</code><span>A link</span>
+    <code>- item</code><span>Bullet list (one per line)</span>
+    <code>1. item</code><span>Numbered list</span>
+    <code>&gt; quote</code><span>Quote</span>
+    <code>![description](image address)</code><span>A photo. Upload it in Media, then copy its markdown.</span>
+  </div>
+  <p class="hint">Leave a blank line between paragraphs.</p>
+</details>
+
+<style>
+  .md-field textarea {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 360px;
+  }
+  .md-help { margin-top: -0.4rem; font-size: 0.85rem; color: var(--text-2); }
+  .md-help summary { cursor: pointer; width: fit-content; }
+  .md-help-grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0.7rem 0; }
+  .md-help code { font-size: 0.82rem; color: var(--text); background: var(--surface-2); padding: 0.1rem 0.4rem; border-radius: 6px; }
+</style>

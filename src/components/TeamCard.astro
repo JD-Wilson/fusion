@@ -1,0 +1,135 @@
+---
+import { teamPath, teamPhoto, type PublicTeam } from '../lib/teams';
+
+interface Props {
+  team: PublicTeam;
+  /** Number of open vacancies; shows a "Looking for players" badge when > 0. */
+  openSpaces?: number;
+}
+const { team, openSpaces = 0 } = Astro.props as Props;
+
+const meta = [team.gender === 'Mixed' ? null : team.gender, team.match_day, team.league].filter(Boolean).join(' · ');
+---
+
+<a class="team-card" href={teamPath(team)}>
+  <div class="tc-photo">
+    <img src={teamPhoto(team)} alt="" loading="lazy" decoding="async" width="640" height="360" />
+    <span class="tc-age">{team.age_group}</span>
+    {openSpaces > 0 && <span class="tc-recruiting">Looking for players</span>}
+  </div>
+  <div class="tc-body">
+    <h3 class="tc-name">{team.name}</h3>
+    {meta && <p class="tc-meta">{meta}</p>}
+    {team.contact_name && <p class="tc-coach">{team.contact_name}</p>}
+    <span class="tc-cta" aria-hidden="true">View team →</span>
+  </div>
+</a>
+
+<style>
+  .team-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    color: var(--text);
+    transition: border-color var(--transition), transform var(--transition);
+  }
+
+  .team-card:hover {
+    border-color: var(--accent-line);
+    transform: translateY(-2px);
+  }
+
+  .tc-photo {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--surface-3);
+  }
+
+  /* Absolutely positioned so portrait photos can't stretch the 16:9 frame */
+  .tc-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.88;
+  }
+
+  .tc-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(9, 11, 10, 0.55), transparent 55%);
+  }
+
+  .tc-age {
+    position: absolute;
+    left: 0.8rem;
+    bottom: 0.7rem;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .tc-recruiting {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .tc-recruiting::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--on-accent);
+  }
+
+  .tc-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.1rem 1.1rem;
+    flex: 1;
+  }
+
+  .tc-name {
+    font-size: 1.15rem;
+  }
+
+  .tc-meta,
+  .tc-coach {
+    font-size: 0.86rem;
+    color: var(--text-2);
+    line-height: 1.45;
+  }
+
+  .tc-coach {
+    color: var(--text-3);
+  }
+
+  .tc-cta {
+    margin-top: auto;
+    padding-top: 0.7rem;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+</style>

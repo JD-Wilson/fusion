@@ -1,0 +1,172 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import MatchList from '../components/fixtures/MatchList.astro';
+import LeagueTable from '../components/fixtures/LeagueTable.astro';
+import { createBreadcrumbJsonLd } from '../lib/seo';
+import {
+  comingUp,
+  fulltimeInfo,
+  hasFulltimeData,
+  latestGameweek,
+  latestResults,
+  shortName,
+  tableFor,
+  teamsWithGames,
+  upcomingFixtures
+} from '../lib/matches';
+
+/*
+ * Rendered per request: the snapshot only changes when the scheduled
+ * Full-Time sync commits (which redeploys), but "upcoming" depends on today.
+ */
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+
+const teams = teamsWithGames();
+const requested = Astro.url.searchParams.get('team') ?? '';
+const team = teams.includes(requested) ? requested : '';
+
+const fixtures = team ? upcomingFixtures({ team }) : comingUp(upcomingFixtures(), 14);
+const results = team ? latestResults({ team, limit: 20 }) : latestGameweek(latestResults());
+const table = team ? tableFor(team) : null;
+
+const updated = fulltimeInfo.scrapedAt
+  ? new Date(fulltimeInfo.scrapedAt).toLocaleString('en-GB', {
+      timeZone: 'Europe/London',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  : null;
+
+const breadcrumbs = createBreadcrumbJsonLd([
+  { name: 'Home', path: '/' },
+  { name: 'Fixtures & Results', path: '/fixtures/' }
+]);
+---
+
+<BaseLayout
+  title="Fixtures & Results | Fusion FC"
+  description="Upcoming fixtures, results and league tables for every Fusion FC team, updated automatically from FA Full-Time."
+  canonical="/fixtures/"
+  structuredData={[breadcrumbs]}
+>
+  <PageHero
+    eyebrow={fulltimeInfo.season ? `Season ${fulltimeInfo.season}` : 'Matchday'}
+    title="Fixtures & results"
+    summary="Every Fusion FC game, updated automatically from FA Full-Time."
+    image="/images/web/player-shooting.jpg"
+    imagePosition="55% 45%"
+  />
+
+  {
+    !hasFulltimeData ? (
+      <section class="section-card empty">
+        <h2 class="section-title">Fixtures are on their way</h2>
+        <p class="section-copy">This page fills in automatically from FA Full-Time once the season's first fixtures are published.</p>
+      </section>
+    ) : (
+      <>
+        {teams.length > 1 && (
+          <nav class="team-filter" aria-label="Choose a team">
+            <a class:list={['tf', !team && 'on']} href="/fixtures/">All teams</a>
+            {teams.map((t) => (
+              <a class:list={['tf', team === t && 'on']} href={`/fixtures/?team=${encodeURIComponent(t)}`}>{shortName(t)}</a>
+            ))}
+          </nav>
+        )}
+
+        <div class="fx-grid">
+          <section class="fx-col">
+            <h2 class="band-eyebrow">{team ? 'Fixtures' : 'Coming up'}</h2>
+            {fixtures.length ? (
+              <MatchList matches={fixtures} team={team || undefined} kind="fixtures" />
+            ) : (
+              <p class="none">No fixtures published yet.</p>
+            )}
+          </section>
+
+          <section class="fx-col">
+            <h2 class="band-eyebrow">{team ? 'Results' : 'Latest results'}</h2>
+            {results.length ? (
+              <MatchList matches={results} team={team || undefined} kind="results" />
+            ) : (
+              <p class="none">No results yet this season.</p>
+            )}
+            {table && (
+              <div class="fx-table">
+                <h2 class="band-eyebrow">League table</h2>
+                <LeagueTable table={table} team={team} />
+              </div>
+            )}
+          </section>
+        </div>
+
+        <p class="source">
+          From <a href="https://fulltime.thefa.com/" target="_blank" rel="noopener">FA Full-Time</a>{updated && <>, last checked {updated}</>}.
+          Scores and tables aren't published for under-11s and younger, so those games show as "Played".
+        </p>
+      </>
+    )
+  }
+</BaseLayout>
+
+<style>
+  .empty { text-align: center; }
+  .empty .section-copy { margin-inline: auto; }
+
+  .team-filter {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: var(--space-xl);
+    overflow-x: auto;
+    padding-bottom: 0.3rem;
+    scrollbar-width: none;
+  }
+
+  .tf {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 0.95rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 0.88rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .tf:hover { color: var(--text); border-color: var(--line-strong); }
+  .tf.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+  .fx-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+    margin-top: var(--space-l);
+  }
+
+  .fx-col { margin-top: 0; }
+  .fx-table { margin-top: var(--space-l); }
+  .none { color: var(--text-3); padding: 1rem 0; }
+
+  .source {
+    margin-top: var(--space-xl);
+    font-size: 0.85rem;
+    color: var(--text-3);
+    max-width: 70ch;
+  }
+
+  .source a { color: var(--text-2); text-decoration: underline; text-underline-offset: 0.2em; }
+
+  @media (max-width: 900px) {
+    .fx-grid { grid-template-columns: 1fr; }
+  }
+</style>

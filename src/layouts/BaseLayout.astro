@@ -2,6 +2,7 @@
 import SEOHead from '../components/SEOHead.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import CookieBanner from '../components/CookieBanner.astro';
 import '../styles/global.css';
 import { createOrganizationJsonLd } from '../lib/seo';
 import type { SEOProps } from '../types/seo';
@@ -24,35 +25,64 @@ const {
 } = Astro.props as LayoutProps;
 
 const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
+
+/*
+ * Social sharing card (public/og/, made by `npm run og`). A page's own image
+ * wins (blog covers, team photos); otherwise each section has a designed card.
+ */
+const OG_BY_PATH: Record<string, string> = {
+  '/': 'default',
+  '/teams/': 'teams',
+  '/fixtures/': 'fixtures',
+  '/vacancies/': 'vacancies',
+  '/join/': 'join',
+  '/about/': 'about',
+  '/development-sessions/': 'development',
+  '/her-game-too/': 'her-game-too',
+  '/age-groups/': 'age-groups',
+  '/leagues/': 'leagues',
+  '/contact/': 'contact',
+  '/new-sponsors/': 'sponsors',
+  '/blog/': 'blog'
+};
+const path = Astro.url.pathname;
+const sectionCard = OG_BY_PATH[path] ?? (path.startsWith('/teams/') ? 'team' : path.startsWith('/club/') ? 'club' : 'default');
+const shareImage = image && image !== '/brand/logo.jpeg' ? image : `/og/${sectionCard}.jpg`;
+
+// Public pages: cache briefly at the edge so the site stays fast, while
+// portal edits still show within a couple of minutes. Pages that set their
+// own policy (login, team pages…) keep it.
+if (!Astro.response.headers.has('Cache-Control')) {
+  Astro.response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=600');
+}
 ---
 
 <!doctype html>
 <html lang={lang}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#090b0a" />
+    <meta name="color-scheme" content="dark" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700;800&display=swap"
-    />
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-BBFQYZMGJ6"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-BBFQYZMGJ6');
+    <!-- Self-hosted fonts (src/styles/fonts.css); preload the main Latin files -->
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-tight-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <script is:inline>
+      // Scroll animations only hide content once this script has run, and a
+      // failsafe shows everything if the animation script never starts.
+      document.documentElement.classList.add('js');
+      setTimeout(function () {
+        if (!window.__revealReady) document.documentElement.classList.remove('js');
+      }, 2500);
     </script>
     <SEOHead
       title={title}
       description={description}
       canonical={canonical}
-      image={image}
+      image={shareImage}
       type={type}
       publishedTime={publishedTime}
       modifiedTime={modifiedTime}
@@ -67,6 +97,7 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
       <slot />
     </main>
     <SiteFooter />
+    <CookieBanner />
   </body>
 </html>
 
@@ -85,6 +116,7 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
   );
 
   document.querySelectorAll('.reveal').forEach((el) => revealObserver.observe(el));
+  (window as unknown as { __revealReady: boolean }).__revealReady = true;
 
   /* ─── Stat counter animation ────────────────────────── */
   function animateCount(el: HTMLElement, target: number) {
@@ -153,8 +185,8 @@ const fullStructuredData = [createOrganizationJsonLd(), ...structuredData];
     z-index: 999;
     padding: 0.6rem 0.9rem;
     border-radius: 0.5rem;
-    background: #080a0a;
-    color: #f5f7f6;
+    background: var(--color-ink);
+    color: var(--color-paper);
   }
 
   .skip-link:focus {

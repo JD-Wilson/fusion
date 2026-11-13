@@ -1,0 +1,78 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import VacancyForm from '../../../components/portal/VacancyForm.astro';
+import { UUID } from '../../../lib/forms';
+import { parseVacancyForm, saveContact, type VacancyRow } from '../../../lib/portal-vacancies';
+import { canEditTeam } from '../../../lib/auth';
+import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+
+export const prerender = false;
+
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+const id = Astro.params.id ?? '';
+if (!UUID.test(id)) return Astro.redirect('/portal/vacancies/');
+
+// RLS only returns vacancies for teams this person manages (or all, for admins).
+const { data } = await supabase
+  .from('vacancies')
+  .select('*, teams(name, age_group), vacancy_contacts(whatsapp_number, email)')
+  .eq('id', id)
+  .maybeSingle();
+const vacancy = data as unknown as VacancyRow | null;
+if (!vacancy) return Astro.redirect('/portal/vacancies/');
+
+const teams = await loadTeams(supabase, session.isAdmin ? undefined : session.teamIds);
+const contact = Array.isArray(vacancy.vacancy_contacts) ? vacancy.vacancy_contacts[0] : vacancy.vacancy_contacts;
+
+let error: string | null = null;
+let defaults: Record<string, any> = {
+  ...vacancy,
+  whatsapp_number: contact?.whatsapp_number ?? '',
+  contact_email: contact?.email ?? '',
+  consent: vacancy.whatsapp_enabled
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseVacancyForm(form);
+  defaults = Object.fromEntries(form.entries());
+  defaults.positions = form.getAll('positions').map(String);
+  defaults.whatsapp_enabled = form.get('whatsapp_enabled') === 'on';
+  defaults.email_enabled = form.get('email_enabled') === 'on';
+  defaults.consent = form.get('consent') === 'on';
+  defaults.published = form.get('published') === 'on';
+
+  if ('error' in parsed && parsed.error) {
+    error = parsed.error;
+  } else if (parsed.values && parsed.contact) {
+    if (!canEditTeam(session, parsed.values.team_id)) {
+      error = 'You can only use teams you manage.';
+    } else {
+      const { error: dbError } = await supabase.from('vacancies').update(parsed.values).eq('id', id);
+      if (dbError) {
+        error = dbError.message;
+      } else {
+        const { error: contactError } = await saveContact(supabase, id, parsed.contact);
+        if (contactError) error = contactError.message;
+        else return Astro.redirect('/portal/vacancies/?saved=1');
+      }
+    }
+  }
+}
+
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="Edit vacancy" session={session} active="vacancies" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Edit vacancy</h1>
+      <p class="p-sub">{vacancy.teams?.name} · {vacancy.whatsapp_clicks} WhatsApp {vacancy.whatsapp_clicks === 1 ? 'tap' : 'taps'} so far</p>
+    </div>
+  </div>
+  <div class="card">
+    {error && <div class="msg bad" role="alert">{error}</div>}
+    <VacancyForm teams={teams} vacancy={vacancy} defaults={defaults} submitLabel="Save changes" />
+  </div>
+</PortalLayout>

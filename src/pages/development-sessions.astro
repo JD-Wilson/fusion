@@ -2,9 +2,9 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
-import { requirePageEntry } from '../lib/pages';
+import { requireSitePage } from '../lib/content';
 
-const page = await requirePageEntry('development-sessions');
+const page = await requireSitePage('development-sessions');
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -21,7 +21,7 @@ const ageGroups = [
     description:
       'A fun and friendly introduction to football, helping young players build confidence, coordination, and a love for the game through play. Every Wednesday, 17:30–18:30 indoors at Northwood Stadium. Wear trainers and shin pads, and bring a drink.',
     tags: ['First steps', 'Northwood Stadium', 'Wednesdays 5:30pm'],
-    image: '/images/mini-fusions.jpg',
+    image: '/images/web/mini-fusions.jpg',
     imageAlt: 'Coaches working with young children at Mini Fusions',
     imagePosition: 'center 25%',
     bookingUrl: 'https://ffc.hivelink.co.uk/365/7904',
@@ -33,7 +33,7 @@ const ageGroups = [
     description:
       'Developing the basics in a supportive environment, where players grow their skills, confidence, and understanding of how to play together. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['Basic skills', 'Excel Academy', 'Wednesdays 5:30pm'],
-    image: '/images/player-dribbling.jpg',
+    image: '/images/web/player-dribbling.jpg',
     imageAlt: 'Young player dribbling with the ball',
     imagePosition: 'center 60%',
     bookingUrl: 'https://ffc.hivelink.co.uk/365/7905',
@@ -45,7 +45,7 @@ const ageGroups = [
     description:
       'Taking the next step, refining skills and building game awareness, while encouraging players to express themselves and grow in confidence. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['Skill refinement', 'Excel Academy', 'Wednesdays 5:30pm'],
-    image: '/images/player-shooting.jpg',
+    image: '/images/web/player-shooting.jpg',
     imageAlt: 'Player shooting at goal during a Fusion session',
     imagePosition: 'center center',
     bookingUrl: 'https://ffc.hivelink.co.uk/365/8178',
@@ -57,7 +57,7 @@ const ageGroups = [
     description:
       'An inclusive and welcoming space for girls of all abilities to enjoy football, develop their skills, and be part of a supportive team environment. Every Wednesday, 17:30–18:30 at the Excel Academy. Wear trainers or boots suitable for 3G, and shin pads.',
     tags: ['All abilities', 'Excel Academy', 'Wednesdays 5:30pm'],
-    image: '/images/girls-session.jpg',
+    image: '/images/web/girls-session.jpg',
     imageAlt: 'Girl player at a Fusion girls session',
     imagePosition: '30% center',
     bookingUrl: 'https://ffc.hivelink.co.uk/365/10261',
@@ -74,6 +74,8 @@ const ageGroups = [
   structuredData={[breadcrumbs]}
 >
   <PageHero
+    image={page.heroImage ?? '/images/web/players-training-bibs.jpg'}
+    imagePosition="50% 40%"
     eyebrow="Open to All"
     title="Development Sessions"
     summary={page.data.description}
@@ -235,7 +237,7 @@ const ageGroups = [
     font-size: clamp(3.5rem, 7vw, 5.5rem);
     font-weight: 700;
     line-height: 1;
-    color: rgba(29, 185, 84, 0.07);
+    color: rgba(63, 209, 127, 0.07);
     letter-spacing: -0.03em;
     user-select: none;
     pointer-events: none;
@@ -249,11 +251,12 @@ const ageGroups = [
   }
 
   .age-range {
-    font-family: var(--font-display);
-    font-size: 0.68rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--color-lime);
+    font-weight: 600;
   }
 
   .age-label {
@@ -264,7 +267,7 @@ const ageGroups = [
 
   .age-coaches {
     font-size: 0.82rem;
-    color: rgba(29, 185, 84, 0.7);
+    color: rgba(63, 209, 127, 0.7);
     font-style: italic;
   }
 
@@ -275,25 +278,24 @@ const ageGroups = [
     margin-top: var(--space-s);
     padding: 0.55rem 1.1rem;
     border-radius: 999px;
-    border: 1px solid rgba(29, 185, 84, 0.45);
-    background: rgba(29, 185, 84, 0.07);
+    border: 1px solid rgba(63, 209, 127, 0.45);
+    background: rgba(63, 209, 127, 0.07);
     color: var(--color-lime);
-    font-family: var(--font-display);
-    font-size: 0.78rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
     font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    letter-spacing: -0.005em;
     transition: background var(--transition), border-color var(--transition);
   }
 
   .card-book-btn:hover {
-    background: rgba(29, 185, 84, 0.16);
-    border-color: rgba(29, 185, 84, 0.75);
+    background: rgba(63, 209, 127, 0.16);
+    border-color: rgba(63, 209, 127, 0.75);
   }
 
   .age-description {
     font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.55);
+    color: rgba(241, 244, 242, 0.55);
     line-height: 1.6;
   }
 
@@ -312,7 +314,7 @@ const ageGroups = [
   .expect-item {
     position: relative;
     padding-top: var(--space-l);
-    border-top: 1px solid rgba(29, 185, 84, 0.2);
+    border-top: 1px solid rgba(63, 209, 127, 0.2);
     display: grid;
     gap: 0.5rem;
     align-content: start;
@@ -325,7 +327,7 @@ const ageGroups = [
     font-family: var(--font-display);
     font-size: 0.68rem;
     letter-spacing: 0.1em;
-    color: rgba(29, 185, 84, 0.35);
+    color: rgba(63, 209, 127, 0.35);
   }
 
   .expect-title {
@@ -336,14 +338,14 @@ const ageGroups = [
 
   .expect-body {
     font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.5);
+    color: rgba(241, 244, 242, 0.5);
     line-height: 1.6;
   }
 
   /* ─── Booking CTA ────────────────────────────────────── */
 
   .booking-cta {
-    background: var(--color-ink);
+    background: var(--color-band);
     border-radius: var(--radius-l);
     padding: var(--space-xl);
     position: relative;
@@ -355,7 +357,7 @@ const ageGroups = [
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at 100% 50%, rgba(29, 185, 84, 0.14) 0%, transparent 60%);
+    background: radial-gradient(ellipse at 100% 50%, rgba(63, 209, 127, 0.14) 0%, transparent 60%);
     pointer-events: none;
   }
 
@@ -376,11 +378,12 @@ const ageGroups = [
   }
 
   .booking-eyebrow {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--color-lime);
+    font-weight: 600;
   }
 
   .booking-title {
@@ -391,7 +394,7 @@ const ageGroups = [
 
   .booking-summary {
     font-size: 0.9rem;
-    color: rgba(245, 247, 246, 0.55);
+    color: rgba(241, 244, 242, 0.55);
     line-height: 1.6;
   }
 
@@ -410,11 +413,10 @@ const ageGroups = [
     gap: 0.4rem;
     background: var(--color-lime);
     color: var(--color-ink);
-    font-family: var(--font-display);
+    font-family: var(--font-body);
     font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     padding: 1rem 2.2rem;
     border-radius: 999px;
     transition: background var(--transition), transform var(--transition);
@@ -428,7 +430,7 @@ const ageGroups = [
 
   .booking-url {
     font-size: 0.72rem;
-    color: rgba(245, 247, 246, 0.25);
+    color: rgba(241, 244, 242, 0.25);
     text-align: center;
   }
 
@@ -450,12 +452,13 @@ const ageGroups = [
   }
 
   .callout-eyebrow {
-    font-family: var(--font-display);
-    font-size: 0.68rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     color: var(--color-forest);
     margin-bottom: 0.25rem;
+    font-weight: 600;
   }
 
   .callout-text {

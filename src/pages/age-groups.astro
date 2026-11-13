@@ -1,12 +1,27 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
-import { requirePageEntry } from '../lib/pages';
+import { requireSitePage } from '../lib/content';
+import TeamCard from '../components/TeamCard.astro';
+import { getPublicTeams, getVacanciesByTeam } from '../lib/teams';
 
-const agePage = await requirePageEntry('age-groups');
-const { Content } = await render(agePage);
+// Team list comes from the club database (managed in the portal), so render per request.
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+
+const liveTeams = await getPublicTeams();
+const spaces = liveTeams ? await getVacanciesByTeam() : new Map();
+const liveGroups = liveTeams
+  ? [
+      { title: 'Saturday Teams', teams: liveTeams.filter((t) => t.match_day === 'Saturday') },
+      { title: 'Sunday Teams', teams: liveTeams.filter((t) => t.match_day === 'Sunday') },
+      { title: '', teams: liveTeams.filter((t) => !t.match_day) }
+    ].filter((g) => g.teams.length)
+  : [];
+
+const agePage = await requireSitePage('age-groups');
 
 const allTeams = (await getCollection('teams', ({ data }) => !data.noindex)).sort((a, b) => {
   const ageA = Number.parseInt(a.data.ageGroup.replace(/\D/g, ''), 10) || 99;
@@ -33,14 +48,33 @@ const breadcrumbs = createBreadcrumbJsonLd([
   noindex={agePage.data.noindex}
   structuredData={[breadcrumbs]}
 >
-  <PageHero eyebrow="Player Pathways" title={agePage.data.title} summary={agePage.data.description} />
+  <PageHero image={agePage.heroImage ?? '/images/web/player-shooting.jpg'} imagePosition="55% 50%" eyebrow="Player Pathways" title={agePage.data.title} summary={agePage.data.description} />
 
   <section class="section-card reveal" data-delay="1">
     <div class="prose">
-      <Content />
+      <Fragment set:html={agePage.html} />
     </div>
   </section>
 
+  {liveTeams ? (
+    <section class="dark-band reveal" data-delay="2" id="teams">
+      <div class="band-head">
+        <div>
+          <p class="band-eyebrow">Registered Teams</p>
+          <h2 class="band-title">Current Team Groups</h2>
+        </div>
+        <a class="band-link" href="/leagues/">View leagues →</a>
+      </div>
+      {liveGroups.map((group) => (
+        <div class="matchday-group">
+          {group.title && <h3 class="matchday-heading">{group.title}</h3>}
+          <div class="live-grid">
+            {group.teams.map((team) => <TeamCard team={team} openSpaces={spaces.get(team.id)?.length ?? 0} />)}
+          </div>
+        </div>
+      ))}
+    </section>
+  ) : (
   <section class="dark-band reveal" data-delay="2">
     <div class="band-head">
       <div>
@@ -152,11 +186,18 @@ const breadcrumbs = createBreadcrumbJsonLd([
       </div>
     )}
   </section>
+  )}
 </BaseLayout>
 
 <style>
+  .live-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 1rem;
+  }
+
   .band-link {
-    color: rgba(245, 247, 246, 0.45);
+    color: rgba(241, 244, 242, 0.45);
     font-size: 0.85rem;
     font-weight: 600;
     white-space: nowrap;
@@ -181,7 +222,7 @@ const breadcrumbs = createBreadcrumbJsonLd([
     font-family: var(--font-display);
     font-size: 3.8rem;
     font-weight: 700;
-    color: rgba(29, 185, 84, 0.07);
+    color: rgba(63, 209, 127, 0.07);
     line-height: 1;
     letter-spacing: -0.02em;
     user-select: none;
@@ -196,11 +237,11 @@ const breadcrumbs = createBreadcrumbJsonLd([
   }
 
   .team-age-label {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(245, 247, 246, 0.38);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    color: rgba(241, 244, 242, 0.38);
+    font-weight: 500;
   }
 
   .team-details {
@@ -219,11 +260,11 @@ const breadcrumbs = createBreadcrumbJsonLd([
   }
 
   .matchday-heading {
-    font-family: var(--font-display);
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.14em;
     color: var(--color-lime);
     margin: 0;
   }

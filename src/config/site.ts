@@ -12,9 +12,11 @@ export const siteConfig = {
   defaultTitle: 'Fusion Football Club',
   defaultDescription:
     'Fusion Football Club is a growing grassroots football community in the UK, supporting player development, team spirit, and local partnerships.',
-  defaultOgImage: '/brand/logo.jpeg',
+  defaultOgImage: '/og/default.jpg',
   locale: 'en_GB',
-  clubContactEmail: 'info@fusionfc.co.uk'
+  clubContactEmail: 'info@fusionfc.co.uk',
+  /** Google Analytics 4. Only loaded after a visitor accepts analytics cookies. */
+  googleAnalyticsId: 'G-BBFQYZMGJ6'
 } as const;
 
 export const toAbsoluteUrl = (pathOrUrl: string) => {

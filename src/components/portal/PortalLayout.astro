@@ -1,0 +1,64 @@
+---
+import '../../styles/portal.css';
+import type { Session } from '../../lib/auth';
+
+interface Props {
+  title: string;
+  session: Session;
+  active: 'dashboard' | 'vacancies' | 'teams' | 'enquiries' | 'pages' | 'blog' | 'media' | 'people' | 'account';
+  newEnquiries?: number;
+}
+const { title, session, active, newEnquiries = 0 } = Astro.props as Props;
+
+const links = [
+  { id: 'dashboard', href: '/portal/', label: 'Dashboard' },
+  { id: 'vacancies', href: '/portal/vacancies/', label: 'Vacancies' },
+  { id: 'teams', href: '/portal/teams/', label: 'Teams' },
+  { id: 'enquiries', href: '/portal/enquiries/', label: 'Enquiries', badge: newEnquiries },
+  ...(session.isAdmin
+    ? [
+        { id: 'pages', href: '/portal/pages/', label: 'Pages' },
+        { id: 'blog', href: '/portal/blog/', label: 'Blog' },
+        { id: 'media', href: '/portal/media/', label: 'Media' },
+        { id: 'people', href: '/portal/people/', label: 'People' }
+      ]
+    : []),
+  { id: 'account', href: '/portal/account/', label: 'My account' }
+];
+---
+
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} | Fusion FC portal</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div class="p-shell">
+      <aside class="p-side">
+        <a class="p-brand" href="/portal/">
+          <img src="/brand/logo.jpeg" alt="" width="40" height="40" />
+          <span><strong>Fusion FC</strong><small>{session.isAdmin ? 'Club admin' : 'Team manager'}</small></span>
+        </a>
+        <nav class="p-nav" aria-label="Portal">
+          {links.map((l) => (
+            <a href={l.href} aria-current={l.id === active ? 'page' : undefined}>
+              {l.label}
+              {'badge' in l && l.badge ? <span class="p-badge">{l.badge}</span> : null}
+            </a>
+          ))}
+        </nav>
+        <div class="p-foot">
+          <span>{session.fullName || session.email}</span>
+          <a class="site" href="/vacancies/">View public vacancies ↗</a>
+          <form method="post" action="/auth/signout/"><button type="submit">Sign out</button></form>
+        </div>
+      </aside>
+      <main class="p-main"><slot /></main>
+    </div>
+  </body>
+</html>

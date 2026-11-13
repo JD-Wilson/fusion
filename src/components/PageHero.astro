@@ -4,127 +4,147 @@ interface Props {
   title: string;
   summary: string;
   actions?: { href: string; label: string; ghost?: boolean }[];
+  /** Optional full-bleed background photo (decorative). */
+  image?: string;
+  /** CSS object-position for cropping the photo, e.g. "50% 30%". */
+  imagePosition?: string;
 }
 
-const { eyebrow = 'Fusion Football Club', title, summary, actions = [] } = Astro.props as Props;
+const {
+  eyebrow = 'Fusion Football Club',
+  title,
+  summary,
+  actions = [],
+  image,
+  imagePosition = '50% 40%'
+} = Astro.props as Props;
 ---
 
-<section class="page-hero reveal">
-  <!-- Football pitch geometry: angled fill + center circle -->
-  <div class="hero-decor" aria-hidden="true">
-    <svg
-      class="hero-svg"
-      viewBox="0 0 700 480"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="xMaxYMid meet"
-    >
-      <!-- Angled green accent panel -->
-      <path d="M 700 0 L 380 0 L 260 480 L 700 480 Z" fill="rgba(2,93,36,0.18)" />
-      <path d="M 700 0 L 440 0 L 320 480 L 700 480 Z" fill="rgba(2,93,36,0.10)" />
+<section class:list={['page-hero', image ? 'has-image' : 'no-image']}>
+  {
+    image && (
+      <div class="hero-media" aria-hidden="true">
+        <img src={image} alt="" width="1600" height="1067" decoding="async" fetchpriority="high" style={`object-position: ${imagePosition}`} />
+      </div>
+    )
+  }
 
-      <!-- Center circle -->
-      <circle class="ring ring-1" cx="560" cy="240" r="190" stroke="rgba(29,185,84,0.14)" stroke-width="1.5" />
-      <circle class="ring ring-2" cx="560" cy="240" r="130" stroke="rgba(29,185,84,0.09)" stroke-width="1" />
-      <circle class="ring ring-3" cx="560" cy="240" r="68" stroke="rgba(29,185,84,0.06)" stroke-width="1" />
+  <div class="hero-inner">
+    <div class="hero-content">
+      <p class="eyebrow">{eyebrow}</p>
+      <h1 class="hero-title">{title}</h1>
+      <p class="hero-summary">{summary}</p>
 
-      <!-- Center spot -->
-      <circle class="center-spot" cx="560" cy="240" r="5" fill="rgba(29,185,84,0.25)" />
-
-      <!-- Horizontal midline -->
-      <line x1="260" y1="240" x2="700" y2="240" stroke="rgba(29,185,84,0.07)" stroke-width="1" />
-
-      <!-- Lime accent top-right corner arc -->
-      <circle cx="700" cy="0" r="80" stroke="rgba(29,185,84,0.18)" stroke-width="1.5" fill="none" />
-    </svg>
-  </div>
-
-  <div class="hero-content">
-    <p class="eyebrow">{eyebrow}</p>
-    <h1 class="hero-title">{title}</h1>
-    <p class="hero-summary">{summary}</p>
-
-    {
-      actions.length > 0 && (
-        <div class="hero-actions">
-          {actions.map((action) => (
-            <a href={action.href} class:list={['button', action.ghost && 'ghost']}>
-              {action.label}
-            </a>
-          ))}
-        </div>
-      )
-    }
+      {
+        actions.length > 0 && (
+          <div class="hero-actions">
+            {actions.map((action) => (
+              <a href={action.href} class:list={['button', action.ghost && 'ghost']}>
+                {action.label}
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </div>
   </div>
 </section>
 
 <style>
-  .hero-decor {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+  /* Full-bleed: breaks out of <main> to span the viewport */
+  .page-hero {
+    position: relative;
+    width: 100vw;
+    margin: 0 0 0 calc(50% - 50vw);
+    margin-top: 0;
     overflow: hidden;
-    border-radius: inherit;
+    isolation: isolate;
+    border-bottom: 1px solid var(--line);
   }
 
-  .hero-svg {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 65%;
+  .hero-inner {
+    width: min(var(--container), calc(100vw - 48px));
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    min-height: min(78vh, 680px);
+    padding: clamp(5rem, 12vh, 8rem) 0 clamp(3rem, 7vh, 5rem);
+  }
+
+  .no-image .hero-inner {
+    min-height: 0;
+    padding: clamp(4.5rem, 10vh, 7rem) 0 clamp(3rem, 6vh, 4.5rem);
   }
 
   .hero-content {
     position: relative;
-    z-index: 1;
-    max-width: 58%;
+    max-width: 680px;
   }
 
   .hero-actions {
-    margin-top: 1.4rem;
+    margin-top: 2rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
   }
 
-  /* ─── SVG ring animations ────────────────────────────── */
-
-  .ring {
-    transform-origin: 560px 240px;
-    animation: breathe 6s ease-in-out infinite;
+  /* Photo with a dark scrim so text always reads */
+  .hero-media {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
   }
 
-  .ring-2 { animation-delay: -2s; animation-duration: 8s; }
-  .ring-3 { animation-delay: -4s; animation-duration: 10s; }
-
-  @keyframes breathe {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.4; transform: scale(1.04); }
+  .hero-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
-  .center-spot {
-    transform-origin: 560px 240px;
-    animation: pulse-spot 3s ease-in-out infinite;
+  .hero-media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, rgba(9, 11, 10, 0.94) 0%, rgba(9, 11, 10, 0.78) 38%, rgba(9, 11, 10, 0.2) 75%, rgba(9, 11, 10, 0.1) 100%),
+      linear-gradient(0deg, var(--bg) 0%, rgba(9, 11, 10, 0) 35%);
   }
 
-  @keyframes pulse-spot {
-    0%, 100% { r: 5; opacity: 1; }
-    50%       { r: 8; opacity: 0.5; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .ring, .center-spot { animation: none; }
+  /* Text-only heroes: a single soft accent glow */
+  .no-image {
+    background:
+      radial-gradient(900px 420px at 85% -20%, rgba(63, 209, 127, 0.14), transparent 65%),
+      var(--bg);
   }
 
   @media (max-width: 720px) {
-    .hero-content {
-      max-width: 100%;
+    .hero-inner {
+      width: calc(100vw - 32px);
+      min-height: 0;
+      padding: 0 0 2.5rem;
+      flex-direction: column;
+      align-items: stretch;
     }
 
-    .hero-svg {
-      opacity: 0.5;
-      width: 100%;
+    .has-image .hero-inner {
+      padding-top: 46vw;
+    }
+
+    .no-image .hero-inner {
+      padding: 3.5rem 0 2.5rem;
+    }
+
+    .hero-media {
+      bottom: auto;
+      height: 72vw;
+    }
+
+    .hero-media::after {
+      background: linear-gradient(0deg, var(--bg) 0%, rgba(9, 11, 10, 0.55) 45%, rgba(9, 11, 10, 0.1) 100%);
+    }
+
+    .hero-actions .button {
+      flex: 1 1 auto;
     }
   }
 </style>

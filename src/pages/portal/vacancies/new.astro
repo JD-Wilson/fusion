@@ -1,0 +1,83 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import VacancyForm from '../../../components/portal/VacancyForm.astro';
+import { parseVacancyForm, saveContact } from '../../../lib/portal-vacancies';
+import { canEditTeam } from '../../../lib/auth';
+import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+
+export const prerender = false;
+
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+const teams = await loadTeams(supabase, session.isAdmin ? undefined : session.teamIds);
+
+let error: string | null = null;
+let defaults: Record<string, any> = {
+  kind: 'player',
+  spaces: 1,
+  contact_name: session.fullName,
+  whatsapp_number: session.phone ?? '',
+  contact_email: session.email,
+  whatsapp_enabled: Boolean(session.phone),
+  email_enabled: true,
+  published: true,
+  team_id: Astro.url.searchParams.get('team') ?? (teams.length === 1 ? teams[0].id : undefined)
+};
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseVacancyForm(form);
+  defaults = Object.fromEntries(form.entries());
+  defaults.positions = form.getAll('positions').map(String);
+  defaults.whatsapp_enabled = form.get('whatsapp_enabled') === 'on';
+  defaults.email_enabled = form.get('email_enabled') === 'on';
+  defaults.consent = form.get('consent') === 'on';
+  defaults.published = form.get('published') === 'on';
+
+  if ('error' in parsed && parsed.error) {
+    error = parsed.error;
+  } else if (parsed.values && !canEditTeam(session, parsed.values.team_id)) {
+    error = "You can only add vacancies for teams you manage.";
+  } else if (parsed.values && parsed.contact) {
+    const { data, error: dbError } = await supabase
+      .from('vacancies')
+      .insert({ ...parsed.values, created_by: session.userId })
+      .select('id')
+      .single();
+    if (dbError || !data) {
+      error = dbError?.message ?? 'Could not save the vacancy.';
+    } else {
+      const { error: contactError } = await saveContact(supabase, data.id, {
+        ...parsed.contact,
+        email: parsed.contact.email ?? session.email
+      });
+      if (contactError) {
+        error = `Saved, but the contact details failed: ${contactError.message}`;
+      } else {
+        return Astro.redirect('/portal/vacancies/?saved=1');
+      }
+    }
+  }
+}
+
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="New vacancy" session={session} active="vacancies" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>New vacancy</h1>
+      <p class="p-sub">Tell parents what your team needs. It shows on the public vacancies page straight away.</p>
+    </div>
+  </div>
+  {teams.length === 0 ? (
+    <div class="card empty">
+      You're not assigned to a team yet. Ask a club admin to add you to your team, then come back.
+    </div>
+  ) : (
+    <div class="card">
+      {error && <div class="msg bad" role="alert">{error}</div>}
+      <VacancyForm teams={teams} defaults={defaults} submitLabel="Publish vacancy" />
+    </div>
+  )}
+</PortalLayout>

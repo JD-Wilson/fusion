@@ -1,27 +1,15 @@
 ---
-import { getCollection, render, type CollectionEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { CORE_PAGE_SLUGS } from '../../lib/pages';
+import { getSitePage } from '../../lib/content';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
 
-export async function getStaticPaths() {
-  const pages = await getCollection('pages');
-
-  return pages
-    .filter((entry) => !CORE_PAGE_SLUGS.has(entry.id))
-    .map((entry) => ({
-      params: { slug: entry.id },
-      props: { entry }
-    }));
-}
-
-interface Props {
-  entry: CollectionEntry<'pages'>;
-}
-
-const { entry } = Astro.props as Props;
-const { Content } = await render(entry);
+// Club information pages (values, guides, codes of conduct, policies), edited
+// in the portal. Core pages live at their own addresses, not under /club/.
+const slug = Astro.params.slug ?? '';
+const entry = CORE_PAGE_SLUGS.has(slug) ? null : await getSitePage(slug);
+if (!entry) return Astro.rewrite('/404/');
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -37,11 +25,22 @@ const breadcrumbs = createBreadcrumbJsonLd([
   noindex={entry.data.noindex}
   structuredData={[breadcrumbs]}
 >
-  <PageHero eyebrow="Club Information" title={entry.data.title} summary={entry.data.description} />
+  <PageHero eyebrow="Club Information" title={entry.data.title} summary={entry.data.description} image={entry.heroImage ?? undefined} />
 
   <section class="dark-band reveal" data-delay="1">
     <div class="prose">
-      <Content />
+      <Fragment set:html={entry.html} />
     </div>
+    {entry.attachment && (
+      <a class="button ghost attachment" href={entry.attachment.url} target="_blank" rel="noopener">
+        {entry.attachment.label} ↗
+      </a>
+    )}
   </section>
 </BaseLayout>
+
+<style>
+  .attachment {
+    margin-top: var(--space-l);
+  }
+</style>

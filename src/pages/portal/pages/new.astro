@@ -1,0 +1,66 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { clearContentCache } from '../../../lib/content';
+import { line, slugify } from '../../../lib/forms';
+import { countNewEnquiries } from '../../../lib/portal';
+import { CORE_PAGE_SLUGS } from '../../../lib/pages';
+import { getEntry } from 'astro:content';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+let error: string | null = null;
+let title = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  title = line(form, 'title', 120) ?? '';
+  const slug = slugify(line(form, 'slug', 60) ?? title);
+  if (!title || !slug) error = 'Give the page a title.';
+  else if (CORE_PAGE_SLUGS.has(slug) || (await getEntry('pages', slug))) error = 'A page with that web address already exists. Try a different title.';
+  else {
+    const { error: dbError } = await supabase.from('site_pages').insert({
+      slug,
+      title,
+      description: line(form, 'description', 200) ?? '',
+      body: '',
+      show_in_nav: true,
+      sort_order: 100,
+      published: false,
+      updated_by: session.userId
+    });
+    if (dbError) error = dbError.code === '23505' ? 'A page with that web address already exists.' : dbError.message;
+    else {
+      clearContentCache();
+      return Astro.redirect(`/portal/pages/${slug}/?created=1`);
+    }
+  }
+}
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="New page" session={session} active="pages" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>New page</h1>
+      <p class="p-sub">For a policy, guide or other club information. It stays hidden until you publish it.</p>
+    </div>
+  </div>
+  <div class="card">
+    {error && <div class="msg bad" role="alert">{error}</div>}
+    <form method="post" class="f">
+      <label>Title<input type="text" name="title" required maxlength="120" value={title} placeholder="e.g. Safeguarding Policy" /></label>
+      <label>
+        Short summary
+        <input type="text" name="description" maxlength="200" placeholder="One line shown under the title" />
+      </label>
+      <label>
+        Web address (optional)
+        <input type="text" name="slug" maxlength="60" placeholder="Made from the title, e.g. safeguarding-policy" />
+        <span class="hint">The page will be at /club/&lt;address&gt;/.</span>
+      </label>
+      <div><button class="btn" type="submit">Create and edit</button> <a class="btn outline" href="/portal/pages/">Cancel</a></div>
+    </form>
+  </div>
+</PortalLayout>

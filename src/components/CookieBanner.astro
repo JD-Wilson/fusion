@@ -1,0 +1,178 @@
+---
+import { siteConfig } from '../config/site';
+---
+
+<!--
+  Cookie consent. Google Analytics is the only non-essential cookie on the
+  site and is not loaded at all until the visitor accepts. The choice is kept
+  in localStorage ("fusion-cookie-consent": "granted" | "denied"); "Cookie
+  settings" in the footer reopens this banner.
+-->
+<div class="cookie-banner" role="region" aria-label="Cookie choices" data-ga={siteConfig.googleAnalyticsId} hidden>
+  <div class="cb-inner">
+    <p class="cb-text">
+      We'd like to use analytics cookies to understand how people use the site, so we can improve it. They're only set if you accept.
+      <a href="/club/cookie-policy/">Cookie policy</a>
+    </p>
+    <div class="cb-actions">
+      <button type="button" class="cb-btn ghost" data-consent="denied">Reject</button>
+      <button type="button" class="cb-btn" data-consent="granted">Accept</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const KEY = 'fusion-cookie-consent';
+  const banner = document.querySelector<HTMLElement>('.cookie-banner');
+
+  const read = (): string | null => {
+    try {
+      return localStorage.getItem(KEY);
+    } catch {
+      return null;
+    }
+  };
+
+  const loadAnalytics = () => {
+    const id = banner?.dataset.ga;
+    const w = window as unknown as { dataLayer: unknown[]; gtag: (...a: unknown[]) => void; __gaLoaded?: boolean };
+    if (!id || w.__gaLoaded) return;
+    w.__gaLoaded = true;
+    w.dataLayer = w.dataLayer || [];
+    w.gtag = function gtag() {
+      // eslint-disable-next-line prefer-rest-params
+      w.dataLayer.push(arguments);
+    };
+    w.gtag('js', new Date());
+    w.gtag('config', id);
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    document.head.appendChild(script);
+  };
+
+  /** Remove Google Analytics cookies after consent is withdrawn. */
+  const clearAnalyticsCookies = () => {
+    const host = location.hostname;
+    const domains = ['', host, `.${host}`, `.${host.split('.').slice(-2).join('.')}`];
+    for (const name of document.cookie.split(';').map((c) => c.split('=')[0].trim())) {
+      if (!/^_ga/.test(name)) continue;
+      for (const d of domains) document.cookie = `${name}=; Max-Age=0; path=/${d ? `; domain=${d}` : ''}`;
+    }
+  };
+
+  if (banner) {
+    const choice = read();
+    if (choice === 'granted') loadAnalytics();
+    if (!choice) banner.hidden = false;
+
+    banner.querySelectorAll<HTMLButtonElement>('[data-consent]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const value = button.dataset.consent!;
+        try {
+          localStorage.setItem(KEY, value);
+        } catch {
+          // Private browsing: the choice applies to this page only.
+        }
+        banner.hidden = true;
+        if (value === 'granted') loadAnalytics();
+        else clearAnalyticsCookies();
+      });
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-cookie-settings]').forEach((link) =>
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        banner.hidden = false;
+        banner.querySelector<HTMLButtonElement>('[data-consent="granted"]')?.focus();
+      })
+    );
+  }
+</script>
+
+<style>
+  .cookie-banner {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 90;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .cookie-banner[hidden] { display: none; }
+
+  .cb-inner {
+    pointer-events: auto;
+    width: min(760px, 100%);
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    padding: 1rem 1.1rem 1rem 1.3rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-m);
+    background: rgba(16, 20, 18, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.8);
+    animation: cb-in 0.3s ease;
+  }
+
+  .cb-text {
+    flex: 1;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-2);
+  }
+
+  .cb-text a {
+    color: var(--text);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    white-space: nowrap;
+  }
+
+  .cb-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .cb-btn {
+    height: 40px;
+    padding: 0 1.1rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .cb-btn:hover { background: var(--color-lime-bright); }
+
+  .cb-btn.ghost {
+    background: transparent;
+    border-color: var(--line-strong);
+    color: var(--text);
+  }
+
+  .cb-btn.ghost:hover { background: rgba(255, 255, 255, 0.06); }
+
+  @keyframes cb-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 640px) {
+    .cb-inner { flex-direction: column; align-items: stretch; gap: 0.9rem; }
+    .cb-actions .cb-btn { flex: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cb-inner { animation: none; }
+  }
+</style>

@@ -1,12 +1,10 @@
 ---
-import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
-import { requirePageEntry } from '../lib/pages';
+import { requireSitePage } from '../lib/content';
 
-const sponsorPage = await requirePageEntry('new-sponsors');
-const { Content } = await render(sponsorPage);
+const sponsorPage = await requireSitePage('new-sponsors');
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -25,6 +23,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   structuredData={[breadcrumbs]}
 >
   <PageHero
+    image={sponsorPage.heroImage ?? undefined}
     eyebrow="Partners Wanted"
     title={sponsorPage.data.title}
     summary={sponsorPage.data.description}
@@ -33,7 +32,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   <section class="grid grid-2">
     <article class="section-card reveal" data-delay="1">
       <div class="prose">
-        <Content />
+        <Fragment set:html={sponsorPage.html} />
       </div>
     </article>
 
@@ -136,9 +135,9 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   /* ─── Form wrapper ───────────────────────────────────── */
 
   .sponsor-form-wrap {
-    background: var(--color-charcoal);
+    background: var(--color-band);
     border: 1px solid rgba(255, 255, 255, 0.07);
-    border-top: 2px solid rgba(29, 185, 84, 0.4);
+    border-top: 2px solid rgba(63, 209, 127, 0.4);
     border-radius: var(--radius-m);
     padding: var(--space-l);
     display: grid;
@@ -147,11 +146,12 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   }
 
   .form-eyebrow {
-    font-family: var(--font-display);
-    font-size: 0.7rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     color: var(--color-lime);
+    font-weight: 600;
   }
 
   .form-heading {
@@ -162,7 +162,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
 
   .form-subhead {
     font-size: 0.88rem;
-    color: rgba(245, 247, 246, 0.5);
+    color: rgba(241, 244, 242, 0.5);
     line-height: 1.6;
   }
 
@@ -188,11 +188,11 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   }
 
   .field-label {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: rgba(245, 247, 246, 0.6);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
+    color: rgba(241, 244, 242, 0.6);
+    font-weight: 500;
   }
 
   .required { color: var(--color-lime); }
@@ -210,12 +210,12 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
     box-sizing: border-box;
   }
 
-  .field-input::placeholder { color: rgba(245, 247, 246, 0.2); }
+  .field-input::placeholder { color: rgba(241, 244, 242, 0.2); }
 
   .field-input:focus {
     outline: none;
-    border-color: rgba(29, 185, 84, 0.5);
-    background: rgba(29, 185, 84, 0.04);
+    border-color: rgba(63, 209, 127, 0.5);
+    background: rgba(63, 209, 127, 0.04);
   }
 
   .field-textarea {
@@ -236,7 +236,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
 
   .form-note {
     font-size: 0.75rem;
-    color: rgba(245, 247, 246, 0.3);
+    color: rgba(241, 244, 242, 0.3);
   }
 
   .submit-btn {
@@ -245,11 +245,10 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
     gap: 0.6rem;
     background: var(--color-lime);
     color: var(--color-ink);
-    font-family: var(--font-display);
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
     padding: 0.8rem 1.8rem;
     border: none;
     border-radius: 999px;
@@ -268,7 +267,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
     display: none;
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(16, 20, 20, 0.3);
+    border: 2px solid rgba(9, 11, 10, 0.3);
     border-top-color: var(--color-ink);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
@@ -306,20 +305,20 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   }
 
   .status-success {
-    background: rgba(29, 185, 84, 0.1);
-    border: 1px solid rgba(29, 185, 84, 0.3);
-    color: rgba(245, 247, 246, 0.85);
+    background: rgba(63, 209, 127, 0.1);
+    border: 1px solid rgba(63, 209, 127, 0.3);
+    color: rgba(241, 244, 242, 0.85);
   }
 
   .status-success strong { color: var(--color-lime); display: block; margin-bottom: 0.2rem; }
 
   .status-error {
-    background: rgba(255, 80, 80, 0.08);
-    border: 1px solid rgba(255, 80, 80, 0.25);
-    color: rgba(245, 247, 246, 0.75);
+    background: rgba(240, 90, 90, 0.08);
+    border: 1px solid rgba(240, 90, 90, 0.25);
+    color: rgba(241, 244, 242, 0.75);
   }
 
-  .status-error strong { color: #ff8080; display: block; margin-bottom: 0.2rem; }
+  .status-error strong { color: #f5a3a3; display: block; margin-bottom: 0.2rem; }
   .status-error a { color: var(--color-lime); text-decoration: underline; }
   .status-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
 

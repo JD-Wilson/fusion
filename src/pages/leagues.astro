@@ -1,12 +1,11 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../lib/seo';
-import { requirePageEntry } from '../lib/pages';
+import { requireSitePage } from '../lib/content';
 
-const leaguesPage = await requirePageEntry('leagues');
-const { Content } = await render(leaguesPage);
+const leaguesPage = await requireSitePage('leagues');
 
 const leagues = (await getCollection('leagues', ({ data }) => !data.noindex)).sort((a, b) => {
   const ageA = Number.parseInt(a.data.ageBand.replace(/\D/g, ''), 10) || 99;
@@ -29,11 +28,11 @@ const breadcrumbs = createBreadcrumbJsonLd([
   noindex={leaguesPage.data.noindex}
   structuredData={[breadcrumbs]}
 >
-  <PageHero eyebrow="League Competition" title={leaguesPage.data.title} summary={leaguesPage.data.description} />
+  <PageHero image={leaguesPage.heroImage ?? '/images/web/fusion-kit-pitch.jpg'} imagePosition="50% 70%" eyebrow="League Competition" title={leaguesPage.data.title} summary={leaguesPage.data.description} />
 
   <section class="section-card reveal" data-delay="1">
     <div class="prose">
-      <Content />
+      <Fragment set:html={leaguesPage.html} />
     </div>
   </section>
 
@@ -85,7 +84,7 @@ const breadcrumbs = createBreadcrumbJsonLd([
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.02em;
-    color: rgba(29, 185, 84, 0.1);
+    color: rgba(63, 209, 127, 0.1);
     user-select: none;
     pointer-events: none;
   }
@@ -98,6 +97,6 @@ const breadcrumbs = createBreadcrumbJsonLd([
 
   .league-region {
     font-size: 0.85rem;
-    color: rgba(245, 247, 246, 0.45);
+    color: rgba(241, 244, 242, 0.45);
   }
 </style>

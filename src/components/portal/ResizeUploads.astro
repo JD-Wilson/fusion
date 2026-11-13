@@ -1,0 +1,41 @@
+<script>
+  /*
+   * Shrink big photos in the browser before upload (max 2000px, JPEG), so
+   * phone photos upload quickly and stay under the server's request limit.
+   * Applies to every <input type="file" data-resize> on the page, including
+   * ones that accept several files; PDFs and small images pass through.
+   */
+  async function shrink(file: File): Promise<File> {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && file.size < 1.5 * 1024 * 1024) return file;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.84));
+      return blob ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+    } catch {
+      return file; // The server still checks type and size.
+    }
+  }
+
+  document.querySelectorAll<HTMLInputElement>('input[type="file"][data-resize]').forEach((input) => {
+    input.addEventListener('change', async () => {
+      const chosen = [...(input.files ?? [])];
+      if (!chosen.length) return;
+      const form = input.form;
+      const buttons = form ? [...form.querySelectorAll<HTMLButtonElement>('button[type="submit"]')] : [];
+      buttons.forEach((b) => (b.disabled = true)); // don't submit half-processed files
+      try {
+        const dt = new DataTransfer();
+        for (const file of chosen) dt.items.add(await shrink(file));
+        input.files = dt.files;
+      } finally {
+        buttons.forEach((b) => (b.disabled = false));
+      }
+    });
+  });
+</script>

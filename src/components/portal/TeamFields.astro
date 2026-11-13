@@ -1,0 +1,112 @@
+---
+import type { TeamRow } from '../../lib/portal';
+import { fulltimeTeams } from '../../lib/matches';
+
+interface Props {
+  team?: Partial<TeamRow> | null;
+  /** Club admins see the identity fields (name, age group, league, visibility). */
+  admin: boolean;
+  /** "create" shows identity fields only; the rest is filled in on the team's page. */
+  mode?: 'create' | 'edit';
+  contact?: { whatsapp_number: string | null; email: string | null } | null;
+}
+const { team, admin, mode = 'edit', contact } = Astro.props as Props;
+const t = team ?? {};
+---
+
+{admin && (
+  <fieldset>
+    <legend>Team</legend>
+    <div class="two">
+      <label>Team name<input type="text" name="name" required maxlength="80" value={t.name ?? ''} placeholder="e.g. U10 Black" /></label>
+      <label>Age group<input type="text" name="age_group" required maxlength="10" value={t.age_group ?? ''} placeholder="e.g. U10" /></label>
+    </div>
+    <div class="two">
+      <label>
+        Boys / girls
+        <select name="gender">
+          {['Mixed', 'Boys', 'Girls'].map((g) => <option value={g} selected={(t.gender ?? 'Mixed') === g}>{g}</option>)}
+        </select>
+      </label>
+      <label>
+        Match day
+        <select name="match_day">
+          <option value="">Not set</option>
+          {['Saturday', 'Sunday'].map((d) => <option value={d} selected={t.match_day === d}>{d}</option>)}
+        </select>
+      </label>
+    </div>
+    <div class="two">
+      <label>League<input type="text" name="league" maxlength="120" value={t.league ?? ''} /></label>
+      <label>Season<input type="text" name="season" maxlength="20" value={t.season ?? ''} placeholder="2026/27" /></label>
+    </div>
+    <label class="check"><input type="checkbox" name="published" checked={t.published !== false} />Show this team on the website</label>
+  </fieldset>
+)}
+
+{mode === 'edit' && (
+  <>
+    <fieldset>
+      <legend>Team page</legend>
+      <div class="photo-row">
+        {t.photo_url ? <img class="photo-preview" src={t.photo_url} alt="" /> : <div class="photo-preview empty">No photo yet</div>}
+        <div class="photo-fields">
+          <label>
+            Team photo
+            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-resize />
+            <span class="hint">A landscape photo works best. Big phone photos are shrunk automatically before upload.</span>
+          </label>
+          {t.photo_url && <label class="check"><input type="checkbox" name="remove_photo" />Remove the current photo</label>}
+        </div>
+      </div>
+      <label>
+        About the team
+        <textarea name="description" maxlength="1500" placeholder="A few friendly lines for parents: what the team is like, the coaching style, anything new players should know.">{t.description ?? ''}</textarea>
+        <span class="hint">The first paragraph also appears at the top of the team page.</span>
+      </label>
+      <div class="two">
+        <label>Training<input type="text" name="training" maxlength="160" value={t.training ?? ''} placeholder="e.g. Tuesdays 6–7pm" /></label>
+        <label>Training venue<input type="text" name="training_venue" maxlength="120" value={t.training_venue ?? ''} placeholder="e.g. Excel Academy" /></label>
+      </div>
+      <label>
+        Team name on FA Full-Time
+        <input type="text" name="fulltime_name" maxlength="120" value={t.fulltime_name ?? ''} list="fulltime-teams" placeholder="e.g. Fusion FC U8 Black" />
+        <span class="hint">
+          {fulltimeTeams.length
+            ? 'Start typing and pick the team from the list. This shows its fixtures, results and league table on the team page.'
+            : 'The list fills in after the first Full-Time update. Enter it exactly as Full-Time shows it.'}
+        </span>
+        <datalist id="fulltime-teams">
+          {fulltimeTeams.map((name) => <option value={name} />)}
+        </datalist>
+      </label>
+      <div class="two">
+        <label>Home ground<input type="text" name="home_ground" maxlength="120" value={t.home_ground ?? ''} /></label>
+        <label>
+          FA Full-Time link (optional)
+          <input type="url" name="fulltime_url" maxlength="300" value={t.fulltime_url ?? ''} placeholder="https://fulltime.thefa.com/…" />
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>How parents get in touch</legend>
+      <label>
+        Name to show parents
+        <input type="text" name="contact_name" maxlength="80" value={t.contact_name ?? ''} placeholder="e.g. Coach Mark" />
+      </label>
+      <label class="check"><input type="checkbox" name="whatsapp_enabled" checked={Boolean(t.whatsapp_enabled)} />Show a WhatsApp button on the team page</label>
+      <label>
+        WhatsApp number
+        <input type="tel" name="whatsapp_number" value={contact?.whatsapp_number ?? ''} placeholder="07700 900123" autocomplete="tel" />
+        <span class="hint">Never shown on the website. It only opens in WhatsApp when a parent taps the button.</span>
+      </label>
+      <label class="check"><input type="checkbox" name="consent" checked={Boolean(t.whatsapp_enabled)} />I'm happy for parents who tap the button to see this number in WhatsApp</label>
+      <label class="check"><input type="checkbox" name="email_enabled" checked={t.email_enabled !== false} />Show a message form on the team page (comes by email)</label>
+      <label>
+        Email for messages
+        <input type="email" name="contact_email" value={contact?.email ?? ''} placeholder="Leave blank to send to the team's managers" />
+      </label>
+    </fieldset>
+  </>
+)}

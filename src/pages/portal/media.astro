@@ -1,0 +1,160 @@
+---
+import PortalLayout from '../../components/portal/PortalLayout.astro';
+import ResizeUploads from '../../components/portal/ResizeUploads.astro';
+import { countNewEnquiries } from '../../lib/portal';
+import { MEDIA_BUCKET, uploadMedia } from '../../lib/portal-media';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+let notice: { ok: boolean; text: string } | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('intent') === 'delete') {
+    const path = String(form.get('path') ?? '');
+    if (/^(images|documents)\/[\w.-]+$/.test(path)) {
+      const { error } = await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'File deleted. Any page still linking to it will show a broken image.' };
+    }
+  } else {
+    const files = form.getAll('files');
+    let done = 0;
+    for (const file of files) {
+      const isPdf = file instanceof File && file.type === 'application/pdf';
+      const result = await uploadMedia(supabase, file, isPdf ? 'documents' : 'images');
+      if (result.error) {
+        notice = { ok: false, text: `${file instanceof File ? file.name : 'File'}: ${result.error}` };
+        break;
+      }
+      if (result.url) done++;
+    }
+    if (!notice) notice = done ? { ok: true, text: `${done} ${done === 1 ? 'file' : 'files'} uploaded.` } : { ok: false, text: 'Choose a file to upload.' };
+  }
+}
+
+type Item = { path: string; name: string; url: string; isPdf: boolean; created: string };
+async function list(folder: 'images' | 'documents'): Promise<{ items: Item[]; error?: string }> {
+  const { data, error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .list(folder, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
+  if (error) return { items: [], error: error.message };
+  return {
+    items: (data ?? [])
+      .filter((f) => f.id && !f.name.startsWith('.'))
+      .map((f) => {
+        const path = `${folder}/${f.name}`;
+        return {
+          path,
+          name: f.name.replace(/^\d+-/, ''),
+          url: supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl,
+          isPdf: folder === 'documents',
+          created: f.created_at ?? ''
+        };
+      })
+  };
+}
+
+const [images, documents] = await Promise.all([list('images'), list('documents')]);
+const bucketMissing = images.error && /not found/i.test(images.error);
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="Media" session={session} active="media" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Media</h1>
+      <p class="p-sub">Photos and documents for pages and blog posts. Upload here, then copy the link into a page's content.</p>
+    </div>
+  </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+  {bucketMissing && <div class="msg bad">Media needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>}
+
+  <div class="card">
+    <h2>Upload</h2>
+    <form method="post" class="f" enctype="multipart/form-data">
+      <label>
+        Photos or PDFs
+        <input type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" data-resize />
+        <span class="hint">Photos are shrunk automatically. PDFs up to 4MB.</span>
+      </label>
+      <div><button class="btn" type="submit">Upload</button></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Photos</h2>
+    {images.items.length === 0 && <p class="empty">No photos uploaded yet.</p>}
+    <div class="media-grid">
+      {images.items.map((item) => (
+        <figure class="media">
+          <a href={item.url} target="_blank" rel="noopener"><img src={item.url} alt="" loading="lazy" /></a>
+          <figcaption>
+            <span class="media-name" title={item.name}>{item.name}</span>
+            <span class="media-actions">
+              <button type="button" class="btn outline sm" data-copy={`![${item.name.replace(/\.\w+$/, '').replace(/-/g, ' ')}](${item.url})`}>Copy for page</button>
+              <button type="button" class="btn outline sm" data-copy={item.url}>Copy link</button>
+              <form method="post" onsubmit="return confirm('Delete this photo?')">
+                <input type="hidden" name="intent" value="delete" />
+                <input type="hidden" name="path" value={item.path} />
+                <button class="btn danger sm" type="submit">Delete</button>
+              </form>
+            </span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Documents</h2>
+    {documents.items.length === 0 && <p class="empty">No documents uploaded yet.</p>}
+    {documents.items.map((item) => (
+      <div class="row">
+        <div class="grow">
+          <h3><a href={item.url} target="_blank" rel="noopener">{item.name}</a></h3>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn outline sm" data-copy={`[${item.name.replace(/\.pdf$/i, '').replace(/-/g, ' ')}](${item.url})`}>Copy for page</button>
+          <form method="post" onsubmit="return confirm('Delete this document?')">
+            <input type="hidden" name="intent" value="delete" />
+            <input type="hidden" name="path" value={item.path} />
+            <button class="btn danger sm" type="submit">Delete</button>
+          </form>
+        </div>
+      </div>
+    ))}
+  </div>
+</PortalLayout>
+
+<ResizeUploads />
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const label = button.textContent;
+      try {
+        await navigator.clipboard.writeText(button.dataset.copy ?? '');
+        button.textContent = 'Copied!';
+      } catch {
+        button.textContent = 'Copy failed';
+      }
+      setTimeout(() => (button.textContent = label), 1600);
+    });
+  });
+</script>
+
+<style>
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .media { margin: 0; border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; background: var(--surface-2); }
+  .media img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+  .media figcaption { display: grid; gap: 0.5rem; padding: 0.7rem; }
+  .media-name { font-size: 0.82rem; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .media-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+</style>

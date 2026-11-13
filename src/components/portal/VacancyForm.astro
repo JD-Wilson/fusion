@@ -1,0 +1,113 @@
+---
+import { EXPERIENCE, POSITIONS } from '../../lib/vacancies';
+import type { VacancyRow } from '../../lib/portal-vacancies';
+import type { TeamRow } from '../../lib/portal';
+
+interface Props {
+  teams: TeamRow[];
+  vacancy?: VacancyRow | null;
+  /** Values to show when a save failed, so nothing typed is lost. */
+  defaults: Record<string, string | string[] | boolean | number | null | undefined>;
+  submitLabel: string;
+}
+const { teams, vacancy, defaults: d, submitLabel } = Astro.props as Props;
+const positions = (d.positions as string[] | undefined) ?? [];
+const kind = (d.kind as string) ?? 'player';
+const str = (k: string) => (d[k] as string | null | undefined) ?? '';
+---
+
+<form method="post" class="f">
+  <label>
+    Team
+    <select name="team_id" required>
+      <option value="" disabled selected={!d.team_id}>Choose a team…</option>
+      {teams.map((t) => (
+        <option value={t.id} selected={d.team_id === t.id}>{t.name} ({t.age_group}{t.match_day ? `, ${t.match_day}` : ''})</option>
+      ))}
+    </select>
+  </label>
+
+  <div class="two">
+    <label>
+      Looking for
+      <select name="kind">
+        <option value="player" selected={kind === 'player'}>A player</option>
+        <option value="coach" selected={kind === 'coach'}>A coach or helper</option>
+      </select>
+    </label>
+    <label>
+      How many places?
+      <input type="number" name="spaces" min="1" max="20" value={String(d.spaces ?? 1)} />
+    </label>
+  </div>
+
+  <fieldset>
+    <legend>Positions (leave all unticked for "any position")</legend>
+    <div class="chips">
+      {POSITIONS.map((p) => (
+        <label class="check"><input type="checkbox" name="positions" value={p} checked={positions.includes(p)} />{p}</label>
+      ))}
+    </div>
+  </fieldset>
+
+  <label>
+    Experience
+    <select name="experience">
+      {Object.entries(EXPERIENCE).map(([k, label]) => (
+        <option value={k} selected={(d.experience ?? 'any') === k}>{label}</option>
+      ))}
+    </select>
+  </label>
+
+  <label>
+    Headline (optional)
+    <input type="text" name="headline" maxlength="80" value={str('headline')} placeholder="e.g. Goalkeeper wanted!" />
+  </label>
+
+  <label>
+    Anything else parents should know? (optional)
+    <textarea name="description" maxlength="600" placeholder="Training night, friendly team, new players welcome to try a session…">{str('description')}</textarea>
+  </label>
+
+  <fieldset>
+    <legend>How parents get in touch</legend>
+    <label>
+      Name to show parents
+      <input type="text" name="contact_name" required maxlength="80" value={str('contact_name')} placeholder="e.g. Coach Mark" />
+    </label>
+
+    <label class="check"><input type="checkbox" name="whatsapp_enabled" checked={d.whatsapp_enabled !== false} />Let parents message me on WhatsApp</label>
+    <label>
+      WhatsApp number
+      <input type="tel" name="whatsapp_number" value={str('whatsapp_number')} placeholder="07700 900123" autocomplete="tel" />
+      <span class="hint">Never shown on the website. It only opens in WhatsApp when a parent taps the button.</span>
+    </label>
+    <label class="check"><input type="checkbox" name="consent" checked={Boolean(d.consent)} />I'm happy for parents who tap the button to see this number in WhatsApp</label>
+
+    <label class="check"><input type="checkbox" name="email_enabled" checked={d.email_enabled !== false} />Also show a "Send a message" form (comes to me by email)</label>
+    <label>
+      Email for messages
+      <input type="email" name="contact_email" value={str('contact_email')} placeholder="Leave blank to use the team managers' login emails" />
+    </label>
+  </fieldset>
+
+  <div class="two">
+    <label>
+      Hide automatically after (optional)
+      <input type="date" name="expires_on" value={str('expires_on')} />
+    </label>
+    {vacancy && (
+      <label>
+        Status
+        <select name="status">
+          <option value="open" selected={(d.status ?? 'open') === 'open'}>Open, still looking</option>
+          <option value="filled" selected={d.status === 'filled'}>Filled</option>
+        </select>
+      </label>
+    )}
+  </div>
+
+  <label class="check"><input type="checkbox" name="published" checked={d.published !== false} />Show on the public website</label>
+
+  <div><button class="btn" type="submit">{submitLabel}</button> <a class="btn outline" href="/portal/vacancies/">Cancel</a></div>
+</form>

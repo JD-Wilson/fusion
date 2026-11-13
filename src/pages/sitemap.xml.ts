@@ -1,8 +1,10 @@
-import { getCollection } from 'astro:content';
 import { toAbsoluteUrl } from '../config/site';
-import { CORE_PAGE_SLUGS } from '../lib/pages';
+import { getPosts, getSitePage, listClubPages } from '../lib/content';
+import { getPublicTeams } from '../lib/teams';
 
-export const prerender = true;
+// Generated per request (cached for an hour) so pages, posts and teams added
+// in the portal appear without a rebuild.
+export const prerender = false;
 
 const xmlEscape = (value: string) =>
   value
@@ -20,8 +22,10 @@ const buildUrlEntry = (loc: string, lastmod?: string) => {
 };
 
 export async function GET() {
-  const pageEntries = await getCollection('pages');
-  const pageBySlug = new Map(pageEntries.map((entry) => [entry.id, entry]));
+  const corePages = await Promise.all(
+    ['home', 'about', 'age-groups', 'development-sessions', 'leagues', 'new-sponsors', 'blog', 'contact', 'join'].map((slug) => getSitePage(slug))
+  );
+  const pageBySlug = new Map(corePages.filter((p) => p !== null).map((p) => [p.id, p]));
 
   const staticPaths = [
     { path: '/', id: 'home' },
@@ -33,7 +37,10 @@ export async function GET() {
     { path: '/new-sponsors/', id: 'new-sponsors' },
     { path: '/blog/', id: 'blog' },
     { path: '/contact/', id: 'contact' },
-    { path: '/join/', id: 'join' }
+    { path: '/join/', id: 'join' },
+    { path: '/vacancies/', id: 'vacancies' },
+    { path: '/teams/', id: 'teams' },
+    { path: '/fixtures/', id: 'fixtures' }
   ]
     .filter((route) => !pageBySlug.get(route.id)?.data.noindex)
     .map((route) => ({
@@ -41,19 +48,22 @@ export async function GET() {
       lastmod: undefined as string | undefined
     }));
 
-  const extraClubPaths = pageEntries
-    .filter((entry) => !CORE_PAGE_SLUGS.has(entry.id) && !entry.data.noindex)
+  const extraClubPaths = (await listClubPages())
+    .filter((entry) => !entry.data.noindex)
     .map((entry) => ({
       path: `/club/${entry.id}/`,
-      lastmod: undefined
+      lastmod: entry.updatedAt ?? undefined
     }));
 
-  const blogPaths = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex)).map((entry) => ({
+  const blogPaths = (await getPosts()).filter((p) => !p.data.noindex).map((entry) => ({
     path: `/blog/${entry.id}/`,
     lastmod: (entry.data.updatedDate ?? entry.data.date).toISOString()
   }));
 
-  const urls = [...staticPaths, ...extraClubPaths, ...blogPaths];
+  // Team pages, read from the club database when the site is built.
+  const teamPaths = ((await getPublicTeams()) ?? []).map((team) => ({ path: `/teams/${team.slug}/`, lastmod: undefined }));
+
+  const urls = [...staticPaths, ...extraClubPaths, ...blogPaths, ...teamPaths];
   const uniqueUrls = Array.from(new Map(urls.map((url) => [url.path, url])).values());
 
   const xml = [

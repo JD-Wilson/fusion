@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "description": "FA Full-Time scraper for the Fusion FC site. Kept apart so the website's install doesn't pull in Playwright.",
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.64.1"
+  }
+}

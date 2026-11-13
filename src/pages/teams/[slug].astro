@@ -1,0 +1,421 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import { createBreadcrumbJsonLd } from '../../lib/seo';
+import { getPublicTeam, getVacanciesByTeam, teamPath, teamPhoto } from '../../lib/teams';
+import { EXPERIENCE, positionsLabel } from '../../lib/vacancies';
+import MatchList from '../../components/fixtures/MatchList.astro';
+import LeagueTable from '../../components/fixtures/LeagueTable.astro';
+import { fulltimeNameFor, latestResults, seasonRecord, tableFor, upcomingFixtures } from '../../lib/matches';
+
+export const prerender = false;
+
+const team = await getPublicTeam(Astro.params.slug ?? '');
+if (!team) {
+  Astro.response.status = 404;
+} else {
+  Astro.response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+}
+
+const vacancies = team ? ((await getVacanciesByTeam()).get(team.id) ?? []) : [];
+const sent = Astro.url.searchParams.get('sent');
+const error = Astro.url.searchParams.get('error');
+const errors: Record<string, string> = {
+  invalid: 'Please add your name, a valid email and a short message.',
+  fast: 'That was quick! Please check your message and press send again.',
+  limit: "Thanks, we've already got your messages. Please give us a little time to reply.",
+  closed: "Sorry, this team isn't taking messages here right now. Please use the Join Us page.",
+  failed: 'Sorry, something went wrong sending your message. Please try again.'
+};
+
+const facts = team
+  ? [
+      ['Age group', team.age_group],
+      ['Match day', team.match_day],
+      ['League', team.league],
+      ['Season', team.season],
+      ['Training', team.training],
+      ['Training venue', team.training_venue],
+      ['Home ground', team.home_ground]
+    ].filter((f): f is [string, string] => Boolean(f[1]))
+  : [];
+
+// Fixtures, results and table from the Full-Time snapshot, if the team is linked.
+const ftName = team ? fulltimeNameFor(team) : null;
+const nextGames = ftName ? upcomingFixtures({ team: ftName, limit: 5 }) : [];
+const pastGames = ftName ? latestResults({ team: ftName }) : [];
+const record = ftName ? seasonRecord(pastGames, ftName) : null;
+const ftTable = ftName ? tableFor(ftName) : null;
+const hasMatches = nextGames.length > 0 || pastGames.length > 0;
+
+const coach = team?.contact_name ?? null;
+const canMessage = Boolean(team && (team.whatsapp_enabled || team.email_enabled));
+const initial = (coach ?? 'F').replace(/^(coach|manager)\s+/i, '').trim()[0]?.toUpperCase() ?? 'F';
+const shortName = coach && coach.length <= 18 ? coach : (coach?.split(' ')[0] ?? 'the coach');
+const share = team
+  ? `https://wa.me/?text=${encodeURIComponent(`Fusion FC ${team.name} (${team.age_group}): ${Astro.url.origin}${teamPath(team)}`)}`
+  : '';
+
+const summary =
+  team?.description?.split('\n').find((l) => l.trim())?.trim() ??
+  (team ? [team.match_day && `${team.match_day} football`, team.league].filter(Boolean).join(' in the ') || 'A Fusion FC team.' : '');
+
+const breadcrumbs = team
+  ? createBreadcrumbJsonLd([
+      { name: 'Home', path: '/' },
+      { name: 'Teams', path: '/teams/' },
+      { name: team.name, path: teamPath(team) }
+    ])
+  : null;
+const teamJsonLd = team
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'SportsTeam',
+      name: `Fusion FC ${team.name}`,
+      sport: 'Football',
+      memberOf: { '@type': 'SportsOrganization', name: 'Fusion Football Club' }
+    }
+  : null;
+---
+
+{
+  !team ? (
+    <BaseLayout title="Team not found | Fusion FC" description="This team page doesn't exist." noindex>
+      <section class="section-card notfound">
+        <h1 class="section-title">We couldn't find that team</h1>
+        <p class="section-copy">It may have been renamed or merged for the new season.</p>
+        <a class="button" href="/teams/">See all teams</a>
+      </section>
+    </BaseLayout>
+  ) : (
+    <BaseLayout
+      title={`${team.name} (${team.age_group}) | Fusion FC`}
+      description={summary.slice(0, 160)}
+      canonical={teamPath(team)}
+      image={team.photo_url ?? undefined}
+      structuredData={[breadcrumbs!, teamJsonLd!]}
+    >
+      <PageHero
+        eyebrow={[team.age_group, team.gender === 'Mixed' ? null : team.gender, team.match_day].filter(Boolean).join(' · ')}
+        title={team.name}
+        summary={summary}
+        image={teamPhoto(team)}
+        imagePosition="50% 40%"
+        actions={[
+          ...(vacancies.length ? [{ href: '#recruiting', label: 'Looking for players' }] : []),
+          ...(canMessage ? [{ href: '#contact', label: coach ? `Message ${shortName}` : 'Message the team', ghost: vacancies.length > 0 }] : [])
+        ]}
+      />
+
+      {(sent || error) && (
+        <div class:list={['notice', sent ? 'ok' : 'bad']} role={sent ? 'status' : 'alert'}>
+          {sent ? <><strong>Message sent!</strong> {coach ?? 'The team'} will reply by email soon.</> : errors[error ?? ''] ?? errors.failed}
+        </div>
+      )}
+
+      <div class="team-layout">
+        <div class="team-main">
+          {facts.length > 0 && (
+            <section class="facts" aria-label="Team details">
+              {facts.map(([label, value]) => (
+                <div class="fact">
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {team.description && (
+            <section class="about">
+              <h2 class="band-eyebrow">About the team</h2>
+              <div class="prose">
+                {team.description.split(/\n{2,}/).map((p) => <p>{p}</p>)}
+              </div>
+            </section>
+          )}
+
+          {vacancies.length > 0 && (
+            <section id="recruiting" class="recruiting">
+              <h2 class="band-eyebrow">Looking for players</h2>
+              <div class="vac-list">
+                {vacancies.map((v) => (
+                  <article class="vac">
+                    <div>
+                      <h3>{v.headline ?? (v.kind === 'coach' ? 'Coach or helper wanted' : v.spaces > 1 ? `${v.spaces} places available` : 'A place is available')}</h3>
+                      <div class="chip-list">
+                        <span class="chip">{positionsLabel(v)}</span>
+                        {v.kind === 'player' && v.spaces > 1 && <span class="chip">{v.spaces} spaces</span>}
+                        <span class="chip">{EXPERIENCE[v.experience] ?? EXPERIENCE.any}</span>
+                      </div>
+                      {v.description && <p class="vac-desc">{v.description}</p>}
+                    </div>
+                    <div class="vac-actions">
+                      {v.whatsapp_enabled && (
+                        <a class="button wa" href={`/vacancies/${v.id}/whatsapp/`} target="_blank" rel="nofollow noopener">WhatsApp {v.contact_name}</a>
+                      )}
+                      {v.email_enabled && <a class="button ghost" href={`/vacancies/#v-${v.id}`}>Send a message</a>}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {hasMatches && (
+            <section class="matches" id="fixtures">
+              <div class="matches-head">
+                <h2 class="band-eyebrow">Fixtures & results</h2>
+                <a class="see-all" href={`/fixtures/?team=${encodeURIComponent(ftName!)}`}>All games →</a>
+              </div>
+              {nextGames.length > 0 && <MatchList matches={nextGames} team={ftName!} kind="fixtures" compact />}
+              {pastGames.length > 0 && (
+                <>
+                  <p class="sub-head">
+                    Results
+                    {record && record.played > 0 && (
+                      <span>W{record.won} D{record.drawn} L{record.lost}</span>
+                    )}
+                    {record && record.played === 0 && <span>{pastGames.length} played</span>}
+                  </p>
+                  <MatchList matches={pastGames.slice(0, 5)} team={ftName!} kind="results" compact />
+                </>
+              )}
+              {ftTable && <LeagueTable table={ftTable} team={ftName!} />}
+            </section>
+          )}
+
+          {team.fulltime_url && (
+            <a class="fulltime" href={team.fulltime_url} target="_blank" rel="noopener">
+              <span>
+                <strong>Fixtures, results & table</strong>
+                <small>On FA Full-Time</small>
+              </span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          )}
+        </div>
+
+        <aside id="contact" class="contact">
+          <div class="coach">
+            <span class="coach-av" aria-hidden="true">{initial}</span>
+            <div>
+              <strong>{coach ?? 'Fusion FC'}</strong>
+              <small>{coach ? `${team.name} contact` : 'Club contact'}</small>
+            </div>
+          </div>
+
+          {team.whatsapp_enabled && (
+            <a class="button wa block" href={`/teams/${team.slug}/whatsapp/`} target="_blank" rel="nofollow noopener">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.27-1.38A9.9 9.9 0 1 0 12.04 2Zm0 18.1a8.2 8.2 0 0 1-4.2-1.15l-.3-.18-3.13.82.84-3.05-.2-.31a8.2 8.2 0 1 1 7 3.87Zm4.5-6.14c-.25-.12-1.46-.72-1.69-.8-.23-.09-.39-.13-.56.12-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06a6.7 6.7 0 0 1-3.3-2.88c-.25-.44.25-.41.72-1.34.08-.16.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.4-.41-.56-.42h-.47c-.16 0-.43.06-.65.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.16 1.73 2.64 4.19 3.7 1.56.67 2.17.73 2.95.61.47-.07 1.46-.6 1.66-1.18.2-.58.2-1.07.14-1.18-.06-.1-.22-.16-.47-.28Z"/></svg>
+              WhatsApp {shortName}
+            </a>
+          )}
+
+          {team.email_enabled ? (
+            <details class="enq-wrap" open={error ? true : undefined} data-contact-form>
+            <summary class:list={['button', 'block', team.whatsapp_enabled && 'ghost']}>
+              {team.whatsapp_enabled ? 'Or send a message' : `Message ${shortName}`}
+            </summary>
+            <form method="post" action="/api/enquiry/" class="enq">
+              <input type="hidden" name="team_id" value={team.id} />
+              <input type="hidden" name="return" value={teamPath(team)} />
+              <input type="hidden" name="anchor" value="contact" />
+              <input type="hidden" name="started" value="" data-started />
+              <input type="text" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true" />
+              <label>Your name<input name="name" required autocomplete="name" /></label>
+              <label>Email<input name="email" type="email" required autocomplete="email" /></label>
+              <div class="two">
+                <label>Player's name<input name="player_name" /></label>
+                <label>Age<input name="player_age" inputmode="numeric" /></label>
+              </div>
+              <label>Message<textarea name="message" rows="4" required minlength="5"></textarea></label>
+              <button class="button block" type="submit">Send message</button>
+              <p class="privacy">We only use your details to put you in touch with the team.</p>
+            </form>
+            </details>
+          ) : (
+            !team.whatsapp_enabled && (
+              <a class="button ghost block" href="/join/">Ask the club about this team</a>
+            )
+          )}
+
+          <a class="share" href={share} target="_blank" rel="noopener">Share this team on WhatsApp</a>
+        </aside>
+      </div>
+
+      <a class="link-arrow back" href="/teams/">All teams</a>
+    </BaseLayout>
+  )
+}
+
+<script>
+  const stamp = String(Date.now());
+  document.querySelectorAll<HTMLInputElement>('[data-started]').forEach((el) => (el.value = stamp));
+
+  // "Message the coach" links jump to #contact: open the form when there's no WhatsApp button to tap.
+  const openForm = () => {
+    const form = document.querySelector<HTMLDetailsElement>('[data-contact-form]');
+    if (location.hash === '#contact' && form && !document.querySelector('#contact .wa')) form.open = true;
+  };
+  openForm();
+  window.addEventListener('hashchange', openForm);
+</script>
+
+<style>
+  .notfound { text-align: center; max-width: 560px; margin-inline: auto; }
+
+  .notice { margin-top: var(--space-l); padding: 0.9rem 1.1rem; border-radius: var(--radius-s); }
+  .notice.ok { background: var(--accent-soft); border: 1px solid var(--accent-line); }
+  .notice.bad { background: rgba(240, 90, 90, 0.1); border: 1px solid rgba(240, 90, 90, 0.35); color: #f5a3a3; }
+
+  .team-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+    margin-top: var(--space-xl);
+  }
+
+  .team-main {
+    display: grid;
+    gap: var(--space-xl);
+  }
+
+  .team-main > section { margin-top: 0; }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    overflow: hidden;
+    background: var(--line);
+    gap: 1px;
+  }
+
+  .fact {
+    display: grid;
+    align-content: start;
+    gap: 0.25rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--surface);
+  }
+
+  .fact span { font-size: 0.78rem; color: var(--text-3); }
+  .fact strong { font-weight: 600; color: var(--text); line-height: 1.4; }
+
+  .vac-list { display: grid; gap: 0.8rem; }
+
+  .matches { display: grid; gap: 1rem; }
+  .matches-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .matches-head .band-eyebrow { margin: 0; }
+  .see-all { font-size: 0.88rem; color: var(--text-2); }
+  .see-all:hover { color: var(--text); }
+  .sub-head { display: flex; gap: 0.7rem; align-items: baseline; margin-top: 0.4rem; font-weight: 600; }
+  .sub-head span { font-size: 0.85rem; font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  .vac {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.2rem;
+    align-items: center;
+    padding: 1.3rem 1.4rem;
+    border: 1px solid var(--accent-line);
+    border-radius: var(--radius-m);
+    background: linear-gradient(0deg, var(--accent-soft), var(--accent-soft)), var(--surface);
+  }
+
+  .vac h3 { font-size: 1.15rem; }
+  .vac-desc { margin-top: 0.6rem; color: var(--text-2); font-size: 0.95rem; }
+  .vac-actions { display: grid; gap: 0.5rem; }
+
+  .fulltime {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    background: var(--surface);
+    transition: border-color var(--transition);
+  }
+
+  .fulltime:hover { border-color: var(--line-strong); }
+  .fulltime strong { display: block; }
+  .fulltime small { color: var(--text-3); }
+  .fulltime > span:last-child { font-size: 1.3rem; color: var(--accent); }
+
+  /* Contact card */
+  .contact {
+    min-width: 0;
+    position: sticky;
+    top: calc(var(--header-h) + 1rem);
+    display: grid;
+    gap: 0.9rem;
+    padding: 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+    scroll-margin-top: calc(var(--header-h) + 1rem);
+  }
+
+  .coach { display: flex; align-items: center; gap: 0.8rem; }
+  .coach strong { display: block; font-family: var(--font-display); font-size: 1.1rem; }
+  .coach small { color: var(--text-3); font-size: 0.82rem; }
+
+  .coach-av {
+    flex: none;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  .button.block { width: 100%; }
+  .button.wa { background: #25d366; color: #052e16; }
+  .button.wa:hover { background: #3ee07c; box-shadow: 0 8px 30px -8px rgba(37, 211, 102, 0.5); }
+
+  .enq-wrap summary { list-style: none; cursor: pointer; }
+  .enq-wrap summary::-webkit-details-marker { display: none; }
+  .enq-wrap[open] summary { display: none; }
+  .enq { display: grid; gap: 0.7rem; }
+  .enq label { display: grid; gap: 0.3rem; min-width: 0; font-size: 0.8rem; color: var(--text-2); }
+  .enq input,
+  .enq textarea {
+    font: inherit;
+    font-size: 16px;
+    padding: 0.65rem 0.8rem;
+    border-radius: var(--radius-s);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text);
+    width: 100%;
+    min-width: 0;
+  }
+  .enq input:focus,
+  .enq textarea:focus { outline: none; border-color: var(--accent-line); }
+  .enq .two { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 0.6rem; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .privacy { font-size: 0.75rem; color: var(--text-3); }
+
+  .share { font-size: 0.84rem; color: var(--text-2); text-align: center; text-decoration: underline; text-underline-offset: 0.2em; }
+  .share:hover { color: var(--text); }
+
+  .back { margin-top: var(--space-xl); }
+
+  @media (max-width: 960px) {
+    .team-layout { grid-template-columns: 1fr; }
+    .contact { position: static; }
+  }
+
+  @media (max-width: 560px) {
+    .vac { grid-template-columns: 1fr; }
+  }
+</style>

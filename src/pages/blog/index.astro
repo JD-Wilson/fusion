@@ -1,16 +1,12 @@
 ---
-import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
-import { requirePageEntry } from '../../lib/pages';
+import { getPosts, requireSitePage } from '../../lib/content';
 
-const blogPage = await requirePageEntry('blog');
-const { Content } = await render(blogPage);
+const blogPage = await requireSitePage('blog');
 
-const posts = (await getCollection('blog', ({ data }) => !data.draft && !data.noindex)).sort(
-  (a, b) => b.data.date.getTime() - a.data.date.getTime()
-);
+const posts = await getPosts();
 
 const breadcrumbs = createBreadcrumbJsonLd([
   { name: 'Home', path: '/' },
@@ -26,11 +22,12 @@ const breadcrumbs = createBreadcrumbJsonLd([
   noindex={blogPage.data.noindex}
   structuredData={[breadcrumbs]}
 >
-  <PageHero eyebrow="Club Updates" title={blogPage.data.title} summary={blogPage.data.description} />
+  <PageHero
+    image={blogPage.heroImage ?? undefined} eyebrow="Club Updates" title={blogPage.data.title} summary={blogPage.data.description} />
 
   <section class="section-card reveal" data-delay="1">
     <div class="prose">
-      <Content />
+      <Fragment set:html={blogPage.html} />
     </div>
   </section>
 
@@ -100,11 +97,11 @@ const breadcrumbs = createBreadcrumbJsonLd([
   }
 
   .post-date {
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0;
     color: var(--color-lime);
+    font-weight: 500;
   }
 
   .post-title {
@@ -123,7 +120,7 @@ const breadcrumbs = createBreadcrumbJsonLd([
 
   .post-excerpt {
     font-size: 0.87rem;
-    color: rgba(245, 247, 246, 0.55);
+    color: rgba(241, 244, 242, 0.55);
     line-height: 1.55;
   }
 

@@ -1,0 +1,53 @@
+# Saves a fresh snapshot of Fusion FC's fixtures and results from FA
+# Full-Time. Full-Time blocks plain server requests, so this drives a real
+# browser and commits the result; the push redeploys the site.
+name: Full-Time snapshot
+
+on:
+  schedule:
+    # UTC. Weekend afternoons and evenings while results come in, plus
+    # midweek for fixture changes.
+    - cron: '0 13,16,19,22 * * 6,0'
+    - cron: '0 8 * * 1'
+    - cron: '0 18 * * 3,5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fulltime
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: |
+          npm install --prefix scripts/fulltime --no-audit --no-fund
+          npx --prefix scripts/fulltime playwright install --with-deps chromium
+
+      - name: Snapshot Full-Time
+        env:
+          HEADED: '1'
+        run: xvfb-run --auto-servernum node scripts/fulltime/scrape.mjs
+
+      - name: Commit if anything changed
+        run: |
+          if git diff --quiet -- src/data/fulltime.json; then
+            echo "No changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/fulltime.json
+          git commit -m "Update fixtures and results from Full-Time"
+          git push

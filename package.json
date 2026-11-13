@@ -8,10 +8,17 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "astro": "astro"
+    "astro": "astro",
+    "seed:sql": "node scripts/generate-seed-sql.mjs",
+    "content:sql": "node scripts/generate-content-sql.mjs",
+    "og": "node scripts/generate-og.mjs"
   },
   "dependencies": {
-    "astro": "^7.3.3"
+    "@astrojs/vercel": "^11.0.21",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
+    "astro": "^7.3.3",
+    "satteri": "^0.10.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",

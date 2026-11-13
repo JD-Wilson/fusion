@@ -1,0 +1,149 @@
+---
+import { byDate, fromOurSide, kickOff, shortName, venueOf, type Match } from '../../lib/matches';
+
+interface Props {
+  matches: Match[];
+  /** Full-Time name of the team whose point of view to show (team pages). */
+  team?: string;
+  kind: 'fixtures' | 'results';
+  /** Hide the date headings (when a list is already short and dated). */
+  compact?: boolean;
+}
+const { matches, team, kind, compact = false } = Astro.props as Props;
+
+const dateLabel = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const off = (m: Match) => /postponed|cancelled|called off|abandoned|void/i.test(m.status ?? '');
+---
+
+<div class:list={['match-list', compact && 'compact']}>
+  {byDate(matches).map(([date, games]) => (
+    <div class="day">
+      {!compact && <p class="day-label">{dateLabel(date)}</p>}
+      <ul>
+        {games.map((m) => {
+          const side = fromOurSide(m, team);
+          const time = kickOff(m);
+          const venue = venueOf(m);
+          return (
+            <li class:list={['match', off(m) && 'is-off']}>
+              {compact && <span class="m-date">{dateLabel(m.date)}</span>}
+              <span class="m-ha" title={side.home ? 'Home' : 'Away'}>{side.home ? 'H' : 'A'}</span>
+              <span class="m-teams">
+                <span class="m-line">
+                  {!team && <><strong>{shortName(side.us.name)}</strong>{' '}</>}
+                  <span class="m-vs">{side.home ? 'v' : '@'}</span>{' '}
+                  {side.them.name}
+                </span>
+                <small>
+                  {[m.competition, venue].filter(Boolean).join(' · ')}
+                </small>
+              </span>
+              <span class="m-right">
+                {off(m) ? (
+                  <span class="m-tag off">{m.status}</span>
+                ) : kind === 'fixtures' ? (
+                  <span class="m-time">{time ?? 'TBC'}</span>
+                ) : side.ourScore != null ? (
+                  <span class:list={['m-score', side.result?.toLowerCase()]}>
+                    {side.ourScore}–{side.theirScore}
+                  </span>
+                ) : (
+                  <span class="m-tag">Played</span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  ))}
+</div>
+
+<style>
+  .match-list { display: grid; gap: 1.2rem; }
+  .match-list.compact { gap: 0; }
+
+  .day-label {
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .match {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.85rem 1.1rem;
+  }
+
+  .compact .match { grid-template-columns: 5.6rem auto minmax(0, 1fr) auto; }
+  .match + .match { border-top: 1px solid var(--line); }
+  .is-off { opacity: 0.6; }
+
+  .m-date { font-size: 0.85rem; color: var(--text-2); }
+
+  .m-ha {
+    width: 1.6rem;
+    height: 1.6rem;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+
+  .m-teams { display: block; min-width: 0; line-height: 1.35; }
+  .m-line { display: block; }
+  .m-teams strong { font-weight: 600; }
+  .m-vs { color: var(--text-3); }
+  .m-teams small { display: block; margin-top: 0.15rem; color: var(--text-3); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .m-right { text-align: right; }
+  .m-time { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+
+  .m-score {
+    display: inline-block;
+    min-width: 3.4rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 8px;
+    background: var(--surface-3);
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-align: center;
+  }
+  .m-score.w { background: var(--accent-soft); color: var(--accent); }
+  .m-score.l { background: rgba(240, 90, 90, 0.12); color: #f5a3a3; }
+
+  .m-tag {
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.75rem;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .m-tag.off { border-color: rgba(240, 90, 90, 0.4); color: #f5a3a3; }
+
+  @media (max-width: 560px) {
+    .match { padding: 0.75rem 0.85rem; gap: 0.65rem; }
+    .compact .match { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .compact .m-date { grid-column: 1 / -1; margin-bottom: -0.3rem; font-size: 0.78rem; }
+  }
+</style>
