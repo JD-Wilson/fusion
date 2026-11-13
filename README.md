@@ -41,12 +41,11 @@ npm run build
 
 ## Deployment (Vercel)
 
-1. Create a Vercel project from this repo.
-2. Set environment variable `SITE_URL` to your production domain (for canonical URLs and sitemap).
-3. Build command: `npm run build`
-4. Output directory: `dist`
-
-Use `.env.example` as a reference for local/production env values.
+1. Create a Vercel project from this repo (framework preset: **Astro**).
+2. Leave **Build command** and **Output directory** on their defaults. The site uses the `@astrojs/vercel` adapter, which writes Vercel's own output format; an output directory override such as `dist` breaks the deploy.
+3. **Node.js version** (Settings → General): 22.x.
+4. **Environment variables** (Settings → Environment Variables), from `.env.example`: `SITE_URL` (the live address, e.g. `https://fusionfc.co.uk`), `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `RESEND_API_KEY`, `EMAIL_FROM`, `CLUB_INBOX_EMAIL`, `PUBLIC_WEB3FORMS_KEY`.
+5. **GitHub → Settings → Actions → General → Workflow permissions: Read and write**, so the Full-Time sync can commit fixture updates (which redeploys the site).
 
 ## Site structure
 
