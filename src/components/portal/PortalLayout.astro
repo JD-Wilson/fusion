@@ -15,7 +15,8 @@ const { title, session, active, activeTeam, newEnquiries = 0 } = Astro.props as 
 type Link = { id: string; href: string; label: string; badge?: number };
 const groups: { label: string | null; links: Link[] }[] = [
   { label: null, links: [{ id: 'dashboard', href: '/portal/', label: 'Home' }] },
-  ...(!session.approved ? [] : [{
+  // Recruiting is for club admins and people on a team.
+  ...(!session.isAdmin && session.myTeams.length === 0 ? [] : [{
     label: 'Recruiting',
     links: [
       { id: 'vacancies', href: '/portal/vacancies/', label: 'Vacancies' },

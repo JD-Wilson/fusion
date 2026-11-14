@@ -29,6 +29,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect('/portal/account/');
   }
 
+  // Vacancies, enquiries and team pages are for club admins and people on a team.
+  if (!session.isAdmin && session.teamIds.length === 0 && /^\/portal\/(vacancies|enquiries|teams)(\/|$)/.test(pathname)) {
+    return context.redirect('/portal/');
+  }
+
   const response = await next();
   response.headers.set('Cache-Control', 'private, no-store');
   return response;
