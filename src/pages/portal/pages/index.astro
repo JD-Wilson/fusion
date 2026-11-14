@@ -1,18 +1,24 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
-import { countNewEnquiries, ukDate } from '../../../lib/portal';
-import { CORE_PAGE_NAMES, listEditablePages, publicPath } from '../../../lib/portal-pages';
+import { ago, countNewEnquiries } from '../../../lib/portal';
+import { CORE_PAGE_NAMES, listEditablePages, publicPath, type EditablePage } from '../../../lib/portal-pages';
 
 export const prerender = false;
 const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
 if (!session.isAdmin) return Astro.redirect('/portal/');
 
-const { pages, tableReady } = await listEditablePages(supabase);
+const [{ pages, tableReady }, newEnquiries] = await Promise.all([listEditablePages(supabase), countNewEnquiries(supabase)]);
 const core = pages.filter((p) => p.core);
 const club = pages.filter((p) => !p.core);
-const newEnquiries = await countNewEnquiries(supabase);
 const saved = Astro.url.searchParams.get('saved');
+const hidden = club.filter((p) => !p.published).length;
+
+const nameOf = (p: EditablePage) => CORE_PAGE_NAMES[p.slug] ?? p.title;
+const sections = [
+  { id: 'main', label: 'Main pages', note: 'Title, introduction, main text and top photo', pages: core },
+  { id: 'club', label: 'Club information and policies', note: 'Shown under the Club menu and in the footer', pages: club }
+];
 ---
 
 <PortalLayout title="Pages" session={session} active="pages" newEnquiries={newEnquiries}>
@@ -24,45 +30,68 @@ const saved = Astro.url.searchParams.get('saved');
     {tableReady && <a class="btn" href="/portal/pages/new/">+ New page</a>}
   </div>
   {saved && <div class="msg ok" role="status">{saved === 'deleted' ? 'Page deleted.' : saved === 'restored' ? 'Restored to the original wording.' : 'Saved.'}</div>}
-  {!tableReady && (
-    <div class="msg bad">Page editing needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>
-  )}
+  {!tableReady && <div class="msg bad">Page editing needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>}
 
-  <div class="card">
-    <h2>Club information and policies</h2>
-    <p class="p-sub" style="margin-bottom:0.4rem">Values, guides, codes of conduct and policies. Shown under the Club menu and in the footer.</p>
-    {club.length === 0 && <p class="empty">No pages yet.</p>}
-    {club.map((p) => (
-      <div class="row">
-        <div class="grow">
-          <h3>
-            {p.title} {!p.published && <span class="pill warn">Hidden</span>}
-            {p.attachment_url && <span class="pill grey">PDF</span>}
-          </h3>
-          <p>{publicPath(p.slug)}{p.updated_at ? ` · edited ${ukDate(p.updated_at)}` : ''}{p.show_in_nav ? ' · in menus' : ''}</p>
-        </div>
-        <div class="actions">
-          {p.published && <a class="btn outline sm" href={publicPath(p.slug)} target="_blank" rel="noopener">View ↗</a>}
-          {tableReady && <a class="btn outline sm" href={`/portal/pages/${p.slug}/`}>Edit</a>}
-        </div>
-      </div>
-    ))}
+  <div class="toolbar">
+    <nav class="tabs" aria-label="Filter pages">
+      <button type="button" data-filter="all" aria-pressed="true">All<span class="n">{pages.length}</span></button>
+      <button type="button" data-filter="main" aria-pressed="false">Main pages<span class="n">{core.length}</span></button>
+      <button type="button" data-filter="club" aria-pressed="false">Club information<span class="n">{club.length}</span></button>
+      {hidden > 0 && <button type="button" data-filter="hidden" aria-pressed="false">Hidden<span class="n">{hidden}</span></button>}
+    </nav>
+    <input class="search" type="search" placeholder="Search pages" aria-label="Search pages" data-search />
   </div>
 
-  <div class="card">
-    <h2>Main pages</h2>
-    <p class="p-sub" style="margin-bottom:0.4rem">Each page's title, introduction, main text and top photo. Some sections (like the forms and session cards) are part of the page design and changed in code.</p>
-    {core.map((p) => (
-      <div class="row">
-        <div class="grow">
-          <h3>{CORE_PAGE_NAMES[p.slug] ?? p.title}</h3>
-          <p>{publicPath(p.slug)}{p.updated_at ? ` · edited ${ukDate(p.updated_at)}` : ''}</p>
-        </div>
-        <div class="actions">
-          <a class="btn outline sm" href={publicPath(p.slug)} target="_blank" rel="noopener">View ↗</a>
-          {tableReady && <a class="btn outline sm" href={`/portal/pages/${p.slug}/`}>Edit</a>}
-        </div>
+  {sections.map((s) => (
+    <section data-section={s.id}>
+      <h2 class="section-label">{s.label}<small>{s.note}</small></h2>
+      {s.pages.length === 0 && <p class="empty">No pages yet.</p>}
+      <div class="tiles">
+        {s.pages.map((p) => (
+          <article class="tile" data-tile data-hidden={String(!p.published)} data-text={`${nameOf(p)} ${publicPath(p.slug)} ${p.description}`.toLowerCase()}>
+            {p.hero_image
+              ? <div class="tile-img" style={`background-image:url('${p.hero_image}')`}>{!p.published && <span class="pill warn">Hidden</span>}</div>
+              : <div class="tile-img none" aria-hidden="true">{nameOf(p).slice(0, 1)}{!p.published && <span class="pill warn">Hidden</span>}</div>}
+            <div class="tile-body">
+              <h3>{tableReady ? <a class="tile-link" href={`/portal/pages/${p.slug}/`}>{nameOf(p)}</a> : nameOf(p)}</h3>
+              {p.description && <p class="tile-desc">{p.description}</p>}
+              <p>{p.inDatabase && p.updated_at ? `Edited ${ago(p.updated_at)}` : 'Original wording'}</p>
+              <div class="tile-tags">
+                {p.show_in_nav && !p.core && <span class="pill grey">In menus</span>}
+                {p.attachment_url && <span class="pill grey">PDF</span>}
+                {p.published && <a class="tile-view" href={publicPath(p.slug)} target="_blank" rel="noopener">{publicPath(p.slug)} ↗</a>}
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
-    ))}
-  </div>
+    </section>
+  ))}
+  <p class="empty" data-none hidden>No pages match.</p>
 </PortalLayout>
+
+<script>
+  const tiles = [...document.querySelectorAll<HTMLElement>('[data-tile]')];
+  const sections = [...document.querySelectorAll<HTMLElement>('[data-section]')];
+  const search = document.querySelector<HTMLInputElement>('[data-search]')!;
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+  let filter = 'all';
+  const apply = () => {
+    const q = search.value.trim().toLowerCase();
+    tiles.forEach((t) => {
+      const section = t.closest<HTMLElement>('[data-section]')!.dataset.section;
+      const okFilter = filter === 'all' || filter === section || (filter === 'hidden' && t.dataset.hidden === 'true');
+      t.hidden = !okFilter || (Boolean(q) && !(t.dataset.text ?? '').includes(q));
+    });
+    sections.forEach((s) => (s.hidden = ![...s.querySelectorAll<HTMLElement>('[data-tile]')].some((t) => !t.hidden)));
+    document.querySelector<HTMLElement>('[data-none]')!.hidden = tiles.some((t) => !t.hidden);
+  };
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      filter = b.dataset.filter!;
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      apply();
+    })
+  );
+  search.addEventListener('input', apply);
+</script>

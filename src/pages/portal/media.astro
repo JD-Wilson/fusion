@@ -1,8 +1,8 @@
 ---
 import PortalLayout from '../../components/portal/PortalLayout.astro';
 import ResizeUploads from '../../components/portal/ResizeUploads.astro';
-import { countNewEnquiries } from '../../lib/portal';
-import { MEDIA_BUCKET, uploadMedia } from '../../lib/portal-media';
+import { ago, countNewEnquiries } from '../../lib/portal';
+import { MEDIA_BUCKET, fileSize, listMedia, mediaUsage, uploadMedia } from '../../lib/portal-media';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -17,7 +17,7 @@ if (Astro.request.method === 'POST') {
     const path = String(form.get('path') ?? '');
     if (/^(images|documents)\/[\w.-]+$/.test(path)) {
       const { error } = await supabase.storage.from(MEDIA_BUCKET).remove([path]);
-      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'File deleted. Any page still linking to it will show a broken image.' };
+      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'File deleted.' };
     }
   } else {
     const files = form.getAll('files');
@@ -35,68 +35,65 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-type Item = { path: string; name: string; url: string; isPdf: boolean; created: string };
-async function list(folder: 'images' | 'documents'): Promise<{ items: Item[]; error?: string }> {
-  const { data, error } = await supabase.storage
-    .from(MEDIA_BUCKET)
-    .list(folder, { limit: 200, sortBy: { column: 'created_at', order: 'desc' } });
-  if (error) return { items: [], error: error.message };
-  return {
-    items: (data ?? [])
-      .filter((f) => f.id && !f.name.startsWith('.'))
-      .map((f) => {
-        const path = `${folder}/${f.name}`;
-        return {
-          path,
-          name: f.name.replace(/^\d+-/, ''),
-          url: supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl,
-          isPdf: folder === 'documents',
-          created: f.created_at ?? ''
-        };
-      })
-  };
-}
-
-const [images, documents] = await Promise.all([list('images'), list('documents')]);
+const [images, documents, newEnquiries] = await Promise.all([listMedia(supabase, 'images'), listMedia(supabase, 'documents'), countNewEnquiries(supabase)]);
+const usage = await mediaUsage(supabase, [...images.items, ...documents.items].map((i) => i.url));
 const bucketMissing = images.error && /not found/i.test(images.error);
-const newEnquiries = await countNewEnquiries(supabase);
+const nice = (n: string) => n.replace(/\.\w+$/, '').replace(/[-_]+/g, ' ');
+const unused = [...images.items, ...documents.items].filter((i) => !usage.get(i.url)?.length).length;
 ---
 
-<PortalLayout title="Media" session={session} active="media" newEnquiries={newEnquiries}>
+<PortalLayout title="Photos & files" session={session} active="media" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <h1>Media</h1>
-      <p class="p-sub">Photos and documents for pages and blog posts. Upload here, then copy the link into a page's content.</p>
+      <h1>Photos &amp; files</h1>
+      <p class="p-sub">Photos and PDFs for pages and blog posts. Upload them here, then add them with the "Photo or PDF" button when editing.</p>
     </div>
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
-  {bucketMissing && <div class="msg bad">Media needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>}
+  {bucketMissing && <div class="msg bad">Photos &amp; files needs migration <code>004_site_content.sql</code> to be run in Supabase (see the README).</div>}
 
-  <div class="card">
-    <h2>Upload</h2>
-    <form method="post" class="f" enctype="multipart/form-data">
-      <label>
-        Photos or PDFs
-        <input type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" data-resize />
-        <span class="hint">Photos are shrunk automatically. PDFs up to 4MB.</span>
-      </label>
-      <div><button class="btn" type="submit">Upload</button></div>
-    </form>
+  <form method="post" enctype="multipart/form-data" class="drop" data-drop>
+    <input id="files" type="file" name="files" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" data-resize />
+    <label for="files">
+      <strong>Drop photos or PDFs here</strong>
+      <span>or click to choose. Photos are shrunk automatically; PDFs up to 4MB.</span>
+    </label>
+    <div class="drop-chosen" data-chosen hidden>
+      <span data-chosen-text></span>
+      <button class="btn" type="submit">Upload</button>
+    </div>
+  </form>
+
+  <div class="toolbar">
+    <nav class="tabs" aria-label="Filter files">
+      <button type="button" data-filter="all" aria-pressed="true">All<span class="n">{images.items.length + documents.items.length}</span></button>
+      <button type="button" data-filter="photo" aria-pressed="false">Photos<span class="n">{images.items.length}</span></button>
+      <button type="button" data-filter="pdf" aria-pressed="false">PDFs<span class="n">{documents.items.length}</span></button>
+      {unused > 0 && <button type="button" data-filter="unused" aria-pressed="false">Not used<span class="n">{unused}</span></button>}
+    </nav>
+    <input class="search" type="search" placeholder="Search files" aria-label="Search files" data-search />
   </div>
 
-  <div class="card">
-    <h2>Photos</h2>
-    {images.items.length === 0 && <p class="empty">No photos uploaded yet.</p>}
-    <div class="media-grid">
-      {images.items.map((item) => (
-        <figure class="media">
-          <a href={item.url} target="_blank" rel="noopener"><img src={item.url} alt="" loading="lazy" /></a>
+  {images.items.length === 0 && documents.items.length === 0 && <div class="card"><p class="empty">Nothing uploaded yet.</p></div>}
+
+  <div class="media-grid">
+    {[...images.items, ...documents.items].map((item) => {
+      const used = usage.get(item.url) ?? [];
+      return (
+        <figure class="media" data-item data-kind={item.isPdf ? 'pdf' : 'photo'} data-used={String(used.length > 0)} data-text={`${item.name} ${used.join(' ')}`.toLowerCase()}>
+          <a class="media-thumb" href={item.url} target="_blank" rel="noopener">
+            {item.isPdf ? <span class="pdf">PDF</span> : <img src={item.url} alt="" loading="lazy" />}
+          </a>
           <figcaption>
             <span class="media-name" title={item.name}>{item.name}</span>
+            <span class="media-meta">{[fileSize(item.size), item.created && `added ${ago(item.created)}`].filter(Boolean).join(' · ')}</span>
+            <span class:list={['media-used', used.length === 0 && 'none']} title={used.join('\n')}>
+              {used.length ? `Used on ${used.length === 1 ? used[0] : `${used.length} pages`}` : 'Not used yet'}
+            </span>
             <span class="media-actions">
-              <button type="button" class="btn outline sm" data-copy={`![${item.name.replace(/\.\w+$/, '').replace(/-/g, ' ')}](${item.url})`}>Copy for page</button>
+              <button type="button" class="btn outline sm" data-copy={item.isPdf ? `[${nice(item.name)}](${item.url})` : `![${nice(item.name)}](${item.url})`}>Copy for page</button>
               <button type="button" class="btn outline sm" data-copy={item.url}>Copy link</button>
-              <form method="post" onsubmit="return confirm('Delete this photo?')">
+              <form method="post" data-confirm={used.length ? `This is used on: ${used.join(', ')}. Deleting it will leave a broken ${item.isPdf ? 'link' : 'image'} there. Delete anyway?` : 'Delete this file?'}>
                 <input type="hidden" name="intent" value="delete" />
                 <input type="hidden" name="path" value={item.path} />
                 <button class="btn danger sm" type="submit">Delete</button>
@@ -104,34 +101,16 @@ const newEnquiries = await countNewEnquiries(supabase);
             </span>
           </figcaption>
         </figure>
-      ))}
-    </div>
+      );
+    })}
   </div>
-
-  <div class="card">
-    <h2>Documents</h2>
-    {documents.items.length === 0 && <p class="empty">No documents uploaded yet.</p>}
-    {documents.items.map((item) => (
-      <div class="row">
-        <div class="grow">
-          <h3><a href={item.url} target="_blank" rel="noopener">{item.name}</a></h3>
-        </div>
-        <div class="actions">
-          <button type="button" class="btn outline sm" data-copy={`[${item.name.replace(/\.pdf$/i, '').replace(/-/g, ' ')}](${item.url})`}>Copy for page</button>
-          <form method="post" onsubmit="return confirm('Delete this document?')">
-            <input type="hidden" name="intent" value="delete" />
-            <input type="hidden" name="path" value={item.path} />
-            <button class="btn danger sm" type="submit">Delete</button>
-          </form>
-        </div>
-      </div>
-    ))}
-  </div>
+  <p class="empty" data-none hidden>No files match.</p>
 </PortalLayout>
 
 <ResizeUploads />
 
 <script>
+  // Copy buttons.
   document.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((button) => {
     button.addEventListener('click', async () => {
       const label = button.textContent;
@@ -144,17 +123,78 @@ const newEnquiries = await countNewEnquiries(supabase);
       setTimeout(() => (button.textContent = label), 1600);
     });
   });
+  document.querySelectorAll<HTMLFormElement>('form[data-confirm]').forEach((form) =>
+    form.addEventListener('submit', (e) => {
+      if (!confirm(form.dataset.confirm!)) e.preventDefault();
+    })
+  );
+
+  // Drop zone: dropped or chosen files show a count and an Upload button.
+  const drop = document.querySelector<HTMLFormElement>('[data-drop]')!;
+  const input = drop.querySelector<HTMLInputElement>('input[type="file"]')!;
+  const chosen = drop.querySelector<HTMLElement>('[data-chosen]')!;
+  const showChosen = () => {
+    const n = input.files?.length ?? 0;
+    chosen.hidden = n === 0;
+    drop.querySelector('[data-chosen-text]')!.textContent = n === 1 ? input.files![0]!.name : `${n} files chosen`;
+  };
+  input.addEventListener('change', showChosen);
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, () => drop.classList.remove('over')));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!e.dataTransfer?.files.length) return;
+    input.files = e.dataTransfer.files;
+    input.dispatchEvent(new Event('change', { bubbles: true })); // resizes photos, then shows the count
+  });
+
+  // Filters and search.
+  const items = [...document.querySelectorAll<HTMLElement>('[data-item]')];
+  const search = document.querySelector<HTMLInputElement>('[data-search]')!;
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+  let filter = 'all';
+  const apply = () => {
+    const q = search.value.trim().toLowerCase();
+    items.forEach((el) => {
+      const ok = filter === 'all' || el.dataset.kind === filter || (filter === 'unused' && el.dataset.used === 'false');
+      el.hidden = !ok || (Boolean(q) && !(el.dataset.text ?? '').includes(q));
+    });
+    document.querySelector<HTMLElement>('[data-none]')!.hidden = items.length === 0 || items.some((el) => !el.hidden);
+  };
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      filter = b.dataset.filter!;
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      apply();
+    })
+  );
+  search.addEventListener('input', apply);
 </script>
 
 <style>
-  .media-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+  .drop {
+    position: relative; display: grid; gap: 0.8rem; justify-items: center; text-align: center; margin-bottom: 1.2rem;
+    padding: 1.6rem 1rem; border: 1.5px dashed var(--line-strong); border-radius: var(--radius-m); background: var(--surface);
   }
-  .media { margin: 0; border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; background: var(--surface-2); }
+  .drop.over, .drop:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .drop label { display: grid; gap: 0.25rem; cursor: pointer; }
+  .drop label strong { font-family: var(--font-display); font-size: 1.05rem; }
+  .drop label span { font-size: 0.85rem; color: var(--text-3); }
+  .drop input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+  .drop-chosen { display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; justify-content: center; font-size: 0.9rem; }
+  .drop-chosen[hidden] { display: none; }
+
+  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.9rem; }
+  .media { margin: 0; border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; background: var(--surface); }
+  .media[hidden] { display: none; }
+  .media-thumb { display: block; background: var(--surface-2); }
   .media img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
-  .media figcaption { display: grid; gap: 0.5rem; padding: 0.7rem; }
-  .media-name { font-size: 0.82rem; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .media-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .media .pdf { display: grid; place-items: center; aspect-ratio: 4 / 3; font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; color: #f5a3a3; }
+  .media figcaption { display: grid; gap: 0.3rem; padding: 0.75rem; }
+  .media-name { font-size: 0.86rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .media-meta { font-size: 0.75rem; color: var(--text-3); }
+  .media-used { font-size: 0.78rem; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .media-used.none { color: var(--text-3); }
+  .media-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
 </style>

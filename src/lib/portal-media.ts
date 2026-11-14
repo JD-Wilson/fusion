@@ -44,3 +44,47 @@ export async function uploadMedia(
   if (error) return { url: null, error: `Upload failed: ${error.message}` };
   return { url: supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl };
 }
+
+export type MediaItem = { path: string; name: string; url: string; isPdf: boolean; created: string; size: number };
+
+/** Uploaded files in one folder, newest first. */
+export async function listMedia(supabase: SupabaseClient, folder: 'images' | 'documents'): Promise<{ items: MediaItem[]; error?: string }> {
+  const { data, error } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .list(folder, { limit: 300, sortBy: { column: 'created_at', order: 'desc' } });
+  if (error) return { items: [], error: error.message };
+  return {
+    items: (data ?? [])
+      .filter((f) => f.id && !f.name.startsWith('.'))
+      .map((f) => {
+        const path = `${folder}/${f.name}`;
+        return {
+          path,
+          name: f.name.replace(/^\d+-/, ''),
+          url: supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl,
+          isPdf: folder === 'documents',
+          created: f.created_at ?? '',
+          size: Number((f.metadata as { size?: number } | null)?.size ?? 0)
+        };
+      })
+  };
+}
+
+/** Where each uploaded file is used: page and post titles, keyed by file URL. */
+export async function mediaUsage(supabase: SupabaseClient, urls: string[]): Promise<Map<string, string[]>> {
+  const [pages, posts, teams] = await Promise.all([
+    supabase.from('site_pages').select('title, body, hero_image, attachment_url'),
+    supabase.from('posts').select('title, body, cover_image'),
+    supabase.from('teams').select('name, photo_url')
+  ]);
+  const sources = [
+    ...(pages.data ?? []).map((p) => ({ label: p.title as string, text: [p.body, p.hero_image, p.attachment_url].join(' ') })),
+    ...(posts.data ?? []).map((p) => ({ label: `Blog: ${p.title}`, text: [p.body, p.cover_image].join(' ') })),
+    ...(teams.data ?? []).map((t) => ({ label: `Team: ${t.name}`, text: String(t.photo_url ?? '') }))
+  ];
+  return new Map(urls.map((url) => [url, sources.filter((s) => s.text.includes(url)).map((s) => s.label)]));
+}
+
+/** "1.2 MB", "340 KB". */
+export const fileSize = (bytes: number) =>
+  bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : bytes > 0 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : '';

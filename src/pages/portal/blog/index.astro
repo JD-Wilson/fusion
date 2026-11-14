@@ -1,22 +1,23 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
-import { countNewEnquiries } from '../../../lib/portal';
+import { ago, countNewEnquiries } from '../../../lib/portal';
 
 export const prerender = false;
 const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
 if (!session.isAdmin) return Astro.redirect('/portal/');
 
-const { data, error } = await supabase
-  .from('posts')
-  .select('id, slug, title, date, draft, cover_image, updated_at')
-  .order('date', { ascending: false });
-const posts = (data ?? []) as { id: string; slug: string; title: string; date: string; draft: boolean; cover_image: string | null }[];
+const [{ data, error }, newEnquiries] = await Promise.all([
+  supabase.from('posts').select('id, slug, title, date, draft, cover_image, excerpt, tags, updated_at').order('date', { ascending: false }),
+  countNewEnquiries(supabase)
+]);
+type Post = { id: string; slug: string; title: string; date: string; draft: boolean; cover_image: string | null; excerpt: string | null; tags: string[] | null; updated_at: string | null };
+const posts = (data ?? []) as Post[];
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
-const status = (p: (typeof posts)[number]) => (p.draft ? 'Draft' : p.date > today ? 'Scheduled' : 'Live');
+const status = (p: Post) => (p.draft ? 'Draft' : p.date > today ? 'Scheduled' : 'Live');
 const ukDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-const newEnquiries = await countNewEnquiries(supabase);
 const saved = Astro.url.searchParams.get('saved');
+const FILTERS = ['All', 'Live', 'Scheduled', 'Draft'].map((f) => ({ id: f, n: f === 'All' ? posts.length : posts.filter((p) => status(p) === f).length }));
 ---
 
 <PortalLayout title="Blog" session={session} active="blog" newEnquiries={newEnquiries}>
@@ -29,26 +30,63 @@ const saved = Astro.url.searchParams.get('saved');
   </div>
   {saved && <div class="msg ok" role="status">{saved === 'deleted' ? 'Post deleted.' : 'Saved.'}</div>}
   {error && <div class="msg bad">The blog needs migration <code>004_site_content.sql</code> and <code>seed-content.sql</code> to be run in Supabase (see the README).</div>}
+  {!error && posts.length === 0 && <div class="card"><p class="empty">No posts yet. Run <code>seed-content.sql</code> to bring in the existing posts, or write a new one.</p></div>}
 
-  <div class="card">
-    {!error && posts.length === 0 && <p class="empty">No posts yet. Run <code>seed-content.sql</code> to bring in the existing posts, or write a new one.</p>}
-    {posts.map((p) => (
-      <div class="row">
-        {p.cover_image && <img class="thumb" src={p.cover_image} alt="" />}
-        <div class="grow">
-          <h3>{p.title}</h3>
-          <p>{ukDay(p.date)}</p>
-        </div>
-        <div class="actions">
-          <span class:list={['pill', status(p) === 'Live' ? '' : status(p) === 'Draft' ? 'grey' : 'warn']}>{status(p)}</span>
-          {status(p) === 'Live' && <a class="btn outline sm" href={`/blog/${p.slug}/`} target="_blank" rel="noopener">View ↗</a>}
-          <a class="btn outline sm" href={`/portal/blog/${p.id}/`}>Edit</a>
-        </div>
-      </div>
-    ))}
+  {posts.length > 0 && (
+    <div class="toolbar">
+      <nav class="tabs" aria-label="Filter posts">
+        {FILTERS.filter((f) => f.id === 'All' || f.n > 0).map((f) => (
+          <button type="button" data-filter={f.id} aria-pressed={f.id === 'All' ? 'true' : 'false'}>{f.id === 'Draft' ? 'Drafts' : f.id}<span class="n">{f.n}</span></button>
+        ))}
+      </nav>
+      <input class="search" type="search" placeholder="Search posts" aria-label="Search posts" data-search />
+    </div>
+  )}
+
+  <div class="tiles">
+    {posts.map((p) => {
+      const s = status(p);
+      const pill = <span class:list={['pill', s === 'Draft' ? 'grey' : s === 'Scheduled' && 'warn']}>{s === 'Scheduled' ? `Scheduled ${ukDay(p.date)}` : s}</span>;
+      return (
+        <article class="tile" data-tile data-status={s} data-text={`${p.title} ${p.excerpt ?? ''} ${(p.tags ?? []).join(' ')}`.toLowerCase()}>
+          {p.cover_image
+            ? <div class="tile-img" style={`background-image:url('${p.cover_image}')`}>{pill}</div>
+            : <div class="tile-img none" aria-hidden="true">{p.title.slice(0, 1)}{pill}</div>}
+          <div class="tile-body">
+            <h3><a class="tile-link" href={`/portal/blog/${p.id}/`}>{p.title}</a></h3>
+            {p.excerpt && <p class="tile-desc">{p.excerpt}</p>}
+            <p>{ukDay(p.date)}{p.updated_at ? ` · edited ${ago(p.updated_at)}` : ''}</p>
+            <div class="tile-tags">
+              {(p.tags ?? []).slice(0, 3).map((t) => <span class="pill grey">{t}</span>)}
+              {s === 'Live' && <a class="tile-view" href={`/blog/${p.slug}/`} target="_blank" rel="noopener">View ↗</a>}
+            </div>
+          </div>
+        </article>
+      );
+    })}
   </div>
+  <p class="empty" data-none hidden>No posts match.</p>
 </PortalLayout>
 
-<style>
-  .thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); }
-</style>
+<script>
+  const tiles = [...document.querySelectorAll<HTMLElement>('[data-tile]')];
+  const search = document.querySelector<HTMLInputElement>('[data-search]');
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+  let filter = 'All';
+  const apply = () => {
+    const q = search?.value.trim().toLowerCase() ?? '';
+    tiles.forEach((t) => {
+      t.hidden = (filter !== 'All' && t.dataset.status !== filter) || (Boolean(q) && !(t.dataset.text ?? '').includes(q));
+    });
+    const none = document.querySelector<HTMLElement>('[data-none]');
+    if (none) none.hidden = tiles.length === 0 || tiles.some((t) => !t.hidden);
+  };
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      filter = b.dataset.filter!;
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      apply();
+    })
+  );
+  search?.addEventListener('input', apply);
+</script>

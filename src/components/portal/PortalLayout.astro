@@ -142,6 +142,28 @@ const initials = (session.fullName || session.email)
       scrim.addEventListener('click', () => set(false));
       document.querySelector('[data-close]')!.addEventListener('click', () => set(false));
       document.addEventListener('keydown', (e) => e.key === 'Escape' && set(false));
+
+      // Editors: warn before leaving with unsaved changes; Ctrl/⌘ S saves.
+      document.querySelectorAll<HTMLFormElement>('form[data-guard]').forEach((form) => {
+        let dirty = false;
+        let submitting = false;
+        const flag = () => {
+          dirty = true;
+          form.querySelectorAll<HTMLElement>('[data-dirty]').forEach((el) => (el.hidden = false));
+        };
+        form.addEventListener('input', flag);
+        form.addEventListener('change', flag);
+        form.addEventListener('submit', () => (submitting = true));
+        window.addEventListener('beforeunload', (e) => {
+          if (dirty && !submitting) e.preventDefault();
+        });
+        document.addEventListener('keydown', (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            form.querySelector<HTMLButtonElement>('button[value="save"]')?.click();
+          }
+        });
+      });
     </script>
   </body>
 </html>

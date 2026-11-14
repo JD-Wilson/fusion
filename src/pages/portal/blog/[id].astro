@@ -1,13 +1,12 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import MarkdownField from '../../../components/portal/MarkdownField.astro';
-import Preview from '../../../components/portal/Preview.astro';
 import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import { clearContentCache } from '../../../lib/content';
 import { UUID, checked, line, slugify, text } from '../../../lib/forms';
-import { renderMarkdown } from '../../../lib/markdown';
-import { countNewEnquiries } from '../../../lib/portal';
-import { uploadMedia } from '../../../lib/portal-media';
+import { readingMinutes } from '../../../lib/markdown';
+import { ago, countNewEnquiries } from '../../../lib/portal';
+import { listMedia, uploadMedia } from '../../../lib/portal-media';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -27,6 +26,7 @@ type PostForm = {
   draft: boolean;
   seo_title: string | null;
   seo_description: string | null;
+  updated_at?: string | null;
 };
 
 // /portal/blog/new/ creates; /portal/blog/<uuid>/ edits.
@@ -57,7 +57,6 @@ if (!isNew) {
 let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('saved')
   ? { ok: true, text: post.draft ? 'Saved as a draft.' : 'Saved. The blog updates within a couple of minutes.' }
   : null;
-let previewHtml: string | null = null;
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
@@ -84,9 +83,7 @@ if (Astro.request.method === 'POST') {
     seo_description: line(form, 'seo_description', 180)
   };
 
-  if (intent === 'preview') {
-    previewHtml = renderMarkdown(post.body);
-  } else if (!post.title || !post.slug) {
+  if (!post.title || !post.slug) {
     notice = { ok: false, text: 'The post needs a title.' };
   } else {
     const cover = await uploadMedia(supabase, form.get('cover_file'), 'images', { imagesOnly: true });
@@ -97,6 +94,7 @@ if (Astro.request.method === 'POST') {
       else if (checked(form, 'remove_cover')) post.cover_image = null;
       const values = { ...post, updated_by: session.userId };
       delete (values as { id?: string }).id;
+      delete (values as { updated_at?: string | null }).updated_at;
       const result = isNew
         ? await supabase.from('posts').insert(values).select('id').single()
         : await supabase.from('posts').update(values).eq('id', param).select('id').single();
@@ -111,7 +109,13 @@ if (Astro.request.method === 'POST') {
 }
 
 const live = !post.draft && post.date <= today;
-const newEnquiries = await countNewEnquiries(supabase);
+const status = post.draft ? 'Draft' : live ? 'Live' : 'Scheduled';
+const ukDay = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const [newEnquiries, images, documents] = await Promise.all([
+  countNewEnquiries(supabase),
+  listMedia(supabase, 'images'),
+  listMedia(supabase, 'documents')
+]);
 ---
 
 <PortalLayout title={isNew ? 'New post' : 'Edit post'} session={session} active="blog" newEnquiries={newEnquiries}>
@@ -119,69 +123,81 @@ const newEnquiries = await countNewEnquiries(supabase);
     <div>
       <a class="back" href="/portal/blog/">← Blog</a>
       <h1>{isNew ? 'New post' : post.title}</h1>
-      {!isNew && <p class="p-sub">/blog/{post.slug}/ · {post.draft ? 'Draft' : live ? 'Live' : `Scheduled for ${post.date}`}</p>}
+      {!isNew && <p class="p-sub">/blog/{post.slug}/</p>}
     </div>
-    {!isNew && live && <a class="btn outline" href={`/blog/${post.slug}/`} target="_blank" rel="noopener">View post ↗</a>}
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
 
-  <form method="post" class="f" enctype="multipart/form-data">
-    <div class="card stack">
-      <label>Title<input type="text" name="title" required maxlength="160" value={post.title} /></label>
-      <label>
-        Summary
-        <textarea name="excerpt" maxlength="400" rows="3">{post.excerpt}</textarea>
-        <span class="hint">Shown on the blog page and when the post is shared.</span>
-      </label>
-      <MarkdownField name="body" label="Post" value={post.body} rows={22} />
+  <form method="post" class="f editor" enctype="multipart/form-data" data-guard>
+    <div class="editor-main">
+      <div class="card stack">
+        <label>Title<input class="title-input" type="text" name="title" required maxlength="160" value={post.title} placeholder="Post title" /></label>
+        <label>
+          Summary
+          <textarea name="excerpt" maxlength="400" rows="3">{post.excerpt}</textarea>
+          <span class="hint">Shown on the blog page and when the post is shared.</span>
+        </label>
+        <MarkdownField name="body" label="Post" value={post.body} rows={22} media={[...images.items, ...documents.items]} />
+      </div>
     </div>
 
-    <div class="card stack">
-      <h2>Cover photo</h2>
-      <div class="photo-row">
-        {post.cover_image ? <img class="photo-preview" src={post.cover_image} alt="" /> : <div class="photo-preview empty">No cover photo</div>}
-        <div class="photo-fields">
-          <label>
-            {post.cover_image ? 'Replace the photo' : 'Add a photo'}
-            <input type="file" name="cover_file" accept="image/jpeg,image/png,image/webp" data-resize />
-          </label>
-          {post.cover_image && <label class="check"><input type="checkbox" name="remove_cover" />Remove the cover photo</label>}
+    <aside class="editor-side">
+      <div class="card stack publish">
+        <h2>Publish</h2>
+        <dl>
+          <dt>Status</dt><dd><span class:list={['pill', status === 'Draft' ? 'grey' : status === 'Scheduled' && 'warn']}>{status === 'Scheduled' ? `Scheduled for ${ukDay(post.date)}` : status}</span></dd>
+          {!isNew && <><dt>Edited</dt><dd>{post.updated_at ? ago(post.updated_at) : 'Not yet'}</dd></>}
+          {!isNew && <><dt>Length</dt><dd>{readingMinutes(post.body)} min read</dd></>}
+        </dl>
+        <label>Date<input type="date" name="date" value={post.date} /><span class="hint">Choose a future date to schedule the post.</span></label>
+        <label class="check"><input type="checkbox" name="publish" checked={!post.draft} />Publish (untick to keep as a draft)</label>
+        <div class="publish-actions">
+          <button class="btn" type="submit" name="intent" value="save">Save</button>
+          {!isNew && live && <a class="btn outline" href={`/blog/${post.slug}/`} target="_blank" rel="noopener">View ↗</a>}
         </div>
       </div>
-    </div>
 
-    <div class="card stack">
-      <h2>Publishing</h2>
-      <div class="two">
-        <label>Date<input type="date" name="date" value={post.date} /><span class="hint">Choose a future date to schedule the post.</span></label>
+      <div class="card stack">
+        <h2>Cover photo</h2>
+        <div class="photo-row">
+          {post.cover_image ? <img class="photo-preview" src={post.cover_image} alt="" /> : <div class="photo-preview empty">No cover photo</div>}
+          <div class="photo-fields">
+            <label>
+              {post.cover_image ? 'Replace the photo' : 'Add a photo'}
+              <input type="file" name="cover_file" accept="image/jpeg,image/png,image/webp" data-resize />
+            </label>
+            {post.cover_image && <label class="check"><input type="checkbox" name="remove_cover" />Remove the cover photo</label>}
+          </div>
+        </div>
+      </div>
+
+      <div class="card stack">
+        <h2>Details</h2>
         <label>Author<input type="text" name="author" maxlength="80" value={post.author} /></label>
+        <label>Tags<input type="text" name="tags" maxlength="200" value={post.tags.join(', ')} placeholder="Club News, Girls Football" /><span class="hint">Separate with commas.</span></label>
+        <label>
+          Web address
+          <input type="text" name="slug" maxlength="80" value={post.slug} placeholder="Made from the title" />
+        </label>
       </div>
-      <label>Tags<input type="text" name="tags" maxlength="200" value={post.tags.join(', ')} placeholder="Club News, Girls Football" /><span class="hint">Separate with commas.</span></label>
-      <label>
-        Web address
-        <input type="text" name="slug" maxlength="80" value={post.slug} placeholder="Made from the title" />
-      </label>
-      <label class="check"><input type="checkbox" name="publish" checked={!post.draft} />Publish (untick to keep as a draft)</label>
-    </div>
 
-    <details class="card">
-      <summary><strong>Search engines (optional)</strong></summary>
-      <div class="stack" style="margin-top:0.9rem">
-        <label>Search title<input type="text" name="seo_title" maxlength="90" value={post.seo_title ?? ''} placeholder={post.title} /></label>
-        <label>Search description<input type="text" name="seo_description" maxlength="180" value={post.seo_description ?? ''} placeholder={post.excerpt} /></label>
-      </div>
-    </details>
+      <details class="card">
+        <summary>Search engines (optional)</summary>
+        <div class="stack" style="margin-top:0.9rem">
+          <label>Search title<input type="text" name="seo_title" maxlength="90" value={post.seo_title ?? ''} placeholder={post.title} /></label>
+          <label>Search description<input type="text" name="seo_description" maxlength="180" value={post.seo_description ?? ''} placeholder={post.excerpt} /></label>
+        </div>
+      </details>
+    </aside>
 
     <div class="save-bar">
       <button class="btn" type="submit" name="intent" value="save">Save</button>
-      <button class="btn outline" type="submit" name="intent" value="preview" formnovalidate>Preview</button>
+      <span class="dirty" data-dirty hidden>Unsaved changes</span>
     </div>
   </form>
 
-  {previewHtml !== null && <Preview html={previewHtml} title={post.title} />}
-
   {!isNew && (
-    <div class="card">
+    <div class="card danger-zone" style="margin-top:1.5rem">
       <h2>Delete post</h2>
       <p class="p-sub">Removes the post from the website for good. To take it down for now, untick Publish instead.</p>
       <form method="post" onsubmit="return confirm('Delete this post?')" style="margin-top:0.8rem">
@@ -192,15 +208,3 @@ const newEnquiries = await countNewEnquiries(supabase);
 </PortalLayout>
 
 <ResizeUploads />
-
-<style>
-  .save-bar {
-    position: sticky;
-    bottom: 0;
-    display: flex;
-    gap: 0.6rem;
-    padding: 0.9rem 0;
-    background: linear-gradient(0deg, var(--bg) 70%, transparent);
-  }
-  details.card summary { cursor: pointer; }
-</style>

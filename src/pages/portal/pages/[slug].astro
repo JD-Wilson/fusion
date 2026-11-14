@@ -1,13 +1,11 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import MarkdownField from '../../../components/portal/MarkdownField.astro';
-import Preview from '../../../components/portal/Preview.astro';
 import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import { clearContentCache } from '../../../lib/content';
 import { checked, line, text } from '../../../lib/forms';
-import { renderMarkdown } from '../../../lib/markdown';
-import { countNewEnquiries } from '../../../lib/portal';
-import { uploadMedia } from '../../../lib/portal-media';
+import { ago, countNewEnquiries } from '../../../lib/portal';
+import { listMedia, uploadMedia } from '../../../lib/portal-media';
 import { CORE_PAGE_NAMES, loadEditablePage, publicPath, type EditablePage } from '../../../lib/portal-pages';
 
 export const prerender = false;
@@ -25,7 +23,6 @@ let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('c
   : Astro.url.searchParams.get('saved')
     ? { ok: true, text: 'Saved. The website updates within a couple of minutes.' }
     : null;
-let previewHtml: string | null = null;
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
@@ -49,7 +46,7 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/portal/pages/?saved=deleted');
   }
 
-  // Values from the form (kept on screen if saving fails or for preview).
+  // Values from the form (kept on screen if saving fails).
   page = {
     ...page,
     title: line(form, 'title', 120) ?? '',
@@ -65,9 +62,7 @@ if (Astro.request.method === 'POST') {
     published: page.core ? true : checked(form, 'published')
   };
 
-  if (intent === 'preview') {
-    previewHtml = renderMarkdown(page.body);
-  } else if (!page.title) {
+  if (!page.title) {
     notice = { ok: false, text: 'The page needs a title.' };
   } else {
     const hero = await uploadMedia(supabase, form.get('hero_file'), 'images', { imagesOnly: true });
@@ -98,86 +93,103 @@ function stripMeta(p: EditablePage) {
 }
 
 const name = CORE_PAGE_NAMES[slug] ?? page.title;
-const newEnquiries = await countNewEnquiries(supabase);
+const [newEnquiries, images, documents] = await Promise.all([
+  countNewEnquiries(supabase),
+  listMedia(supabase, 'images'),
+  listMedia(supabase, 'documents')
+]);
+const status = page.published ? 'Live' : 'Hidden';
 ---
 
 <PortalLayout title={`Edit ${name}`} session={session} active="pages" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
       <a class="back" href="/portal/pages/">← Pages</a>
-      <h1>{name} {!page.published && <span class="pill warn">Hidden</span>}</h1>
+      <h1>{name}</h1>
       <p class="p-sub">{publicPath(slug)}{!page.inDatabase && ' · showing the original wording until you save'}</p>
     </div>
-    {page.published && <a class="btn outline" href={publicPath(slug)} target="_blank" rel="noopener">View page ↗</a>}
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
 
-  <form method="post" class="f" enctype="multipart/form-data">
-    <div class="card stack">
-      <label>Title<input type="text" name="title" required maxlength="120" value={page.title} /></label>
-      <label>
-        Introduction
-        <textarea name="description" maxlength="400" rows="3">{page.description}</textarea>
-        <span class="hint">Shown under the title at the top of the page, and in search results.</span>
-      </label>
-      <MarkdownField name="body" label="Main content" value={page.body} />
-    </div>
-
-    <div class="card stack">
-      <h2>Top photo</h2>
-      <div class="photo-row">
-        {page.hero_image ? <img class="photo-preview" src={page.hero_image} alt="" /> : <div class="photo-preview empty">Using the page's default photo</div>}
-        <div class="photo-fields">
-          <label>
-            Replace the photo
-            <input type="file" name="hero_file" accept="image/jpeg,image/png,image/webp" data-resize />
-            <span class="hint">A wide (landscape) photo works best.</span>
-          </label>
-          {page.hero_image && <label class="check"><input type="checkbox" name="remove_hero" />Go back to the default photo</label>}
-        </div>
-      </div>
-    </div>
-
-    {!page.core && (
+  <form method="post" class="f editor" enctype="multipart/form-data" data-guard>
+    <div class="editor-main">
       <div class="card stack">
-        <h2>Menus and documents</h2>
-        <label class="check"><input type="checkbox" name="published" checked={page.published} />Show on the website</label>
-        <label class="check"><input type="checkbox" name="show_in_nav" checked={page.show_in_nav} />Show in the Club menu and footer</label>
-        <div class="two">
-          <label>Menu label<input type="text" name="nav_label" maxlength="40" value={page.nav_label ?? ''} placeholder={page.title} /></label>
-          <label>Menu order<input type="number" name="sort_order" min="1" max="999" value={String(page.sort_order)} /><span class="hint">Lower numbers come first.</span></label>
-        </div>
+        <label>Title<input class="title-input" type="text" name="title" required maxlength="120" value={page.title} /></label>
         <label>
-          PDF version (optional)
-          <input type="file" name="attachment_file" accept="application/pdf" />
-          <span class="hint">{page.attachment_url ? <>Current file: <a href={page.attachment_url} target="_blank" rel="noopener">open</a>. Choose a new one to replace it.</> : 'Adds a download button under the page, e.g. a signed copy of a policy. Up to 4MB.'}</span>
+          Introduction
+          <textarea name="description" maxlength="400" rows="3">{page.description}</textarea>
+          <span class="hint">Shown under the title at the top of the page, and in search results.</span>
         </label>
-        <div class="two">
-          <label>Button label<input type="text" name="attachment_label" maxlength="60" value={page.attachment_label ?? ''} placeholder="Download PDF" /></label>
-          {page.attachment_url && <label class="check" style="align-self:end"><input type="checkbox" name="remove_attachment" />Remove the PDF</label>}
+        <MarkdownField name="body" label="Main content" value={page.body} media={[...images.items, ...documents.items]} />
+      </div>
+    </div>
+
+    <aside class="editor-side">
+      <div class="card stack publish">
+        <h2>{page.core ? 'Save' : 'Publish'}</h2>
+        <dl>
+          <dt>Status</dt><dd><span class:list={['pill', !page.published && 'warn']}>{status}</span></dd>
+          <dt>Address</dt><dd>{publicPath(slug)}</dd>
+          <dt>Edited</dt><dd>{page.inDatabase && page.updated_at ? ago(page.updated_at) : 'Not yet'}</dd>
+        </dl>
+        {!page.core && <label class="check"><input type="checkbox" name="published" checked={page.published} />Show on the website</label>}
+        <div class="publish-actions">
+          <button class="btn" type="submit" name="intent" value="save">Save</button>
+          {page.published && <a class="btn outline" href={publicPath(slug)} target="_blank" rel="noopener">View ↗</a>}
         </div>
       </div>
-    )}
 
-    <details class="card">
-      <summary><strong>Search engines (optional)</strong></summary>
-      <div class="stack" style="margin-top:0.9rem">
-        <label>Search title<input type="text" name="seo_title" maxlength="90" value={page.seo_title ?? ''} placeholder={page.title} /></label>
-        <label>Search description<input type="text" name="seo_description" maxlength="180" value={page.seo_description ?? ''} placeholder={page.description} /></label>
-        <label class="check"><input type="checkbox" name="noindex" checked={page.noindex} />Hide this page from search engines</label>
+      <div class="card stack">
+        <h2>Top photo</h2>
+        <div class="photo-row">
+          {page.hero_image ? <img class="photo-preview" src={page.hero_image} alt="" /> : <div class="photo-preview empty">Using the page's default photo</div>}
+          <div class="photo-fields">
+            <label>
+              Replace the photo
+              <input type="file" name="hero_file" accept="image/jpeg,image/png,image/webp" data-resize />
+              <span class="hint">A wide (landscape) photo works best.</span>
+            </label>
+            {page.hero_image && <label class="check"><input type="checkbox" name="remove_hero" />Go back to the default photo</label>}
+          </div>
+        </div>
       </div>
-    </details>
+
+      {!page.core && (
+        <div class="card stack">
+          <h2>Menus and documents</h2>
+          <label class="check"><input type="checkbox" name="show_in_nav" checked={page.show_in_nav} />Show in the Club menu and footer</label>
+          <div class="two">
+            <label>Menu label<input type="text" name="nav_label" maxlength="40" value={page.nav_label ?? ''} placeholder={page.title} /></label>
+            <label>Menu order<input type="number" name="sort_order" min="1" max="999" value={String(page.sort_order)} /><span class="hint">Lower numbers come first.</span></label>
+          </div>
+          <label>
+            PDF version (optional)
+            <input type="file" name="attachment_file" accept="application/pdf" />
+            <span class="hint">{page.attachment_url ? <>Current file: <a href={page.attachment_url} target="_blank" rel="noopener">open</a>. Choose a new one to replace it.</> : 'Adds a download button under the page, e.g. a signed copy of a policy. Up to 4MB.'}</span>
+          </label>
+          <label>Button label<input type="text" name="attachment_label" maxlength="60" value={page.attachment_label ?? ''} placeholder="Download PDF" /></label>
+          {page.attachment_url && <label class="check"><input type="checkbox" name="remove_attachment" />Remove the PDF</label>}
+        </div>
+      )}
+
+      <details class="card">
+        <summary>Search engines (optional)</summary>
+        <div class="stack" style="margin-top:0.9rem">
+          <label>Search title<input type="text" name="seo_title" maxlength="90" value={page.seo_title ?? ''} placeholder={page.title} /></label>
+          <label>Search description<input type="text" name="seo_description" maxlength="180" value={page.seo_description ?? ''} placeholder={page.description} /></label>
+          <label class="check"><input type="checkbox" name="noindex" checked={page.noindex} />Hide this page from search engines</label>
+        </div>
+      </details>
+    </aside>
 
     <div class="save-bar">
       <button class="btn" type="submit" name="intent" value="save">Save</button>
-      <button class="btn outline" type="submit" name="intent" value="preview" formnovalidate>Preview</button>
+      <span class="dirty" data-dirty hidden>Unsaved changes</span>
     </div>
   </form>
 
-  {previewHtml !== null && <Preview html={previewHtml} title={page.title} />}
-
   {page.core && page.inDatabase && (
-    <div class="card">
+    <div class="card danger-zone" style="margin-top:1.5rem">
       <h2>Restore original</h2>
       <p class="p-sub">Go back to the page's original wording and photo. Your changes will be lost.</p>
       <form method="post" onsubmit="return confirm('Restore the original wording? Your changes will be lost.')" style="margin-top:0.8rem">
@@ -187,7 +199,7 @@ const newEnquiries = await countNewEnquiries(supabase);
   )}
 
   {!page.core && (
-    <div class="card">
+    <div class="card danger-zone" style="margin-top:1.5rem">
       <h2>{page.hasFile ? 'Hide page' : 'Delete page'}</h2>
       <p class="p-sub">
         {page.hasFile
@@ -202,15 +214,3 @@ const newEnquiries = await countNewEnquiries(supabase);
 </PortalLayout>
 
 <ResizeUploads />
-
-<style>
-  .save-bar {
-    position: sticky;
-    bottom: 0;
-    display: flex;
-    gap: 0.6rem;
-    padding: 0.9rem 0;
-    background: linear-gradient(0deg, var(--bg) 70%, transparent);
-  }
-  details.card summary { cursor: pointer; }
-</style>

@@ -1,44 +1,255 @@
 ---
+/*
+ * Markdown editor: a formatting toolbar, Write / Preview tabs (rendered by the
+ * server with the same engine as the website), and a picker for photos and
+ * PDFs already uploaded to Photos & files. Without JavaScript it is a plain
+ * textarea.
+ */
+import type { MediaItem } from '../../lib/portal-media';
+
 interface Props {
   name: string;
   label: string;
   value?: string;
   rows?: number;
   hint?: string;
+  media?: MediaItem[];
 }
-const { name, label, value = '', rows = 18, hint } = Astro.props as Props;
+const { name, label, value = '', rows = 18, hint, media = [] } = Astro.props as Props;
+const id = `md-${name}`;
+const photos = media.filter((m) => !m.isPdf);
+const docs = media.filter((m) => m.isPdf);
+const nice = (n: string) => n.replace(/\.\w+$/, '').replace(/[-_]+/g, ' ');
 ---
 
-<label class="md-field">
-  {label}
-  <textarea name={name} rows={rows} spellcheck="true">{value}</textarea>
-  {hint && <span class="hint">{hint}</span>}
-</label>
-<details class="md-help">
-  <summary>Formatting help</summary>
-  <div class="md-help-grid">
-    <code>## Heading</code><span>Section heading</span>
-    <code>### Smaller heading</code><span>Sub-heading</span>
-    <code>**bold**</code><span><strong>bold</strong></span>
-    <code>*italic*</code><span><em>italic</em></span>
-    <code>[link text](https://…)</code><span>A link</span>
-    <code>- item</code><span>Bullet list (one per line)</span>
-    <code>1. item</code><span>Numbered list</span>
-    <code>&gt; quote</code><span>Quote</span>
-    <code>![description](image address)</code><span>A photo. Upload it in Media, then copy its markdown.</span>
+<div class="md" data-md>
+  <div class="md-top">
+    <label for={id} class="md-label">{label}</label>
+    <div class="md-tabs" role="group" aria-label="Editor view">
+      <button type="button" data-view="write" aria-pressed="true">Write</button>
+      <button type="button" data-view="preview" aria-pressed="false">Preview</button>
+    </div>
   </div>
-  <p class="hint">Leave a blank line between paragraphs.</p>
-</details>
+
+  <div class="md-box">
+    <div class="md-toolbar" data-toolbar hidden>
+      <button type="button" data-cmd="h2" title="Section heading">Heading</button>
+      <button type="button" data-cmd="h3" title="Smaller heading">Sub-heading</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="bold" title="Bold (Ctrl/⌘ B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl/⌘ I)"><i>I</i></button>
+      <button type="button" data-cmd="link" title="Link (Ctrl/⌘ K)">Link</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="ul" title="Bullet list">• List</button>
+      <button type="button" data-cmd="ol" title="Numbered list">1. List</button>
+      <button type="button" data-cmd="quote" title="Quote">Quote</button>
+      <span class="sep"></span>
+      <button type="button" data-cmd="media" title="Add a photo or PDF from Photos & files">Photo or PDF</button>
+    </div>
+    <textarea id={id} name={name} rows={rows} spellcheck="true">{value}</textarea>
+    <div class="md-preview" data-preview hidden aria-live="polite"></div>
+  </div>
+  {hint && <span class="hint">{hint}</span>}
+
+  <details class="md-help">
+    <summary>Formatting help</summary>
+    <div class="md-help-grid">
+      <code>## Heading</code><span>Section heading</span>
+      <code>### Smaller heading</code><span>Sub-heading</span>
+      <code>**bold**</code><span><strong>bold</strong></span>
+      <code>*italic*</code><span><em>italic</em></span>
+      <code>[link text](https://…)</code><span>A link</span>
+      <code>- item</code><span>Bullet list (one per line)</span>
+      <code>1. item</code><span>Numbered list</span>
+      <code>&gt; quote</code><span>Quote</span>
+      <code>![description](image address)</code><span>A photo. Upload it in Photos &amp; files, then add it with the Photo or PDF button.</span>
+    </div>
+    <p class="hint">Leave a blank line between paragraphs.</p>
+  </details>
+
+  <dialog class="md-pick" data-pick>
+    <div class="pick-head">
+      <h2>Add a photo or PDF</h2>
+      <button type="button" class="btn outline sm" data-close-pick>Close</button>
+    </div>
+    <p class="hint">Click one to add it where your cursor is. To use a new one, <a href="/portal/media/" target="_blank" rel="noopener">upload it in Photos &amp; files ↗</a>, then reopen this.</p>
+    {photos.length === 0 && docs.length === 0 && <p class="empty">Nothing uploaded yet.</p>}
+    {photos.length > 0 && (
+      <div class="pick-grid">
+        {photos.map((m) => (
+          <button type="button" data-insert={`![${nice(m.name)}](${m.url})`} title={m.name}>
+            <img src={m.url} alt="" loading="lazy" />
+            <span>{m.name}</span>
+          </button>
+        ))}
+      </div>
+    )}
+    {docs.length > 0 && (
+      <div class="pick-docs">
+        <h3>PDFs</h3>
+        {docs.map((m) => (
+          <button type="button" data-insert={`[${nice(m.name)}](${m.url})`}>📄 {m.name}</button>
+        ))}
+      </div>
+    )}
+  </dialog>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-md]').forEach((root) => {
+    const area = root.querySelector('textarea')!;
+    const toolbar = root.querySelector<HTMLElement>('[data-toolbar]')!;
+    const preview = root.querySelector<HTMLElement>('[data-preview]')!;
+    const pick = root.querySelector<HTMLDialogElement>('[data-pick]')!;
+    toolbar.hidden = false;
+
+    // Insert text at the cursor, keeping the browser's undo history where possible.
+    const insert = (text: string, selectFrom?: number, selectTo?: number) => {
+      area.focus();
+      const start = area.selectionStart;
+      if (!document.execCommand('insertText', false, text)) area.setRangeText(text, start, area.selectionEnd, 'end');
+      if (selectFrom !== undefined) area.setSelectionRange(start + selectFrom, start + (selectTo ?? selectFrom));
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const wrap = (mark: string, placeholder: string) => {
+      const sel = area.value.slice(area.selectionStart, area.selectionEnd) || placeholder;
+      insert(`${mark}${sel}${mark}`, mark.length, mark.length + sel.length);
+    };
+    // Prefix each selected line (or the current line).
+    const prefix = (make: (i: number) => string) => {
+      const v = area.value;
+      const from = v.lastIndexOf('\n', area.selectionStart - 1) + 1;
+      const endNl = v.indexOf('\n', area.selectionEnd);
+      const to = endNl === -1 ? v.length : endNl;
+      area.setSelectionRange(from, to);
+      const lines = v.slice(from, to).split('\n');
+      insert(lines.map((l, i) => make(i) + l.replace(/^(#{1,6} |[-*] |\d+\. |> )/, '')).join('\n'));
+    };
+    const commands: Record<string, () => void> = {
+      h2: () => prefix(() => '## '),
+      h3: () => prefix(() => '### '),
+      bold: () => wrap('**', 'bold text'),
+      italic: () => wrap('*', 'italic text'),
+      link: () => {
+        const sel = area.value.slice(area.selectionStart, area.selectionEnd) || 'link text';
+        const text = `[${sel}](https://)`;
+        insert(text, sel.length + 3, text.length - 1); // select the address part to type over
+      },
+      ul: () => prefix(() => '- '),
+      ol: () => prefix((i) => `${i + 1}. `),
+      quote: () => prefix(() => '> '),
+      media: () => pick.showModal()
+    };
+    toolbar.addEventListener('click', (e) => {
+      const cmd = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-cmd]')?.dataset.cmd;
+      if (cmd) commands[cmd]?.();
+    });
+    area.addEventListener('keydown', (e) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const cmd = { b: 'bold', i: 'italic', k: 'link' }[e.key.toLowerCase()];
+      if (cmd) {
+        e.preventDefault();
+        commands[cmd]!();
+      }
+    });
+
+    pick.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target === pick || target.closest('[data-close-pick]')) return pick.close();
+      const item = target.closest<HTMLButtonElement>('[data-insert]');
+      if (!item) return;
+      pick.close();
+      // Photos go on their own line so they show as a block.
+      const before = area.value.slice(0, area.selectionStart);
+      const isPhoto = item.dataset.insert!.startsWith('!');
+      const lead = isPhoto && before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+      insert(lead + item.dataset.insert! + (isPhoto ? '\n\n' : ''));
+    });
+
+    // Write / Preview tabs.
+    const tabs = root.querySelectorAll<HTMLButtonElement>('[data-view]');
+    tabs.forEach((tab) =>
+      tab.addEventListener('click', async () => {
+        const showPreview = tab.dataset.view === 'preview';
+        tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+        area.hidden = showPreview;
+        toolbar.hidden = showPreview;
+        preview.hidden = !showPreview;
+        if (!showPreview) return area.focus();
+        preview.style.minHeight = `${area.offsetHeight || 360}px`;
+        preview.innerHTML = '<p class="hint">Loading preview…</p>';
+        try {
+          const res = await fetch('/portal/preview/', { method: 'POST', body: area.value, headers: { 'Content-Type': 'text/plain' } });
+          preview.innerHTML = res.ok ? (await res.text()) || '<p class="hint">Nothing written yet.</p>' : '<p class="hint">Preview isn\'t available right now.</p>';
+        } catch {
+          preview.innerHTML = '<p class="hint">Preview isn\'t available right now.</p>';
+        }
+      })
+    );
+  });
+</script>
 
 <style>
-  .md-field textarea {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    min-height: 360px;
+  .md { display: grid; gap: 0.45rem; }
+  .md-top { display: flex; justify-content: space-between; align-items: end; gap: 0.6rem; }
+  .md-label { font-size: 0.84rem; font-weight: 600; color: var(--text-2); }
+  .md-tabs { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .md-tabs button {
+    font: inherit; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.8rem; border-radius: 999px;
+    border: 0; background: none; color: var(--text-3); cursor: pointer;
   }
-  .md-help { margin-top: -0.4rem; font-size: 0.85rem; color: var(--text-2); }
+  .md-tabs button[aria-pressed='true'] { background: var(--text); color: var(--bg); }
+
+  .md-box { border: 1px solid var(--line-strong); border-radius: var(--radius-s); background: var(--surface-2); overflow: hidden; }
+  .md-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .md-toolbar {
+    display: flex; flex-wrap: wrap; gap: 0.15rem; align-items: center; padding: 0.35rem;
+    border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+  }
+  .md-toolbar[hidden] { display: none; }
+  .md-toolbar button {
+    font: inherit; font-size: 0.8rem; color: var(--text-2); background: none; border: 1px solid transparent;
+    border-radius: 7px; padding: 0.3rem 0.55rem; cursor: pointer; min-height: 32px;
+  }
+  .md-toolbar button:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); border-color: var(--line); }
+  .md-toolbar .sep { width: 1px; height: 18px; background: var(--line); margin: 0 0.2rem; }
+  .md-box textarea {
+    display: block; width: 100%; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.65; min-height: 380px;
+    padding: 0.9rem 1rem !important; resize: vertical;
+  }
+  .md-preview { padding: 1rem 1.2rem; display: grid; gap: 0.9rem; align-content: start; color: var(--text-2); line-height: 1.65; overflow: auto; }
+  .md-preview :global(h2) { font-size: 1.5rem; color: var(--text); margin-top: 0.6rem; }
+  .md-preview :global(h3) { font-size: 1.2rem; color: var(--text); }
+  .md-preview :global(a) { color: var(--accent); text-decoration: underline; }
+  .md-preview :global(strong) { color: var(--text); }
+  .md-preview :global(ul), .md-preview :global(ol) { padding-left: 1.2rem; display: grid; gap: 0.3rem; margin: 0; }
+  .md-preview :global(blockquote) { margin: 0; padding-left: 1rem; border-left: 3px solid var(--accent); }
+  .md-preview :global(img) { max-width: 100%; border-radius: 10px; }
+  .md-preview :global(table) { border-collapse: collapse; }
+  .md-preview :global(th), .md-preview :global(td) { border: 1px solid var(--line); padding: 0.35rem 0.6rem; }
+
+  .md-help { font-size: 0.85rem; color: var(--text-2); }
   .md-help summary { cursor: pointer; width: fit-content; }
   .md-help-grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0.7rem 0; }
   .md-help code { font-size: 0.82rem; color: var(--text); background: var(--surface-2); padding: 0.1rem 0.4rem; border-radius: 6px; }
+
+  .md-pick {
+    width: min(760px, calc(100vw - 2rem)); max-height: min(80vh, 760px); padding: 1.2rem; border-radius: var(--radius-m);
+    background: var(--surface); color: var(--text); border: 1px solid var(--line-strong);
+  }
+  .md-pick::backdrop { background: rgba(0, 0, 0, 0.6); }
+  .pick-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 0.4rem; }
+  .pick-head h2 { font-size: 1.15rem; }
+  .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.6rem; margin-top: 0.9rem; }
+  .pick-grid button, .pick-docs button {
+    font: inherit; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-s);
+    padding: 0; cursor: pointer; text-align: left; overflow: hidden;
+  }
+  .pick-grid button:hover, .pick-docs button:hover { border-color: var(--accent); color: var(--text); }
+  .pick-grid img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .pick-grid span { display: block; font-size: 0.75rem; padding: 0.35rem 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pick-docs { display: grid; gap: 0.35rem; margin-top: 1rem; }
+  .pick-docs h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+  .pick-docs button { padding: 0.55rem 0.7rem; font-size: 0.88rem; }
 </style>
