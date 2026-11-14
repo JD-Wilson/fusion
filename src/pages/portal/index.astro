@@ -18,7 +18,7 @@ const [teams, newEnquiries, { data: vacancyData }, stats, { data: peopleData }] 
   countNewEnquiries(supabase),
   supabase.from('vacancies').select('*, teams(name, age_group)').order('created_at', { ascending: false }),
   teamStats(supabase, admin ? undefined : session.teamIds),
-  admin ? supabase.from('people').select('id, team_managers(id)') : Promise.resolve({ data: null })
+  admin ? supabase.from('people').select('id, full_name, user_id, team_managers(id), profiles(*)') : Promise.resolve({ data: null })
 ]);
 const vacancies = (vacancyData ?? []) as unknown as VacancyRow[];
 const mine = sortTeams(teams.filter((t) => session.teamIds.includes(t.id)));
@@ -47,7 +47,16 @@ for (const t of mine) {
 }
 let clubStats: { teams: number; sat: number; sun: number; dev: number; people: number; noTeam: number } | null = null;
 if (admin) {
-  const people = (peopleData ?? []) as { id: string; team_managers: { id: string }[] }[];
+  const people = (peopleData ?? []) as unknown as { id: string; full_name: string; user_id: string | null; team_managers: { id: string }[]; profiles: { approved?: boolean } | null }[];
+  const pending = people.filter((p) => p.user_id && p.profiles?.approved === false);
+  if (pending.length) {
+    todos.unshift({
+      href: pending.length === 1 ? `/portal/people/${pending[0]!.id}/` : '/portal/people/?show=pending',
+      text: `${pending.length} new ${pending.length === 1 ? 'sign-up is' : 'sign-ups are'} waiting for approval`,
+      detail: pending.slice(0, 4).map((p) => p.full_name).join(', ') + (pending.length > 4 ? '…' : ''),
+      warn: true
+    });
+  }
   const leagueTeams = teams.filter((t) => t.kind !== 'development');
   clubStats = {
     teams: leagueTeams.length,

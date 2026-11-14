@@ -1,7 +1,6 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import PersonFields from '../../../components/portal/PersonFields.astro';
-import { isSiteUrlConfigured, siteConfig } from '../../../config/site';
 import { countNewEnquiries, loadTeams } from '../../../lib/portal';
 import { applyAccess, draftFromForm, parsePersonForm, saveAssignments, type Person } from '../../../lib/portal-people';
 
@@ -25,10 +24,9 @@ if (Astro.request.method === 'POST') {
       error = dbError.code === '23505' ? 'Someone with that email is already in People.' : dbError.message;
     } else {
       const teamError = await saveAssignments(supabase, data.id, parsed.teams);
-      const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
       const login = parsed.access === 'none'
         ? {}
-        : await applyAccess({ id: data.id, user_id: null, ...parsed.values }, parsed.access, origin);
+        : await applyAccess({ id: data.id, user_id: null, ...parsed.values }, parsed.access, parsed.tempPassword);
       const params = new URLSearchParams({ created: '1' });
       if (teamError) params.set('problem', teamError.message);
       else if (login.error) params.set('problem', `Saved, but the login wasn't set up: ${login.error}`);

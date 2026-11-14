@@ -8,10 +8,11 @@ import { normaliseWhatsApp } from '../../lib/vacancies';
 export const prerender = false;
 const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
+const q = Astro.url.searchParams;
 
-let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('welcome')
+let notice: { ok: boolean; text: string } | null = q.get('welcome')
   ? { ok: true, text: 'Welcome! Choose a password below so you can sign in next time.' }
-  : Astro.url.searchParams.get('reset')
+  : q.get('reset')
     ? { ok: true, text: 'Choose a new password below.' }
     : null;
 let fullName = session.fullName;
@@ -24,8 +25,11 @@ if (Astro.request.method === 'POST') {
     if (password.length < 8) {
       notice = { ok: false, text: 'Please use at least 8 characters.' };
     } else {
-      const { error } = await supabase.auth.updateUser({ password });
-      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Password updated.' };
+      // Choosing a password also clears a temporary one set by an admin.
+      const { error } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
+      if (error) notice = { ok: false, text: error.message };
+      else if (session.mustChangePassword) return Astro.redirect('/portal/');
+      else notice = { ok: true, text: 'Password updated.' };
     }
   } else {
     fullName = line(form, 'full_name', 80) ?? '';
@@ -40,18 +44,30 @@ if (Astro.request.method === 'POST') {
     }
   }
 }
-const newEnquiries = await countNewEnquiries(supabase);
+const newEnquiries = session.approved ? await countNewEnquiries(supabase) : 0;
 ---
 
 <PortalLayout title="My account" session={session} active="account" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <span class="eyebrow">{roleLabel(session)}</span>
+      <span class="eyebrow">{session.approved ? roleLabel(session) : 'Waiting for approval'}</span>
       <h1>My account</h1>
       <p class="p-sub">Signed in as {session.email}</p>
     </div>
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  <div class="acct">
+  {!session.approved && (
+    <div class="card urgent">
+      <h2>{q.get('signed_up') ? 'Thanks for signing up' : 'Waiting for a club admin'}</h2>
+      <p class="p-sub">
+        A club admin needs to approve your login and add you to your teams. Let them know you've signed up. Once they have,
+        refresh this page and your teams will be here.
+      </p>
+    </div>
+  )}
+
   <div class="card">
     <h2>Your details</h2>
     <form method="post" class="f">
@@ -63,26 +79,38 @@ const newEnquiries = await countNewEnquiries(supabase);
       <div><button class="btn" type="submit">Save</button></div>
     </form>
   </div>
-  <div class="card">
-    <h2>{session.myTeams.length === 1 ? 'Your team' : 'Your teams'}</h2>
-    {session.myTeams.length === 0 && <p class="empty">{session.isAdmin ? "You're not on a team. Add yourself to any you coach from People." : "You're not on a team yet. Ask a club admin to add you."}</p>}
-    {session.myTeams.map((t) => (
-      <a class="row" href={`/portal/teams/${t.id}/`}>
-        <div class="grow">
-          <h3>{t.name}</h3>
-          <p>{[t.role_title, t.kind === 'development' ? 'Development sessions' : t.match_day].filter(Boolean).join(' · ')}</p>
-        </div>
-        <span aria-hidden="true" style="color:var(--text-3)">→</span>
-      </a>
-    ))}
-    {session.isAdmin && <p class="hint" style="margin-top:0.6rem;font-size:0.82rem;color:var(--text-3)">To change your teams, open yourself in <a href="/portal/people/">People</a>.</p>}
-  </div>
-  <div class="card">
-    <h2>Password</h2>
+
+  {session.approved && (
+    <div class="card">
+      <h2>{session.myTeams.length === 1 ? 'Your team' : 'Your teams'}</h2>
+      {session.myTeams.length === 0 && <p class="empty">{session.isAdmin ? "You're not on a team. Add yourself to any you coach from People." : "You're not on a team yet. Ask a club admin to add you."}</p>}
+      {session.myTeams.map((t) => (
+        <a class="row" href={`/portal/teams/${t.id}/`}>
+          <div class="grow">
+            <h3>{t.name}</h3>
+            <p>{[t.role_title, t.kind === 'development' ? 'Development sessions' : t.match_day].filter(Boolean).join(' · ')}</p>
+          </div>
+          <span aria-hidden="true" style="color:var(--text-3)">→</span>
+        </a>
+      ))}
+      {session.isAdmin && <p class="hint" style="margin-top:0.6rem;font-size:0.82rem;color:var(--text-3)">To change your teams, open yourself in <a href="/portal/people/">People</a>.</p>}
+    </div>
+  )}
+
+  <div class:list={['card', session.mustChangePassword && 'urgent']} id="password" style={`order:${session.mustChangePassword ? -1 : 99}`}>
+    <h2>{session.mustChangePassword ? 'Choose your own password' : 'Password'}</h2>
+    {session.mustChangePassword && <p class="p-sub" style="margin-bottom:0.8rem">You signed in with a temporary password from a club admin. Choose your own to carry on.</p>}
     <form method="post" class="f">
       <input type="hidden" name="intent" value="password" />
-      <label>New password<input type="password" name="password" minlength="8" autocomplete="new-password" required /></label>
-      <div><button class="btn outline" type="submit">Change password</button></div>
+      <label>New password<input type="password" name="password" minlength="8" autocomplete="new-password" required /><span class="hint">At least 8 characters.</span></label>
+      <div><button class:list={['btn', !session.mustChangePassword && 'outline']} type="submit">{session.mustChangePassword ? 'Save password' : 'Change password'}</button></div>
     </form>
   </div>
+  </div>
 </PortalLayout>
+
+<style>
+  .acct { display: grid; gap: 1rem; }
+  .acct > :global(.card) { margin: 0; }
+</style>
+

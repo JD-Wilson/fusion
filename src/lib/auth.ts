@@ -17,6 +17,10 @@ export interface Session {
   fullName: string;
   phone: string | null;
   isAdmin: boolean;
+  /** False for someone who signed up and is waiting for a club admin. */
+  approved: boolean;
+  /** Set when an admin gave them a temporary password. */
+  mustChangePassword: boolean;
   /** Teams this person is on (admins can edit every team, and may coach some). */
   teamIds: string[];
   myTeams: MyTeam[];
@@ -37,9 +41,11 @@ export async function loadSession(supabase: SupabaseClient): Promise<Session | n
     supabase.from('team_managers').select('team_id, role_title, teams(*)').eq('user_id', user.id)
   ]);
   if (!profile) return null;
+  // Before migration 006 there is no "approved" column: everyone is approved.
+  const approved = profile.approved !== false;
 
   type Row = { team_id: string; role_title: string; teams: Record<string, unknown> | null };
-  const myTeams: MyTeam[] = ((managed ?? []) as unknown as Row[])
+  const myTeams: MyTeam[] = ((approved ? managed ?? [] : []) as unknown as Row[])
     .filter((m) => m.teams)
     .map((m) => ({
       id: m.team_id,
@@ -57,7 +63,9 @@ export async function loadSession(supabase: SupabaseClient): Promise<Session | n
     email: profile.email as string,
     fullName: (profile.full_name as string) ?? '',
     phone: (profile.phone as string | null) ?? null,
-    isAdmin: profile.role === 'club_admin',
+    isAdmin: approved && profile.role === 'club_admin',
+    approved,
+    mustChangePassword: Boolean(user.user_metadata?.must_change_password),
     teamIds: myTeams.map((t) => t.id),
     myTeams
   };

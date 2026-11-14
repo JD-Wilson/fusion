@@ -338,3 +338,4 @@ form.f { display: grid; gap: 0.95rem; }
     background: none; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.35rem 0.85rem; min-height: 36px;
   }
 }
+.card.approve, .card.urgent { border-color: rgba(240, 190, 70, 0.4); background: rgba(240, 190, 70, 0.05); }

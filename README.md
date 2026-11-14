@@ -216,34 +216,19 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (home: a to-do list and
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL editor**: run `supabase/schema.sql`, then `supabase/seed.sql` (your existing teams, from `src/content/teams` via `npm run seed:sql`), then `supabase/seed-content.sql` (the site's pages and blog posts, from `src/content` via `npm run content:sql`). All are safe to re-run and never overwrite edits made in the portal.
 
-   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`, `005_people.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
+   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`, `005_people.sql`, `006_signups.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
 3. **Project Settings → API**: copy the URL, anon key and service-role key into `.env.local` and Vercel's environment variables (see `.env.example`).
 4. **Authentication → URL Configuration**: set the Site URL to the live site (e.g. `https://www.fusionfc.co.uk`) and add `https://www.fusionfc.co.uk/**` (and `http://localhost:4399/**` for local testing) to Redirect URLs.
-5. **Authentication → Emails → SMTP Settings**: turn on custom SMTP. The club's email is at IONOS, so use a mailbox there: host `smtp.ionos.co.uk`, port 465, username and sender = the full mailbox address (e.g. `hub@fusionfc.co.uk`), password = that mailbox's password, sender name `Fusion FC`. Supabase's built-in email only sends to members of the Supabase project and a couple of emails an hour, so invites and password resets won't reach coaches without it.
-6. **Authentication → Emails → Templates**: logins are email and password. Point the invite and reset links at the site:
-   - *Invite user* (subject "You're invited to the Fusion FC team hub"):
-     ```html
-     <h2>You're invited to the Fusion FC team hub</h2>
-     <p>You've been given a login to manage your team's page, vacancies and enquiries.</p>
-     <p><a href="{{ .SiteURL }}/auth/confirm/?token_hash={{ .TokenHash }}&type=invite">Open the team hub and choose a password</a></p>
-     <p>After that, sign in at {{ .SiteURL }}/login/ with this email address and your password.</p>
-     ```
-   - *Reset password* (subject "Reset your Fusion FC team hub password"):
-     ```html
-     <h2>Reset your password</h2>
-     <p><a href="{{ .SiteURL }}/auth/confirm/?token_hash={{ .TokenHash }}&type=recovery">Choose a new password</a></p>
-     <p>If you didn't ask for this, you can ignore this email.</p>
-     ```
-   The links open a page with a button rather than signing in straight away, so email security scanners that open links first don't use them up. Each link works once; if one expires, resend the invite from People or use "Forgot password?".
-7. **Turn off "Allow new users to sign up"** (Authentication → Sign In / Providers). Invites still work.
-8. **Make the first admin.** Invite yourself from Authentication → Users → *Invite user*, accept the email, then run:
+5. **No emails are needed.** Coaches create their own login at `/signup/` (name, email, password); it starts **waiting for approval** and can't see anything until a club admin approves it in **People** and puts it on teams. Admins can also give someone a login with a temporary password, and set a temporary password for anyone who's locked out ("break glass"); either way they choose their own password when they next sign in. The website creates these logins itself, so Supabase sends nothing.
+6. **Turn off "Allow new users to sign up"** (Authentication → Sign In / Providers). That only stops sign-ups that go around the website; `/signup/` still works.
+7. **Make the first admin.** In Authentication → Users → *Add user → Create new user*, enter your email and a password and tick *Auto Confirm User*, then run:
 
    ```sql
    update public.profiles set role = 'club_admin' where email = 'you@example.com';
    ```
 
-   From then on, add coaches from **People** in the portal (tick their teams, and choose a login if they need one).
-9. Optional: set `RESEND_API_KEY` and `EMAIL_FROM` so enquiries are also emailed to managers.
+   From then on, approve sign-ups and add coaches from **People** in the portal.
+8. Optional: set `RESEND_API_KEY` and `EMAIL_FROM` so enquiries are also emailed to managers.
 
 Without Supabase variables the rest of the site works as before and `/vacancies/` shows a "coming soon" message.
 

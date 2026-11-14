@@ -69,17 +69,33 @@ const groups = [...new Set(sorted.map(groupOf))].map((label) => ({ label, teams:
       <label class="check"><input type="radio" name="access" value="none" checked={access === 'none'} />No login (just listed on their teams)</label>
       <label class="check"><input type="radio" name="access" value="coach" checked={access === 'coach'} />Coach: can edit their own teams, vacancies and enquiries</label>
       <label class="check"><input type="radio" name="access" value="admin" checked={access === 'admin'} />Club admin: can edit everything, and their own teams</label>
-      <span class="hint">
-        {access === 'none'
-          ? 'Choosing a login sends them an email to set a password. They need an email address above.'
-          : 'Choosing "No login" removes their login but keeps them on their teams.'}
-      </span>
+      {access === 'none' ? (
+        <div class="temp" data-temp-box>
+          <label>
+            Temporary password
+            <input type="text" name="temp_password" minlength="8" maxlength="72" autocomplete="off" data-temp />
+            <span class="hint">No email is sent. Give them their email address and this password (e.g. on WhatsApp); they choose their own when they first sign in. Not needed if they've already signed up on the website.</span>
+          </label>
+          <div><button class="btn outline sm" type="button" data-generate>Make one up for me</button></div>
+        </div>
+      ) : (
+        <span class="hint">Choosing "No login" removes their login but keeps them on their teams.</span>
+      )}
     </>
   )}
   {self && <input type="hidden" name="access" value={access} />}
 </fieldset>
 
 <script>
+  // The temporary password box only shows when a login is chosen.
+  const box = document.querySelector<HTMLElement>('[data-temp-box]');
+  if (box) {
+    const radios = [...document.querySelectorAll<HTMLInputElement>('input[name="access"]')];
+    const sync = () => (box.hidden = !radios.some((r) => r.checked && r.value !== 'none'));
+    radios.forEach((r) => r.addEventListener('change', sync));
+    sync();
+  }
+
   // Role and enquiries only matter for ticked teams.
   document.querySelectorAll<HTMLElement>('[data-team-pick]').forEach((row) => {
     const box = row.querySelector<HTMLInputElement>('input[name="team"]')!;
@@ -90,6 +106,7 @@ const groups = [...new Set(sorted.map(groupOf))].map((label) => ({ label, teams:
 </script>
 
 <style>
+  .temp { display: grid; gap: 0.5rem; margin-top: 0.3rem; padding: 0.8rem; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--line); }
   .team-group { display: grid; gap: 0.15rem; }
   .team-group h3 { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 0.6rem 0 0.2rem; }
   .team-pick {

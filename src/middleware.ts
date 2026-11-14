@@ -24,6 +24,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
   context.locals.supabase = supabase;
   context.locals.session = session;
 
+  // Waiting for approval, or holding a temporary password: only the account page.
+  if ((!session.approved || session.mustChangePassword) && !pathname.startsWith('/portal/account')) {
+    return context.redirect('/portal/account/');
+  }
+
   const response = await next();
   response.headers.set('Cache-Control', 'private, no-store');
   return response;

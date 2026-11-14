@@ -1,19 +1,21 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import PersonFields from '../../../components/portal/PersonFields.astro';
-import { isSiteUrlConfigured, siteConfig } from '../../../config/site';
-import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+import { countNewEnquiries, loadTeams, ukDate } from '../../../lib/portal';
 import {
   accessOf,
   applyAccess,
+  approveLogin,
   draftFromForm,
+  isPending,
   loadPerson,
   parsePersonForm,
   saveAssignments,
+  setTemporaryPassword,
   signedInUserIds,
   type Person
 } from '../../../lib/portal-people';
-import { adminSupabase, publicSupabase } from '../../../lib/supabase';
+import { adminSupabase } from '../../../lib/supabase';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -35,7 +37,6 @@ let notice: { ok: boolean; text: string } | null = q.get('problem')
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const intent = String(form.get('intent') ?? 'save');
-  const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
 
   if (intent === 'delete' && !isSelf) {
     // Their login goes too; their team places go with the person.
@@ -44,12 +45,15 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/portal/people/?deleted=1');
   }
 
-  if (intent === 'resend' && !isSelf && loaded.user_id && loaded.email) {
-    // An invite can't be re-sent to an existing login; a password link does the same job.
-    const { error } = (await publicSupabase()?.auth.resetPasswordForEmail(loaded.email, {
-      redirectTo: `${origin}/auth/confirm/?next=/portal/account/`
-    })) ?? { error: { message: 'Supabase is not connected.' } };
-    notice = error ? { ok: false, text: error.message } : { ok: true, text: `Password link sent to ${loaded.email}.` };
+  if (intent === 'approve' && !isSelf && loaded.user_id) {
+    const error = await approveLogin(loaded.user_id);
+    if (!error) return Astro.redirect(`/portal/people/${loaded.id}/?saved=1&note=${encodeURIComponent(`${loaded.full_name} is approved and can now use the team hub.`)}`);
+    notice = { ok: false, text: error };
+  } else if (intent === 'temp_password' && !isSelf && loaded.user_id) {
+    const error = await setTemporaryPassword(loaded.user_id, String(form.get('temp_password') ?? '').slice(0, 72));
+    notice = error
+      ? { ok: false, text: error }
+      : { ok: true, text: `Temporary password set. Send it to ${loaded.full_name.split(' ')[0]}; they'll choose their own when they next sign in.` };
   } else if (intent === 'save') {
     const parsed = parsePersonForm(form);
     if (parsed.error !== undefined) {
@@ -65,7 +69,7 @@ if (Astro.request.method === 'POST') {
       } else {
         const teamError = await saveAssignments(supabase, loaded.id, parsed.teams);
         const access = isSelf ? accessOf(loaded) : parsed.access;
-        const login = access === accessOf(loaded) ? {} : await applyAccess({ ...loaded, ...values }, access, origin);
+        const login = access === accessOf(loaded) ? {} : await applyAccess({ ...loaded, ...values }, access, parsed.tempPassword);
         const params = new URLSearchParams({ saved: '1' });
         if (teamError) params.set('problem', teamError.message);
         else if (login.error) params.set('problem', `Saved, but the login wasn't changed: ${login.error}`);
@@ -78,7 +82,8 @@ if (Astro.request.method === 'POST') {
 
 const [teams, signedIn, newEnquiries] = await Promise.all([loadTeams(supabase), signedInUserIds(), countNewEnquiries(supabase)]);
 const access = accessOf(loaded);
-const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user_id);
+const pending = isPending(loaded);
+const invited = !pending && access !== 'none' && loaded.user_id && !signedIn.has(loaded.user_id);
 ---
 
 <PortalLayout title={loaded.full_name} session={session} active="people" newEnquiries={newEnquiries}>
@@ -89,12 +94,29 @@ const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user
         {loaded.full_name}
         {access === 'admin' && <span class="pill">Club admin</span>}
         {access === 'coach' && <span class="pill">Coach login</span>}
-        {invited && <span class="pill warn">Invite sent</span>}
+        {pending && <span class="pill warn">Waiting for approval</span>}
+        {invited && <span class="pill grey">Hasn't signed in yet</span>}
       </h1>
       <p class="p-sub">{loaded.team_managers.length ? `On ${loaded.team_managers.length} ${loaded.team_managers.length === 1 ? 'team' : 'teams'}` : 'Not on a team yet'}</p>
     </div>
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  {pending && !isSelf && (
+    <div class="card approve">
+      <h2>Signed up{loaded.profiles?.created_at ? ` on ${ukDate(loaded.profiles.created_at)}` : ''}, waiting for approval</h2>
+      <p class="p-sub">
+        Check this is really {loaded.full_name} ({loaded.email}) before approving. Until then they can sign in but can't see or change anything.
+        Tick their teams below and save first, or approve now and add teams after.
+      </p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.8rem">
+        <form method="post"><input type="hidden" name="intent" value="approve" /><button class="btn" type="submit">Approve</button></form>
+        <form method="post" onsubmit="return confirm('Reject this sign-up? Their login and People entry are removed.')">
+          <input type="hidden" name="intent" value="delete" /><button class="btn danger" type="submit">Reject and remove</button>
+        </form>
+      </div>
+    </div>
+  )}
 
   <div class="card">
     <form method="post" class="f">
@@ -104,13 +126,17 @@ const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user
     </form>
   </div>
 
-  {invited && !isSelf && (
+  {loaded.user_id && !isSelf && (
     <div class="card">
-      <h2>Haven't signed in yet</h2>
-      <p class="p-sub">If the invite email has gone missing, send them a link to choose a password instead.</p>
-      <form method="post" style="margin-top:0.8rem">
-        <input type="hidden" name="intent" value="resend" />
-        <button class="btn outline" type="submit">Send a password link</button>
+      <h2>Set a temporary password</h2>
+      <p class="p-sub">If {loaded.full_name.split(' ')[0]} is locked out. Send them the password (e.g. on WhatsApp); they'll be asked to choose their own when they sign in.</p>
+      <form method="post" class="f temp-pw" style="margin-top:0.8rem">
+        <input type="hidden" name="intent" value="temp_password" />
+        <label>Temporary password<input type="text" name="temp_password" minlength="8" maxlength="72" autocomplete="off" required data-temp /></label>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn outline" type="button" data-generate>Make one up for me</button>
+          <button class="btn" type="submit">Set password</button>
+        </div>
       </form>
     </div>
   )}
@@ -126,3 +152,4 @@ const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user
     </div>
   )}
 </PortalLayout>
+

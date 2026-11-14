@@ -15,13 +15,13 @@ const { title, session, active, activeTeam, newEnquiries = 0 } = Astro.props as 
 type Link = { id: string; href: string; label: string; badge?: number };
 const groups: { label: string | null; links: Link[] }[] = [
   { label: null, links: [{ id: 'dashboard', href: '/portal/', label: 'Home' }] },
-  {
+  ...(!session.approved ? [] : [{
     label: 'Recruiting',
     links: [
       { id: 'vacancies', href: '/portal/vacancies/', label: 'Vacancies' },
       { id: 'enquiries', href: '/portal/enquiries/', label: 'Enquiries', badge: newEnquiries }
     ]
-  },
+  }]),
   ...(session.isAdmin
     ? [
         {
@@ -142,6 +142,16 @@ const initials = (session.fullName || session.email)
       scrim.addEventListener('click', () => set(false));
       document.querySelector('[data-close]')!.addEventListener('click', () => set(false));
       document.addEventListener('keydown', (e) => e.key === 'Escape' && set(false));
+
+      // "Make one up for me": an easy-to-read temporary password, e.g. "green-tiger-4821".
+      const words = ['green', 'black', 'white', 'silver', 'gold', 'tiger', 'falcon', 'river', 'rocket', 'comet', 'maple', 'harbour', 'pitch', 'corner', 'striker', 'keeper'];
+      const rand = (n: number) => crypto.getRandomValues(new Uint32Array(1))[0]! % n;
+      document.querySelectorAll<HTMLButtonElement>('[data-generate]').forEach((button) =>
+        button.addEventListener('click', () => {
+          const field = button.form?.querySelector<HTMLInputElement>('[data-temp]');
+          if (field) field.value = `${words[rand(words.length)]}-${words[rand(words.length)]}-${1000 + rand(9000)}`;
+        })
+      );
 
       // Editors: warn before leaving with unsaved changes; Ctrl/⌘ S saves.
       document.querySelectorAll<HTMLFormElement>('form[data-guard]').forEach((form) => {

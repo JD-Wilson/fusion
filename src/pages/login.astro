@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { isSiteUrlConfigured, siteConfig } from '../config/site';
 import { loadSession } from '../lib/auth';
 import { safeNext } from '../lib/forms';
 import { isSupabaseConfigured, serverSupabase } from '../lib/supabase';
@@ -14,7 +13,7 @@ const nextParam = Astro.url.searchParams.get('next');
 let message: { ok: boolean; text: string } | null = null;
 
 if (Astro.url.searchParams.get('error') === 'link') {
-  message = { ok: false, text: 'That link has expired or was already used. Request a new one below.' };
+  message = { ok: false, text: 'That link has expired or was already used. Sign in below, or ask a club admin to set you a temporary password.' };
 }
 
 if (isSupabaseConfigured) {
@@ -22,19 +21,11 @@ if (isSupabaseConfigured) {
 
   if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData();
-    const intent = String(form.get('intent') ?? 'password');
     const email = String(form.get('email') ?? '').trim();
     const next = safeNext(String(form.get('next') ?? ''));
-    // Links in emails must point at our own site, never at whatever Host header arrived.
-    const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
 
     if (!email) {
       message = { ok: false, text: 'Pop your email in first.' };
-    } else if (intent === 'reset') {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/auth/confirm/?next=/portal/account/`
-      });
-      message = { ok: true, text: 'If that email has an account, a reset link is on its way.' };
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -65,12 +56,11 @@ if (isSupabaseConfigured) {
     <form method="post" class="stack">
       <input type="hidden" name="next" value={nextParam ?? ''} />
       <label>Email<input type="email" name="email" autocomplete="username" required /></label>
-      <label>Password<input type="password" name="password" autocomplete="current-password" /></label>
+      <label>Password<input type="password" name="password" autocomplete="current-password" required /></label>
       <button class="button primary" type="submit" name="intent" value="password">Sign in</button>
-      <div class="alt">
-        <button type="submit" name="intent" value="reset" formnovalidate>Forgot password?</button>
-      </div>
+      <p class="alt-note">Forgotten your password? Ask a club admin to set you a temporary one.</p>
     </form>
+    <p class="alt-note">New coach or helper? <a href="/signup/">Create a login</a></p>
   </section>
 </BaseLayout>
 
@@ -82,6 +72,8 @@ if (isSupabaseConfigured) {
   input { font: inherit; font-size: 16px; padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius-s); min-height: 46px; background: var(--surface-2); color: var(--text); }
   input:focus { outline: none; border-color: var(--accent-line); }
   .primary { border: 0; cursor: pointer; }
+  .alt-note { margin-top: var(--space-s); font-size: 0.9rem; color: var(--text-3); }
+  .alt-note a { color: var(--accent); }
   .alt { display: flex; justify-content: space-between; gap: var(--space-s); flex-wrap: wrap; }
   .alt button { background: none; border: 0; padding: 0.3rem 0; color: var(--text-2); font: inherit; font-size: 0.9rem; cursor: pointer; }
   .alt button:hover { color: var(--text); }

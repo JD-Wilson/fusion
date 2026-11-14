@@ -1,7 +1,7 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import { countNewEnquiries } from '../../../lib/portal';
-import { accessOf, loadPeople, signedInUserIds } from '../../../lib/portal-people';
+import { accessOf, isPending, loadPeople, signedInUserIds } from '../../../lib/portal-people';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -15,12 +15,13 @@ const ACCESS = { admin: 'Club admin', coach: 'Coach login', none: 'No login' } a
 type P = (typeof people)[number];
 const FILTERS = [
   { id: 'all', label: 'Everyone', test: () => true },
+  { id: 'pending', label: 'Waiting for approval', test: (p: P) => isPending(p) },
   { id: 'admins', label: 'Club admins', test: (p: P) => accessOf(p) === 'admin' },
   { id: 'saturday', label: 'Saturday', test: (p: P) => p.team_managers.some((t) => t.teams?.match_day === 'Saturday') },
   { id: 'sunday', label: 'Sunday', test: (p: P) => p.team_managers.some((t) => t.teams?.match_day === 'Sunday') },
   { id: 'both', label: 'Saturday and Sunday', test: (p: P) => ['Saturday', 'Sunday'].every((d) => p.team_managers.some((t) => t.teams?.match_day === d)) },
   { id: 'no-login', label: 'No login', test: (p: P) => accessOf(p) === 'none' },
-  { id: 'invited', label: 'Invite not used', test: (p: P) => Boolean(p.user_id && !signedIn.has(p.user_id)) },
+  { id: 'invited', label: "Hasn't signed in yet", test: (p: P) => Boolean(p.user_id && !isPending(p) && !signedIn.has(p.user_id)) },
   { id: 'no-team', label: 'Not on a team', test: (p: P) => p.team_managers.length === 0 }
 ];
 const show = FILTERS.find((f) => f.id === Astro.url.searchParams.get('show')) ?? FILTERS[0];
@@ -59,7 +60,8 @@ const shown = people.filter(show.test);
     {people.length > 0 && shown.length === 0 && <p class="empty">Nobody here.</p>}
     {shown.map((p) => {
       const access = accessOf(p);
-      const invited = access !== 'none' && p.user_id && !signedIn.has(p.user_id);
+      const pending = isPending(p);
+      const invited = !pending && access !== 'none' && p.user_id && !signedIn.has(p.user_id);
       const teams = [...p.team_managers].sort((a, b) => (a.teams?.name ?? '').localeCompare(b.teams?.name ?? ''));
       return (
         <a class="row person" href={`/portal/people/${p.id}/`} data-text={[p.full_name, p.email, ...teams.map((t) => t.teams?.name)].join(' ').toLowerCase()}>
@@ -76,7 +78,7 @@ const shown = people.filter(show.test);
             </p>
           </div>
           <div class="actions">
-            {invited ? <span class="pill warn">Invite sent</span> : <span class:list={['pill', access === 'none' && 'grey']}>{ACCESS[access]}</span>}
+            {pending ? <span class="pill warn">Waiting for approval</span> : invited ? <span class="pill grey">Not signed in yet</span> : <span class:list={['pill', access === 'none' && 'grey']}>{ACCESS[access]}</span>}
           </div>
         </a>
       );
