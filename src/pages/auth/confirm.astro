@@ -1,0 +1,67 @@
+---
+import type { EmailOtpType } from '@supabase/supabase-js';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { safeNext } from '../../lib/forms';
+import { isSupabaseConfigured, serverSupabase } from '../../lib/supabase';
+
+export const prerender = false;
+
+/*
+ * Landing point for links in Supabase emails (sign-in links and invites).
+ *
+ * Opening the link shows a "Sign in" button; the one-time token is only used
+ * when that is pressed. Email security scanners (Outlook, school and work
+ * email) open links before the person does, and would otherwise use the token
+ * up, leaving them with "link expired".
+ */
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+if (!isSupabaseConfigured) return Astro.redirect('/login/');
+
+const params = Astro.request.method === 'POST' ? await Astro.request.formData() : Astro.url.searchParams;
+const tokenHash = String(params.get('token_hash') ?? '');
+const type = (params.get('type') ?? '') as EmailOtpType | '';
+const code = params.get('code') ? String(params.get('code')) : null;
+const next = safeNext(String(params.get('next') ?? ''));
+const isInvite = type === 'invite' || type === 'signup';
+const destination = isInvite ? '/portal/account/?welcome=1' : next;
+
+const supabase = serverSupabase(Astro.request, Astro.cookies);
+
+if (Astro.request.method === 'POST' && tokenHash && type) {
+  // A sign-in link for a login that hasn't been used yet carries a sign-up
+  // token, so verifying it as "magiclink" fails. "email" accepts both.
+  const verifyAs: EmailOtpType = type === 'magiclink' || type === 'signup' ? 'email' : type;
+  const { error } = await supabase.auth.verifyOtp({ type: verifyAs, token_hash: tokenHash });
+  return Astro.redirect(error ? '/login/?error=link' : destination);
+}
+
+if (code) {
+  // Links that come back via Supabase's own page (the default email templates).
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  return Astro.redirect(error ? '/login/?error=link' : destination);
+}
+
+if (!tokenHash || !type) return Astro.redirect('/login/?error=link');
+---
+
+<BaseLayout title="Sign in | Fusion FC" description="Fusion FC team hub sign-in." canonical="/auth/confirm/" noindex>
+  <section class="confirm section-card">
+    <img class="crest" src="/brand/logo.jpeg" alt="" width="56" height="56" />
+    <p class="band-eyebrow">Fusion FC team hub</p>
+    <h1 class="section-title">{isInvite ? "You're invited" : 'Sign in'}</h1>
+    <p class="section-copy">{isInvite ? 'Press the button to open the Fusion FC team hub.' : 'Press the button to finish signing in.'}</p>
+    <form method="post">
+      <input type="hidden" name="token_hash" value={tokenHash} />
+      <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="next" value={next} />
+      <button class="button primary" type="submit" autofocus>{isInvite ? 'Open the team hub' : 'Sign in'}</button>
+    </form>
+  </section>
+</BaseLayout>
+
+<style>
+  .confirm { max-width: 440px; margin: var(--space-xl) auto 0; text-align: center; }
+  .crest { border-radius: 12px; margin: 0 auto var(--space-s); display: block; }
+  form { margin-top: var(--space-m); }
+  .primary { border: 0; cursor: pointer; width: 100%; }
+</style>

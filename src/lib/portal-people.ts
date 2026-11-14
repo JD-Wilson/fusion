@@ -45,7 +45,7 @@ export async function loadPerson(supabase: SupabaseClient, id: string): Promise<
   return (data as unknown as Person) ?? null;
 }
 
-/** Logins that have been set up (password chosen), from Supabase Auth. */
+/** Logins that have signed in at least once, from Supabase Auth. */
 export async function signedInUserIds(): Promise<Set<string>> {
   const admin = adminSupabase();
   if (!admin) return new Set();
@@ -173,7 +173,7 @@ export async function applyAccess(
       userId = data.user.id;
       // The database links the new login to this person by email; make sure.
       await admin.from('people').update({ user_id: userId }).eq('id', person.id).is('user_id', null);
-      note = `Invite sent to ${person.email}. They choose a password from the email.`;
+      note = `Invite sent to ${person.email}. They sign in from the link in the email.`;
     }
   }
   const { error } = await admin.from('profiles').update({ role }).eq('id', userId);

@@ -7,11 +7,18 @@ import { isSupabaseConfigured, serverSupabase } from '../lib/supabase';
 
 export const prerender = false;
 
+/*
+ * Sign in by email only: we send a one-time link (and a code, for when the
+ * email is opened on another device). No passwords.
+ */
+
 // Depends on the visitor's login cookie: never cache.
 Astro.response.headers.set('Cache-Control', 'private, no-store');
 
 const nextParam = Astro.url.searchParams.get('next');
 let message: { ok: boolean; text: string } | null = null;
+let sentTo: string | null = null;
+let email = '';
 
 if (Astro.url.searchParams.get('error') === 'link') {
   message = { ok: false, text: 'That link has expired or was already used. Request a new one below.' };
@@ -22,16 +29,22 @@ if (isSupabaseConfigured) {
 
   if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData();
-    const intent = String(form.get('intent') ?? 'password');
-    const email = String(form.get('email') ?? '').trim();
+    const intent = String(form.get('intent') ?? 'link');
+    email = String(form.get('email') ?? '').trim().toLowerCase();
     const next = safeNext(String(form.get('next') ?? ''));
     // Links in emails must point at our own site, never at whatever Host header arrived.
     const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
 
     if (!email) {
       message = { ok: false, text: 'Pop your email in first.' };
-    } else if (intent === 'magic') {
-      // Only existing accounts get a link (no sign-ups); the reply is the same either way.
+    } else if (intent === 'code') {
+      const token = String(form.get('code') ?? '').replace(/\D/g, '');
+      const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+      if (!error) return Astro.redirect(next);
+      sentTo = email;
+      message = { ok: false, text: "That code didn't work. Check it, or send yourself a new one." };
+    } else {
+      // Only existing logins get a link (no sign-ups); the reply is the same either way.
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -39,52 +52,59 @@ if (isSupabaseConfigured) {
           emailRedirectTo: `${origin}/auth/confirm/?next=${encodeURIComponent(next)}`
         }
       });
-      message =
-        error?.status === 429
-          ? { ok: false, text: 'A link was sent very recently. Check your inbox, or try again in a minute.' }
-          : { ok: true, text: 'If that email has an account, a sign-in link is on its way. It works once.' };
-    } else if (intent === 'reset') {
-      await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/auth/confirm/?next=/portal/account/`
-      });
-      message = { ok: true, text: 'If that email has an account, a reset link is on its way.' };
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: String(form.get('password') ?? '')
-      });
-      if (error) {
-        message = { ok: false, text: "That email and password don't match. Try again?" };
-      } else {
-        return Astro.redirect(next);
-      }
+      sentTo = email;
+      if (error?.status === 429) message = { ok: false, text: 'A link was sent very recently. Check your inbox, or try again in a minute.' };
     }
   } else if (await loadSession(supabase)) {
     return Astro.redirect(safeNext(nextParam));
   }
 }
+const next = nextParam ?? '';
 ---
 
 <BaseLayout title="Manager login | Fusion FC" description="Fusion FC team manager and club admin login." canonical="/login/" noindex>
   <section class="login section-card">
     <img class="crest" src="/brand/logo.jpeg" alt="" width="56" height="56" />
     <p class="band-eyebrow">Fusion FC team hub</p>
-    <h1 class="section-title">Welcome back, coach</h1>
-    <p class="section-copy">For team managers and club leadership. Parents don't need an account: just <a href="/vacancies/">find a team here</a>.</p>
 
-    {!isSupabaseConfigured && <div class="msg bad">Logins aren't switched on yet. Supabase still needs connecting.</div>}
-    {message && <div class:list={['msg', message.ok ? 'ok' : 'bad']} role="status">{message.text}</div>}
-
-    <form method="post" class="stack">
-      <input type="hidden" name="next" value={nextParam ?? ''} />
-      <label>Email<input type="email" name="email" autocomplete="username" required /></label>
-      <label>Password<input type="password" name="password" autocomplete="current-password" /></label>
-      <button class="button primary" type="submit" name="intent" value="password">Sign in</button>
-      <div class="alt">
-        <button type="submit" name="intent" value="magic" formnovalidate>Email me a sign-in link</button>
-        <button type="submit" name="intent" value="reset" formnovalidate>Forgot password?</button>
-      </div>
-    </form>
+    {sentTo ? (
+      <>
+        <h1 class="section-title">Check your email</h1>
+        <p class="section-copy">
+          If <strong>{sentTo}</strong> has a login, we've sent it a sign-in link. Tap the link in the email, or type the code from it below.
+        </p>
+        {message && <div class:list={['msg', message.ok ? 'ok' : 'bad']} role="status">{message.text}</div>}
+        <form method="post" class="stack">
+          <input type="hidden" name="next" value={next} />
+          <input type="hidden" name="email" value={sentTo} />
+          <label>
+            Code from the email
+            <input class="code" type="text" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" required />
+          </label>
+          <button class="button primary" type="submit" name="intent" value="code">Sign in</button>
+        </form>
+        <form method="post" class="alt">
+          <input type="hidden" name="next" value={next} />
+          <input type="hidden" name="email" value={sentTo} />
+          <button type="submit" name="intent" value="link">Send a new link</button>
+          <a href={next ? `/login/?next=${encodeURIComponent(next)}` : '/login/'}>Use a different email</a>
+        </form>
+        <p class="small">Nothing there? Check your junk folder. Links work once and expire after an hour.</p>
+      </>
+    ) : (
+      <>
+        <h1 class="section-title">Welcome back, coach</h1>
+        <p class="section-copy">For team managers and club leadership. Parents don't need an account: just <a href="/vacancies/">find a team here</a>.</p>
+        {!isSupabaseConfigured && <div class="msg bad">Logins aren't switched on yet. Supabase still needs connecting.</div>}
+        {message && <div class:list={['msg', message.ok ? 'ok' : 'bad']} role="status">{message.text}</div>}
+        <form method="post" class="stack">
+          <input type="hidden" name="next" value={next} />
+          <label>Email<input type="email" name="email" value={email} autocomplete="email" required /></label>
+          <button class="button primary" type="submit" name="intent" value="link">Email me a sign-in link</button>
+        </form>
+        <p class="small">No password needed. We'll email you a link to sign in.</p>
+      </>
+    )}
   </section>
 </BaseLayout>
 
@@ -95,10 +115,12 @@ if (isSupabaseConfigured) {
   label { display: grid; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
   input { font: inherit; font-size: 16px; padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius-s); min-height: 46px; background: var(--surface-2); color: var(--text); }
   input:focus { outline: none; border-color: var(--accent-line); }
+  input.code { font-size: 1.4rem; letter-spacing: 0.3em; text-align: center; font-variant-numeric: tabular-nums; }
   .primary { border: 0; cursor: pointer; }
-  .alt { display: flex; justify-content: space-between; gap: var(--space-s); flex-wrap: wrap; }
-  .alt button { background: none; border: 0; padding: 0.3rem 0; color: var(--text-2); font: inherit; font-size: 0.9rem; cursor: pointer; }
-  .alt button:hover { color: var(--text); }
+  .alt { display: flex; justify-content: space-between; gap: var(--space-s); flex-wrap: wrap; margin-top: var(--space-s); }
+  .alt button, .alt a { background: none; border: 0; padding: 0.3rem 0; color: var(--text-2); font: inherit; font-size: 0.9rem; cursor: pointer; text-decoration: none; }
+  .alt button:hover, .alt a:hover { color: var(--text); }
+  .small { margin-top: var(--space-s); font-size: 0.85rem; color: var(--text-3); }
   .msg { margin-top: var(--space-s); padding: 0.8rem 1rem; border-radius: var(--radius-s); font-size: 0.92rem; }
   .msg.ok { background: var(--accent-soft); border: 1px solid var(--accent-line); }
   .msg.bad { background: rgba(240, 90, 90, 0.1); border: 1px solid rgba(240, 90, 90, 0.35); color: #f5a3a3; }

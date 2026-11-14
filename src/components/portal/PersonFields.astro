@@ -71,7 +71,7 @@ const groups = [...new Set(sorted.map(groupOf))].map((label) => ({ label, teams:
       <label class="check"><input type="radio" name="access" value="admin" checked={access === 'admin'} />Club admin: can edit everything, and their own teams</label>
       <span class="hint">
         {access === 'none'
-          ? 'Choosing a login sends them an email to set a password. They need an email address above.'
+          ? 'Choosing a login emails them a link to sign in. They need an email address above.'
           : 'Choosing "No login" removes their login but keeps them on their teams.'}
       </span>
     </>
