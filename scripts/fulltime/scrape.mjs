@@ -17,18 +17,18 @@ import { chromium } from 'playwright'
 import { isChallenge, parseFixtures, parseOptions, parseResults, parseTable, slug } from './parse.mjs'
 
 /*
- * Each league Fusion plays in. `league` is the number after `league=` in the
- * league's Full-Time address (open the league on fulltime.thefa.com and copy
- * it from the browser's address bar). Fusion's club is found in each league
- * by its name on Full-Time, so no club ID is needed. Leagues without an ID
- * yet are skipped.
+ * Each league Fusion plays in, from the club's fixtures address on Full-Time
+ * (filter a league's fixtures by Fusion FC and copy `selectedSeason` and
+ * `selectedClub` from the address bar). The league's own ID is read from that
+ * page. When the league moves on to a new season, the scraper follows it and
+ * finds Fusion in the new season by name, so these only need updating if
+ * Fusion joins or leaves a league.
  */
 const CLUB_NAME = 'Fusion FC'
 const SOURCES = [
-  { name: 'North Staffs Junior Youth League', league: '587428981' },
-  // TODO: add the league ID from the league's Full-Time address.
-  { name: 'Staffordshire Junior Football League', league: '' },
-].filter((s) => s.league)
+  { name: 'Staffordshire Junior Football League', season: '921453866', club: '17632512' },
+  { name: 'North Staffs Junior Youth League', season: '870995406', club: '261608494' },
+]
 
 const BASE = 'https://fulltime.thefa.com'
 const OUT = path.resolve(
@@ -103,20 +103,28 @@ try {
   const teams = new Set()
 
   for (const source of SOURCES) {
+    // The league's menu links (Home, Fixtures, Tables…) carry its ID.
+    const linkPage = await load('/fixtures.html', { selectedSeason: source.season, selectedClub: source.club })
+    const ids = [...linkPage.matchAll(/[?&;]league=(\d+)/g)].map((m) => m[1])
+    source.league = ids.sort((a, b) => ids.filter((x) => x === b).length - ids.filter((x) => x === a).length)[0]
+    if (!source.league) {
+      console.warn(`${source.name}: couldn't find the league's ID on Full-Time; skipping`)
+      continue
+    }
     const base = { league: source.league }
     // One table page gives the current season and the list of divisions.
     const tablePage = await load('/table.html', base)
     const season = parseOptions(tablePage, 'selectedSeason').find((o) => o.selected)
+      ?? { value: source.season, label: null }
     const divisions = parseOptions(tablePage, 'selectedDivision')
-    // Find Fusion's club ID in this league from the club filter on the results page.
-    const clubs = parseOptions(await load('/results.html', { ...base, selectedSeason: season?.value ?? '' }), 'selectedClub')
-    const clubOption = clubs.find((o) => o.label.trim().toLowerCase() === CLUB_NAME.toLowerCase())
-      ?? clubs.find((o) => o.label.toLowerCase().startsWith(CLUB_NAME.toLowerCase()))
-    if (!clubOption) {
-      console.warn(`${source.name}: no club called "${CLUB_NAME}" on Full-Time; skipping`)
-      continue
+    if (season.value !== source.season) {
+      // A new season: club IDs can change, so find Fusion by name.
+      const clubs = parseOptions(await load('/results.html', { ...base, selectedSeason: season.value }), 'selectedClub')
+      const clubOption = clubs.find((o) => o.label.trim().toLowerCase() === CLUB_NAME.toLowerCase())
+        ?? clubs.find((o) => o.label.toLowerCase().startsWith(CLUB_NAME.toLowerCase()))
+      if (clubOption) source.club = clubOption.value
+      else console.warn(`${source.name}: no "${CLUB_NAME}" in ${season.label ?? 'the new season'} yet; trying the old club ID`)
     }
-    source.club = clubOption.value
     const list = {
       ...base,
       selectedSeason: season?.value ?? '',

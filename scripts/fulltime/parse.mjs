@@ -87,8 +87,9 @@ function parseScore(raw) {
 }
 
 function competitionType(type) {
-  if (/^L$/i.test(type)) return 'League'
-  if (/^Cup$/i.test(type)) return 'Cup'
+  // Some leagues add the age group, e.g. "LU10" for an Under 10 league game.
+  if (/^L(U\d+)?$/i.test(type)) return 'League'
+  if (/^(Cup|CU\d+)$/i.test(type)) return 'Cup'
   if (/^CC\b/i.test(type)) return 'County Cup'
   return type || 'Other'
 }

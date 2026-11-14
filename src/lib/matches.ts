@@ -207,7 +207,12 @@ export function ordinal(n: number) {
   return `${n}${suffix}`;
 }
 
-const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+/**
+ * Compare names word by word in any order, reading Full-Time's "PU" as
+ * "Playing Up": "U10 PU Black" matches the site's "U10 Black Playing Up".
+ */
+const norm = (s: string) =>
+  s.toLowerCase().replace(/\bpu\b/g, 'playing up').split(/\s+/).filter(Boolean).sort().join(' ');
 
 /**
  * The Full-Time name for one of our teams: the name a manager linked in the

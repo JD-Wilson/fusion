@@ -248,13 +248,13 @@ Page content is markdown, rendered by the same engine as the files (`src/lib/mar
 
 Ported from the Florence FC site. Full-Time has no public API and blocks plain server requests, so:
 
-1. **`scripts/fulltime/scrape.mjs`** drives a real browser (Playwright) through Full-Time for each league in `SOURCES`, finds Fusion's club in each league by name, and writes **`src/data/fulltime.json`** (fixtures, results, league tables).
+1. **`scripts/fulltime/scrape.mjs`** drives a real browser (Playwright) through Full-Time for each league in `SOURCES` (starting from Fusion's fixtures page in that league), follows the league into new seasons, and writes **`src/data/fulltime.json`** (fixtures, results, league tables).
 2. **`.github/workflows/fulltime.yml`** runs it on a schedule (weekend afternoons/evenings, Monday morning, Wednesday/Friday evenings) and commits the file when something changed; the push redeploys the site. Run it by hand from the repo's **Actions** tab (*Full-Time snapshot → Run workflow*).
 3. The site shows it on **`/fixtures/`** (all teams, with a team filter) and on **each team page** (next fixtures, recent results, record and league table).
 
-Teams are matched to Full-Time automatically by name ("U8 Black" ↔ "Fusion FC U8 Black"). If a name doesn't match, set it on the team's page in the portal (*Team name on FA Full-Time*, with a pick list once data exists).
+Teams are matched to Full-Time automatically by name ("U8 Black" ↔ "Fusion FC U8 Black", and "U10 Black Playing Up" ↔ "Fusion FC U10 Fusion FC PU Black"). If a name doesn't match, set it on the team's page in the portal (*Team name on FA Full-Time*, with a pick list once data exists).
 
-**Leagues:** the North Staffs Junior Youth League is set up. For the **Staffordshire Junior Football League**, open the league on fulltime.thefa.com, copy the number after `league=` from the address bar into `SOURCES` in `scrape.mjs`, and commit.
+**Leagues:** the Staffordshire Junior Football League (Saturday) and the North Staffs Junior Youth League (Sunday) are set up. To add a league, open its fixtures on fulltime.thefa.com filtered to Fusion FC, copy `selectedSeason` and `selectedClub` from the address bar into `SOURCES` in `scrape.mjs`, and commit.
 
 The FA doesn't publish scores or tables for U11 and younger, so those games show as "Played"; tables appear automatically for age groups that have them.
 
