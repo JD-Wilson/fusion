@@ -1,5 +1,6 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import TeamFields from '../../../components/portal/TeamFields.astro';
 import { canEditTeam } from '../../../lib/auth';
 import { UUID, checked, line } from '../../../lib/forms';
@@ -11,6 +12,7 @@ import {
   uploadTeamPhoto
 } from '../../../lib/portal-teams';
 import type { VacancyRow } from '../../../lib/portal-vacancies';
+import { TEAM_ROLES } from '../../../lib/portal-people';
 import { positionsLabel } from '../../../lib/vacancies';
 
 export const prerender = false;
@@ -19,8 +21,11 @@ const supabase = Astro.locals.supabase!;
 const id = Astro.params.id ?? '';
 if (!UUID.test(id) || !canEditTeam(session, id)) return Astro.redirect('/portal/teams/');
 
-let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('created')
-  ? { ok: true, text: 'Team created. Now add its managers below; they can fill in the team page.' }
+const created = Astro.url.searchParams.get('created');
+let notice: { ok: boolean; text: string } | null = created === 'fulltime'
+  ? { ok: true, text: 'Team added from Full-Time and linked to its fixtures. It is hidden for now: check the name, add its coaches, then tick "Show this team on the website".' }
+  : created
+  ? { ok: true, text: 'Created. Now add its coaches below; they can fill in the rest.' }
   : Astro.url.searchParams.get('saved')
     ? { ok: true, text: 'Saved. The team page is updated.' }
     : null;
@@ -52,23 +57,30 @@ if (Astro.request.method === 'POST') {
       }
     }
   } else if (session.isAdmin && intent === 'add-manager') {
-    const userId = String(form.get('user_id') ?? '');
-    const { data: person } = UUID.test(userId)
-      ? await supabase.from('profiles').select('full_name, email').eq('id', userId).maybeSingle()
-      : { data: null };
-    if (!person) {
-      notice = { ok: false, text: 'Choose someone to add.' };
+    // Someone already in People, or a new person by name.
+    let personId = String(form.get('person_id') ?? '');
+    const newName = line(form, 'new_name', 80);
+    if (personId === 'new') {
+      if (!newName) personId = '';
+      else {
+        const { data: created, error: createError } = await supabase.from('people').insert({ full_name: newName }).select('id').single();
+        personId = createError ? '' : created.id;
+      }
+    }
+    if (!UUID.test(personId)) {
+      notice = { ok: false, text: personId === '' && String(form.get('person_id')) === 'new' ? 'Enter their name.' : 'Choose someone to add.' };
     } else {
+      const role = line(form, 'role_title', 40);
       const { error } = await supabase.from('team_managers').insert({
         team_id: id,
-        user_id: userId,
-        display_name: person.full_name || person.email,
-        role_title: line(form, 'role_title', 40) ?? 'Manager',
+        person_id: personId,
+        display_name: '',
+        role_title: role && TEAM_ROLES.includes(role) ? role : 'Coach',
         receives_enquiries: checked(form, 'receives_enquiries')
       });
       notice = error
-        ? { ok: false, text: error.code === '23505' ? 'They already manage this team.' : error.message }
-        : { ok: true, text: `${person.full_name || person.email} added. They can now edit this team.` };
+        ? { ok: false, text: error.code === '23505' ? "They're already on this team." : error.message }
+        : { ok: true, text: 'Added to the team.' };
     }
   } else if (session.isAdmin && intent === 'remove-manager') {
     await supabase.from('team_managers').delete().eq('id', String(form.get('manager_id') ?? '')).eq('team_id', id);
@@ -84,7 +96,7 @@ const [{ data: teamData }, { data: contactData }, { data: managerData }, { data:
   supabase.from('team_contacts').select('whatsapp_number, email').eq('team_id', id).maybeSingle(),
   supabase
     .from('team_managers')
-    .select('id, display_name, role_title, receives_enquiries, profiles(email)')
+    .select('id, person_id, display_name, role_title, receives_enquiries, people(email, user_id)')
     .eq('team_id', id)
     .order('sort_order'),
   supabase.from('vacancies').select('*').eq('team_id', id).order('created_at', { ascending: false })
@@ -93,26 +105,38 @@ const team = teamData as TeamRow | null;
 if (!team) return Astro.redirect('/portal/teams/');
 const contact = contactData as { whatsapp_number: string | null; email: string | null } | null;
 const managers = (managerData ?? []) as unknown as {
-  id: string; display_name: string; role_title: string; receives_enquiries: boolean; profiles: { email: string } | null;
+  id: string; person_id: string | null; display_name: string; role_title: string; receives_enquiries: boolean;
+  people: { email: string | null; user_id: string | null } | null;
 }[];
 const vacancies = (vacancyData ?? []) as unknown as VacancyRow[];
 const today = new Date().toISOString().slice(0, 10);
 const isLive = (v: VacancyRow) => v.status === 'open' && v.published && (!v.expires_on || v.expires_on >= today);
 
+const onTeam = new Set(managers.map((m) => m.person_id));
 const people = session.isAdmin
-  ? ((await supabase.from('profiles').select('id, full_name, email').order('full_name')).data ?? [])
+  ? (((await supabase.from('people').select('id, full_name, email').order('full_name')).data ?? []) as { id: string; full_name: string; email: string | null }[])
+      .filter((p) => !onTeam.has(p.id))
   : [];
 const newEnquiries = await countNewEnquiries(supabase);
 ---
 
-<PortalLayout title={team.name} session={session} active="teams" newEnquiries={newEnquiries}>
+<PortalLayout title={team.name} session={session} active="teams" activeTeam={team.id} newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <h1>{team.name} <span class="pill grey">{team.age_group}</span> {!team.published && <span class="pill warn">Hidden</span>}</h1>
-      <p class="p-sub">{session.isAdmin ? 'Everything about this team.' : 'Keep your team page up to date. Changes show on the website straight away.'}</p>
+      {session.isAdmin && <a class="back" href="/portal/teams/">← Teams & sessions</a>}
+      <h1>{team.name}</h1>
+      <p class="p-sub" style="display:flex;gap:0.4rem;flex-wrap:wrap;align-items:center">
+        <span class="pill grey">{team.age_group}</span>
+        {team.kind === 'development' && <span class="pill grey">Development sessions</span>}
+        {team.match_day && <span class="pill grey">{team.match_day}</span>}
+        {team.league && <span>{team.league}</span>}
+        {!team.published && <span class="pill warn">Hidden</span>}
+      </p>
     </div>
-    <div class="actions" style="display:flex;gap:0.5rem;flex-wrap:wrap">
-      {team.published && <a class="btn outline" href={`/teams/${team.slug}/`} target="_blank" rel="noopener">View team page ↗</a>}
+    <div class="actions">
+      {team.published && team.kind !== 'development' && <a class="btn outline" href={`/teams/${team.slug}/`} target="_blank" rel="noopener">View team page ↗</a>}
+      {team.kind === 'development' && <a class="btn outline" href="/development-sessions/" target="_blank" rel="noopener">View sessions page ↗</a>}
+      <a class="btn" href={`/portal/vacancies/new/?team=${team.id}`}>+ Vacancy</a>
     </div>
   </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
@@ -132,11 +156,11 @@ const newEnquiries = await countNewEnquiries(supabase);
         </div>
       </div>
     ))}
-    <div style="margin-top:0.8rem"><a class="btn" href={`/portal/vacancies/new/?team=${team.id}`}>+ Add a vacancy</a></div>
+    <div style="margin-top:0.8rem"><a class="btn outline" href={`/portal/vacancies/new/?team=${team.id}`}>+ Add a vacancy</a></div>
   </div>
 
   <div class="card">
-    <h2>Team page</h2>
+    <h2>{team.kind === 'development' ? 'Details' : 'Team page'}</h2>
     <form method="post" class="f" enctype="multipart/form-data">
       <input type="hidden" name="intent" value="save" />
       <TeamFields team={team} admin={session.isAdmin} contact={contact} />
@@ -145,39 +169,49 @@ const newEnquiries = await countNewEnquiries(supabase);
   </div>
 
   <div class="card">
-    <h2>Managers</h2>
-    <p class="p-sub" style="margin-bottom:0.6rem">Managers can edit this team's page, post its vacancies and read its enquiries.</p>
-    {managers.length === 0 && <p class="empty">No managers assigned yet.</p>}
+    <h2>Coaches</h2>
+    <p class="p-sub" style="margin-bottom:0.6rem">Coaches with a login can edit this team's page, post its vacancies and read its enquiries.</p>
+    {managers.length === 0 && <p class="empty">Nobody on this team yet.</p>}
     {managers.map((m) => (
       <div class="row">
         <div class="grow">
-          <h3>{m.display_name} <span class="pill grey">{m.role_title}</span></h3>
-          <p>{m.profiles?.email ?? 'No login'}{m.receives_enquiries ? ' · gets enquiries' : ''}</p>
+          <h3>
+            {session.isAdmin && m.person_id ? <a href={`/portal/people/${m.person_id}/`}>{m.display_name}</a> : m.display_name}
+            <span class="pill grey">{m.role_title}</span>
+          </h3>
+          <p>{[m.people?.email, m.people?.user_id ? 'has a login' : 'no login', m.receives_enquiries && m.people?.email ? 'gets enquiries' : null].filter(Boolean).join(' · ')}</p>
         </div>
         {session.isAdmin && (
           <form method="post">
             <input type="hidden" name="intent" value="remove-manager" />
             <input type="hidden" name="manager_id" value={m.id} />
-            <button class="btn danger sm" type="submit">Remove</button>
+            <button class="btn danger sm" type="submit">Take off team</button>
           </form>
         )}
       </div>
     ))}
     {session.isAdmin && (
-      <form method="post" class="f" style="margin-top:1rem">
+      <form method="post" class="f" style="margin-top:1rem" data-add-coach>
         <input type="hidden" name="intent" value="add-manager" />
         <div class="two">
           <label>
-            Add a manager
-            <select name="user_id" required>
+            Add someone
+            <select name="person_id" required>
               <option value="" disabled selected>Choose a person…</option>
-              {people.map((p) => <option value={p.id}>{p.full_name || p.email} ({p.email})</option>)}
+              {people.map((p) => <option value={p.id}>{p.full_name}{p.email ? ` (${p.email})` : ''}</option>)}
+              <option value="new">Someone new…</option>
             </select>
           </label>
-          <label>Role<input type="text" name="role_title" value="Manager" maxlength="40" /></label>
+          <label>
+            Role
+            <select name="role_title">
+              {TEAM_ROLES.map((r) => <option value={r} selected={r === 'Coach'}>{r}</option>)}
+            </select>
+          </label>
         </div>
+        <label data-new-name hidden>Their name<input type="text" name="new_name" maxlength="80" /></label>
         <label class="check"><input type="checkbox" name="receives_enquiries" checked />Send them this team's enquiries by email</label>
-        <p class="hint">Not in the list? <a href="/portal/people/">Invite them first</a>.</p>
+        <p class="hint">To add their email, mobile or a login, open them in <a href="/portal/people/">People</a>.</p>
         <div><button class="btn outline" type="submit">Add to team</button></div>
       </form>
     )}
@@ -195,32 +229,20 @@ const newEnquiries = await countNewEnquiries(supabase);
   )}
 </PortalLayout>
 
+<ResizeUploads />
+
 <script>
-  /*
-   * Shrink big phone photos in the browser before upload (max 1600px, JPEG),
-   * so uploads are quick and stay under the server's request size limit.
-   */
-  document.querySelectorAll<HTMLInputElement>('input[type="file"][data-resize]').forEach((input) => {
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0];
-      if (!file || !file.type.startsWith('image/')) return;
-      try {
-        const bitmap = await createImageBitmap(file);
-        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-        if (scale === 1 && file.size < 1.5 * 1024 * 1024) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(bitmap.width * scale);
-        canvas.height = Math.round(bitmap.height * scale);
-        canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
-        if (!blob) return;
-        const resized = new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
-        const dt = new DataTransfer();
-        dt.items.add(resized);
-        input.files = dt.files;
-      } catch {
-        // Leave the original file; the server still checks type and size.
-      }
+  // "Someone new…" asks for their name.
+  const addCoach = document.querySelector<HTMLFormElement>('[data-add-coach]');
+  if (addCoach) {
+    const pick = addCoach.querySelector<HTMLSelectElement>('select[name="person_id"]')!;
+    const nameField = addCoach.querySelector<HTMLElement>('[data-new-name]')!;
+    const nameInput = nameField.querySelector('input')!;
+    pick.addEventListener('change', () => {
+      nameField.hidden = pick.value !== 'new';
+      nameInput.required = pick.value === 'new';
+      if (pick.value === 'new') nameInput.focus();
     });
-  });
+  }
+
 </script>

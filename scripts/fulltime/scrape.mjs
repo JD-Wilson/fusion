@@ -26,8 +26,8 @@ import { isChallenge, parseFixtures, parseOptions, parseResults, parseTable, slu
  */
 const CLUB_NAME = 'Fusion FC'
 const SOURCES = [
-  { name: 'Staffordshire Junior Football League', season: '921453866', club: '17632512' },
-  { name: 'North Staffs Junior Youth League', season: '870995406', club: '261608494' },
+  { name: 'Staffordshire Junior Football League', day: 'Saturday', season: '921453866', club: '17632512' },
+  { name: 'North Staffs Junior Youth League', day: 'Sunday', season: '870995406', club: '261608494' },
 ]
 
 const BASE = 'https://fulltime.thefa.com'
@@ -177,7 +177,7 @@ try {
 
     results.push(...sourceResults)
     fixtures.push(...sourceFixtures)
-    leagues.push({ name: source.name, league: source.league, club: source.club, season: season?.label ?? null })
+    leagues.push({ name: source.name, day: source.day, league: source.league, club: source.club, season: season?.label ?? null })
     console.log(`${source.name}: ${sourceResults.length} results, ${sourceFixtures.length} fixtures, ${tables.length} tables`)
   }
 

@@ -1,5 +1,6 @@
 ---
 import PortalLayout from '../../components/portal/PortalLayout.astro';
+import { roleLabel } from '../../lib/auth';
 import { line } from '../../lib/forms';
 import { countNewEnquiries } from '../../lib/portal';
 import { normaliseWhatsApp } from '../../lib/vacancies';
@@ -41,7 +42,13 @@ const newEnquiries = await countNewEnquiries(supabase);
 ---
 
 <PortalLayout title="My account" session={session} active="account" newEnquiries={newEnquiries}>
-  <div class="p-head"><h1>My account</h1></div>
+  <div class="p-head">
+    <div>
+      <span class="eyebrow">{roleLabel(session)}</span>
+      <h1>My account</h1>
+      <p class="p-sub">Signed in as {session.email}</p>
+    </div>
+  </div>
   {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
   <div class="card">
     <h2>Your details</h2>
@@ -49,11 +56,24 @@ const newEnquiries = await countNewEnquiries(supabase);
       <input type="hidden" name="intent" value="profile" />
       <div class="two">
         <label>Name<input type="text" name="full_name" value={fullName} maxlength="80" /></label>
-        <label>Mobile (used to pre-fill new vacancies)<input type="tel" name="phone" value={phone} placeholder="07700 900123" /></label>
+        <label>Mobile (fills in new vacancies for you)<input type="tel" name="phone" value={phone} placeholder="07700 900123" /></label>
       </div>
-      <p class="hint">Signed in as {session.email}</p>
       <div><button class="btn" type="submit">Save</button></div>
     </form>
+  </div>
+  <div class="card">
+    <h2>{session.myTeams.length === 1 ? 'Your team' : 'Your teams'}</h2>
+    {session.myTeams.length === 0 && <p class="empty">{session.isAdmin ? "You're not on a team. Add yourself to any you coach from People." : "You're not on a team yet. Ask a club admin to add you."}</p>}
+    {session.myTeams.map((t) => (
+      <a class="row" href={`/portal/teams/${t.id}/`}>
+        <div class="grow">
+          <h3>{t.name}</h3>
+          <p>{[t.role_title, t.kind === 'development' ? 'Development sessions' : t.match_day].filter(Boolean).join(' · ')}</p>
+        </div>
+        <span aria-hidden="true" style="color:var(--text-3)">→</span>
+      </a>
+    ))}
+    {session.isAdmin && <p class="hint" style="margin-top:0.6rem;font-size:0.82rem;color:var(--text-3)">To change your teams, open yourself in <a href="/portal/people/">People</a>.</p>}
   </div>
   <div class="card">
     <h2>Password</h2>

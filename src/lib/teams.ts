@@ -26,7 +26,11 @@ export interface PublicTeam {
   whatsapp_enabled: boolean;
   email_enabled: boolean;
   sort_order: number;
+  /** 'development' groups are run like teams but don't get a public team page. */
+  kind?: 'team' | 'development';
 }
+
+const isTeam = (t: PublicTeam) => (t.kind ?? 'team') === 'team';
 
 /*
  * Every column on `teams` is public (private contact details live in
@@ -47,7 +51,7 @@ export async function getPublicTeams(): Promise<PublicTeam[] | null> {
     console.error('[teams] load failed', error.message);
     return null;
   }
-  return ((data ?? []) as PublicTeam[]).sort(byAgeThenName);
+  return ((data ?? []) as PublicTeam[]).filter(isTeam).sort(byAgeThenName);
 }
 
 export async function getPublicTeam(slug: string): Promise<PublicTeam | null> {
@@ -55,7 +59,8 @@ export async function getPublicTeam(slug: string): Promise<PublicTeam | null> {
   if (!db || !/^[a-z0-9-]{1,80}$/.test(slug)) return null;
   const { data, error } = await db.from('teams').select(COLUMNS).eq('slug', slug).eq('published', true).maybeSingle();
   if (error) console.error('[teams] load failed', error.message);
-  return (data as PublicTeam | null) ?? null;
+  const team = (data as PublicTeam | null) ?? null;
+  return team && isTeam(team) ? team : null;
 }
 
 /** Open vacancies grouped by team id, so pages can flag teams that are recruiting. */

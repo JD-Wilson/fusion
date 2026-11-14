@@ -2,6 +2,7 @@
 import { EXPERIENCE, POSITIONS } from '../../lib/vacancies';
 import type { VacancyRow } from '../../lib/portal-vacancies';
 import type { TeamRow } from '../../lib/portal';
+import { groupOf, sortTeams } from '../../lib/portal-overview';
 
 interface Props {
   teams: TeamRow[];
@@ -9,8 +10,19 @@ interface Props {
   /** Values to show when a save failed, so nothing typed is lost. */
   defaults: Record<string, string | string[] | boolean | number | null | undefined>;
   submitLabel: string;
+  /** The signed-in person's own teams, listed first. */
+  mine?: string[];
 }
-const { teams, vacancy, defaults: d, submitLabel } = Astro.props as Props;
+const { teams, vacancy, defaults: d, submitLabel, mine = [] } = Astro.props as Props;
+// Your own teams first (for admins who also coach), then by match day.
+const sorted = sortTeams(teams);
+const optionGroups = [
+  ...(mine.length && mine.length < teams.length ? [{ label: 'Your teams', teams: sorted.filter((t) => mine.includes(t.id)) }] : []),
+  ...[...new Set(sorted.map(groupOf))].map((label) => ({
+    label,
+    teams: sorted.filter((t) => groupOf(t) === label && !(mine.length < teams.length && mine.includes(t.id)))
+  }))
+].filter((g) => g.teams.length);
 const positions = (d.positions as string[] | undefined) ?? [];
 const kind = (d.kind as string) ?? 'player';
 const str = (k: string) => (d[k] as string | null | undefined) ?? '';
@@ -21,8 +33,12 @@ const str = (k: string) => (d[k] as string | null | undefined) ?? '';
     Team
     <select name="team_id" required>
       <option value="" disabled selected={!d.team_id}>Choose a team…</option>
-      {teams.map((t) => (
-        <option value={t.id} selected={d.team_id === t.id}>{t.name} ({t.age_group}{t.match_day ? `, ${t.match_day}` : ''})</option>
+      {optionGroups.map((g) => (
+        <optgroup label={g.label}>
+          {g.teams.map((t) => (
+            <option value={t.id} selected={d.team_id === t.id}>{t.name} ({t.age_group}{t.match_day ? `, ${t.match_day}` : ''})</option>
+          ))}
+        </optgroup>
       ))}
     </select>
   </label>

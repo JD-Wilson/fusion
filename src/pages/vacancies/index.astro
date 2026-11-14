@@ -214,7 +214,7 @@ const expiry = (d: string) =>
                     <div class="vac-top">
                       <span class="vac-age">{v.age_group}</span>
                       <div>
-                        <h3 class="vac-team"><a href={`/teams/${v.team_slug}/`}>{v.team_name}</a></h3>
+                        <h3 class="vac-team"><a href={v.team_kind === 'development' ? '/development-sessions/' : `/teams/${v.team_slug}/`}>{v.team_name}</a></h3>
                         <p class="vac-sub">
                           {[v.gender === 'Mixed' ? null : v.gender, v.match_day ? `${v.match_day} games` : null, v.league]
                             .filter(Boolean)

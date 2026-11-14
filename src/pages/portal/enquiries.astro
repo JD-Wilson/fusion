@@ -18,7 +18,8 @@ if (Astro.request.method === 'POST') {
     }
     if (action === 'delete' && session.isAdmin) await supabase.from('enquiries').delete().eq('id', id);
   }
-  return Astro.redirect('/portal/enquiries/');
+  const back = new URL(Astro.request.headers.get('referer') ?? '/portal/enquiries/', Astro.url);
+  return Astro.redirect(back.pathname === '/portal/enquiries/' ? `${back.pathname}${back.search}` : '/portal/enquiries/');
 }
 
 const { data } = await supabase
@@ -31,25 +32,48 @@ type Enquiry = {
   player_name: string | null; player_age: string | null; message: string; status: 'new' | 'replied' | 'closed';
   teams: { name: string; age_group: string } | null;
 };
-const enquiries = (data ?? []) as unknown as Enquiry[];
-const newCount = enquiries.filter((e) => e.status === 'new').length;
+const all = (data ?? []) as unknown as (Enquiry & { team_id: string | null })[];
+const newCount = all.filter((e) => e.status === 'new').length;
+
+const FILTERS = [
+  { id: 'new', label: 'New', test: (e: (typeof all)[number]) => e.status === 'new' },
+  { id: 'replied', label: 'Replied', test: (e: (typeof all)[number]) => e.status === 'replied' },
+  { id: 'closed', label: 'Closed', test: (e: (typeof all)[number]) => e.status === 'closed' },
+  { id: 'all', label: 'All', test: () => true },
+  ...(session.isAdmin && session.teamIds.length ? [{ id: 'mine', label: 'My teams', test: (e: (typeof all)[number]) => Boolean(e.team_id && session.teamIds.includes(e.team_id)) }] : []),
+  ...(session.isAdmin ? [{ id: 'general', label: 'Not for a team', test: (e: (typeof all)[number]) => !e.team_id }] : [])
+];
+const asked = Astro.url.searchParams.get('show');
+// Open on "New" when there's anything new, otherwise everything.
+const show = FILTERS.find((f) => f.id === asked) ?? (newCount ? FILTERS[0] : FILTERS[3]);
+const enquiries = all.filter(show.test);
 ---
 
 <PortalLayout title="Enquiries" session={session} active="enquiries" newEnquiries={newCount}>
   <div class="p-head">
     <div>
       <h1>Enquiries</h1>
-      <p class="p-sub">Messages from parents about your vacancies. They're also emailed to you: reply to that email to answer them directly.</p>
+      <p class="p-sub">Messages from parents{session.isAdmin ? '' : ' about your teams'}. They're emailed too: reply to that email to answer directly, then mark it here.</p>
     </div>
   </div>
+  {all.length > 0 && (
+    <nav class="tabs" aria-label="Filter enquiries">
+      {FILTERS.map((f) => (
+        <a href={`/portal/enquiries/?show=${f.id}`} aria-current={f.id === show.id ? 'true' : undefined}>
+          {f.label}<span class="n">{all.filter(f.test).length}</span>
+        </a>
+      ))}
+    </nav>
+  )}
   <div class="card">
-    {enquiries.length === 0 && <p class="empty">No enquiries yet.</p>}
+    {all.length === 0 && <p class="empty">No enquiries yet. When parents message a team or reply to a vacancy, it lands here and in your email.</p>}
+    {all.length > 0 && enquiries.length === 0 && <p class="empty">{show.id === 'new' ? 'All caught up.' : 'Nothing here.'}</p>}
     {enquiries.map((e) => (
       <div class="row" style="align-items:flex-start">
         <div class="grow">
           <h3>
             {e.name}
-            <span class:list={['pill', e.status === 'new' ? 'warn' : 'grey']}>{e.status}</span>
+            <span class:list={['pill', e.status === 'new' ? 'warn' : 'grey']}>{e.status === 'new' ? 'New' : e.status === 'replied' ? 'Replied' : 'Closed'}</span>
           </h3>
           <p>
             {e.teams ? `${e.teams.name} (${e.teams.age_group}) · ` : ''}{ukDate(e.created_at)}

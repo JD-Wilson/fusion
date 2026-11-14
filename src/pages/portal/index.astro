@@ -1,68 +1,166 @@
 ---
 import PortalLayout from '../../components/portal/PortalLayout.astro';
+import PortalTeamCard from '../../components/portal/PortalTeamCard.astro';
+import { roleLabel } from '../../lib/auth';
+import { unlinkedFulltimeTeams } from '../../lib/matches';
 import { countNewEnquiries, loadTeams } from '../../lib/portal';
+import { daysUntil, isLive, pageChecklist, sortTeams, teamStats } from '../../lib/portal-overview';
 import type { VacancyRow } from '../../lib/portal-vacancies';
 
 export const prerender = false;
 
 const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
+const admin = session.isAdmin;
 
-const today = new Date().toISOString().slice(0, 10);
-const [teams, newEnquiries, { data }] = await Promise.all([
-  loadTeams(supabase, session.isAdmin ? undefined : session.teamIds),
+const [teams, newEnquiries, { data: vacancyData }, stats, { data: peopleData }] = await Promise.all([
+  loadTeams(supabase, admin ? undefined : session.teamIds),
   countNewEnquiries(supabase),
-  supabase.from('vacancies').select('*, teams(name, age_group)').order('created_at', { ascending: false })
+  supabase.from('vacancies').select('*, teams(name, age_group)').order('created_at', { ascending: false }),
+  teamStats(supabase, admin ? undefined : session.teamIds),
+  admin ? supabase.from('people').select('id, team_managers(id)') : Promise.resolve({ data: null })
 ]);
-const vacancies = (data ?? []) as unknown as VacancyRow[];
-const live = vacancies.filter((v) => v.status === 'open' && v.published && (!v.expires_on || v.expires_on >= today));
-const taps = vacancies.reduce((n, v) => n + v.whatsapp_clicks, 0);
-const teamsWithout = teams.filter((t) => t.published && !live.some((v) => v.team_id === t.id));
+const vacancies = (vacancyData ?? []) as unknown as VacancyRow[];
+const mine = sortTeams(teams.filter((t) => session.teamIds.includes(t.id)));
+const roleOn = new Map(session.myTeams.map((t) => [t.id, t.role_title]));
+
+// ── Things to do, most urgent first ──────────────────────────────────────────
+type Todo = { href: string; text: string; detail?: string; warn?: boolean };
+const todos: Todo[] = [];
+if (newEnquiries) {
+  todos.push({
+    href: '/portal/enquiries/',
+    text: `${newEnquiries} new ${newEnquiries === 1 ? 'enquiry' : 'enquiries'} from parents`,
+    detail: 'Reply by email or phone, then mark them as replied.'
+  });
+}
+for (const v of vacancies.filter((v) => v.status === 'open' && v.published && v.expires_on)) {
+  const days = daysUntil(v.expires_on!);
+  if (days < 0) todos.push({ href: `/portal/vacancies/${v.id}/`, text: `${v.teams?.name} vacancy has expired`, detail: 'Extend the date or mark it filled.', warn: true });
+  else if (days <= 7) todos.push({ href: `/portal/vacancies/${v.id}/`, text: `${v.teams?.name} vacancy ends ${days === 0 ? 'today' : `in ${days} ${days === 1 ? 'day' : 'days'}`}`, detail: 'Extend it if you still need players.' });
+}
+for (const t of mine) {
+  const check = pageChecklist(t);
+  if (check.missing.length) {
+    todos.push({ href: `/portal/teams/${t.id}/`, text: `Finish the ${t.name} page`, detail: `Still to add: ${check.missing.join(', ').toLowerCase()}.` });
+  }
+}
+let clubStats: { teams: number; sat: number; sun: number; dev: number; people: number; noTeam: number } | null = null;
+if (admin) {
+  const people = (peopleData ?? []) as { id: string; team_managers: { id: string }[] }[];
+  const leagueTeams = teams.filter((t) => t.kind !== 'development');
+  clubStats = {
+    teams: leagueTeams.length,
+    sat: leagueTeams.filter((t) => t.match_day === 'Saturday').length,
+    sun: leagueTeams.filter((t) => t.match_day === 'Sunday').length,
+    dev: teams.length - leagueTeams.length,
+    people: people.length,
+    noTeam: people.filter((p) => p.team_managers.length === 0).length
+  };
+  const noCoaches = teams.filter((t) => t.published && !(stats.get(t.id)?.coaches.length));
+  if (noCoaches.length) {
+    todos.push({
+      href: '/portal/teams/?show=no-coaches',
+      text: `${noCoaches.length} ${noCoaches.length === 1 ? 'team has' : 'teams have'} nobody assigned`,
+      detail: noCoaches.slice(0, 4).map((t) => t.name).join(', ') + (noCoaches.length > 4 ? '…' : ''),
+      warn: true
+    });
+  }
+  if (clubStats.noTeam) {
+    todos.push({ href: '/portal/people/?show=no-team', text: `${clubStats.noTeam} ${clubStats.noTeam === 1 ? 'person isn’t' : 'people aren’t'} on a team yet` });
+  }
+  const unlinked = unlinkedFulltimeTeams(teams);
+  if (unlinked.length) {
+    todos.push({
+      href: '/portal/teams/#fulltime',
+      text: `${unlinked.length} ${unlinked.length === 1 ? 'team' : 'teams'} on Full-Time ${unlinked.length === 1 ? 'isn’t' : 'aren’t'} on the website`,
+      detail: 'Add them in one click.'
+    });
+  }
+}
+
+const live = vacancies.filter(isLive);
+const first = session.fullName.split(' ')[0] || 'there';
+const teamList = (list: typeof mine) => {
+  const names = list.map((t) => `${t.name}${t.match_day ? ` (${t.match_day})` : ''}`);
+  return names.length <= 2 ? names.join(' and ') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+};
+const intro = mine.length
+  ? `You help run ${teamList(mine)}.${admin ? ' You can also see and edit everything across the club.' : ''}`
+  : admin
+    ? 'Here’s what’s happening across the club.'
+    : 'You’re not on a team yet. Ask a club admin to add you, then you can post vacancies and update your team page.';
 ---
 
-<PortalLayout title="Dashboard" session={session} active="dashboard" newEnquiries={newEnquiries}>
-  <div class="p-hero">
+<PortalLayout title="Home" session={session} active="dashboard" newEnquiries={newEnquiries}>
+  <section class="p-hero photo" style="background-image:url(/images/web/coach-directing.jpg)">
     <div>
-      <small>Fusion FC team hub</small>
-      <h1>Hi {session.fullName.split(' ')[0] || 'there'} 👋</h1>
-      <p>
-        {session.isAdmin
-          ? 'Thanks for helping run the club. See which teams are recruiting and who’s getting in touch.'
-          : 'Thanks for everything you do for your team. Post a vacancy and parents can message you straight away.'}
-      </p>
+      <span class="eyebrow">{roleLabel(session)}</span>
+      <h1>Hi {first}</h1>
+      <p>{intro}</p>
     </div>
-    <a class="btn" href="/portal/vacancies/new/">+ New vacancy</a>
-  </div>
+    <div class="hero-actions">
+      {(mine.length > 0 || admin) && <a class="btn" href="/portal/vacancies/new/">+ New vacancy</a>}
+      {admin && <a class="btn outline" href="/portal/people/new/">+ Add person</a>}
+    </div>
+  </section>
 
-  <div class="grid-stats">
-    <div class="stat"><b>{live.length}</b><span>Live vacancies</span></div>
-    <div class="stat"><b>{newEnquiries}</b><span>New enquiries</span></div>
-    <div class="stat"><b>{taps}</b><span>WhatsApp taps</span></div>
-    <div class="stat"><b>{teams.length}</b><span>{session.isAdmin ? 'Teams' : 'Your teams'}</span></div>
-  </div>
+  <section class="card">
+    <div class="card-head"><h2>To do</h2>{todos.length > 0 && <span class="count">{todos.length}</span>}</div>
+    {todos.length === 0 ? (
+      <p class="empty" style="padding:0.3rem 0">All caught up. Nothing needs you right now.</p>
+    ) : (
+      <ul class="todo">
+        {todos.slice(0, 8).map((t) => (
+          <li class:list={[t.warn && 'warn']}>
+            <a href={t.href}>
+              <span class="dot" aria-hidden="true"></span>
+              <span class="txt">{t.text}{t.detail && <small>{t.detail}</small>}</span>
+              <span class="go" aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
 
-  {!session.isAdmin && session.teamIds.length === 0 && (
-    <div class="msg bad">You're not assigned to a team yet. Ask a club admin to add you, then you can post vacancies.</div>
+  {mine.length > 0 && (
+    <section class="section">
+      <h2 class="section-title">{mine.length === 1 ? 'Your team' : 'Your teams'}</h2>
+      <div class="team-cards">
+        {mine.map((t) => <PortalTeamCard team={t} stats={stats.get(t.id)} role={roleOn.get(t.id)} />)}
+      </div>
+    </section>
   )}
 
-  <div class="card">
-    <h2>Live vacancies</h2>
-    {live.length === 0 && <p class="empty">Nothing live right now. When your team has a space, <a href="/portal/vacancies/new/">add a vacancy</a> and parents will see it straight away.</p>}
-    {live.map((v) => (
-      <div class="row">
-        <div class="grow">
-          <h3>{v.teams?.name} <span class="pill grey">{v.teams?.age_group}</span></h3>
-          <p>{v.kind === 'coach' ? 'Coach / helper' : v.positions.length ? v.positions.join(', ') : 'Any position'}{v.whatsapp_enabled ? ` · ${v.whatsapp_clicks} WhatsApp taps` : ''}</p>
-        </div>
-        <a class="btn outline sm" href={`/portal/vacancies/${v.id}/`}>Edit</a>
+  {clubStats && (
+    <section class="section">
+      <h2 class="section-title">The club</h2>
+      <div class="grid-stats">
+        <a class="stat" href="/portal/teams/"><b>{clubStats.teams}</b><span>Teams · {clubStats.sat} Sat, {clubStats.sun} Sun</span></a>
+        <a class="stat" href="/portal/teams/?show=development"><b>{clubStats.dev}</b><span>Development {clubStats.dev === 1 ? 'group' : 'groups'}</span></a>
+        <a class="stat" href="/portal/people/"><b>{clubStats.people}</b><span>Coaches and helpers</span></a>
+        <a class="stat hot" href="/portal/vacancies/"><b>{live.length}</b><span>Live vacancies</span></a>
       </div>
-    ))}
-  </div>
+    </section>
+  )}
 
-  {session.isAdmin && teamsWithout.length > 0 && (
-    <div class="card">
-      <h2>Teams not currently advertising</h2>
-      <p class="p-sub">{teamsWithout.map((t) => t.name).join(' · ')}</p>
-    </div>
+  {!admin && mine.length > 0 && (
+    <section class="card">
+      <div class="card-head">
+        <h2>Live vacancies</h2>
+        <a class="btn outline sm" href="/portal/vacancies/">All vacancies</a>
+      </div>
+      {live.length === 0 && <p class="empty">Nothing live right now. When a team has a space, <a href="/portal/vacancies/new/">add a vacancy</a> and parents can see it straight away.</p>}
+      {live.map((v) => (
+        <a class="row" href={`/portal/vacancies/${v.id}/`}>
+          <div class="grow">
+            <h3>{v.teams?.name}</h3>
+            <p>{v.kind === 'coach' ? 'Coach or helper' : v.positions.length ? v.positions.join(', ') : 'Any position'}{v.whatsapp_enabled ? ` · ${v.whatsapp_clicks} WhatsApp taps` : ''}</p>
+          </div>
+          <span class="pill">Live</span>
+        </a>
+      ))}
+    </section>
   )}
 </PortalLayout>

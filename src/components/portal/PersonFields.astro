@@ -1,0 +1,110 @@
+---
+import type { TeamRow } from '../../lib/portal';
+import { groupOf, sortTeams } from '../../lib/portal-overview';
+import { TEAM_ROLES, accessOf, type Person } from '../../lib/portal-people';
+
+interface Props {
+  person?: Partial<Person> | null;
+  teams: TeamRow[];
+  /** Editing yourself: access can't be changed (so you can't lock yourself out). */
+  self?: boolean;
+}
+const { person, teams, self = false } = Astro.props as Props;
+const p = person ?? {};
+const access = p.id ? accessOf({ user_id: p.user_id ?? null, profiles: p.profiles ?? null }) : 'none';
+const onTeam = new Map((p.team_managers ?? []).map((m) => [m.team_id, m]));
+
+// Saturday teams, then Sunday, then development sessions.
+const sorted = sortTeams(teams);
+const groups = [...new Set(sorted.map(groupOf))].map((label) => ({ label, teams: sorted.filter((t) => groupOf(t) === label) }));
+---
+
+<fieldset>
+  <legend>Details</legend>
+  <div class="two">
+    <label>Name<input type="text" name="full_name" required maxlength="80" value={p.full_name ?? ''} autocomplete="off" /></label>
+    <label>
+      Email
+      <input type="email" name="email" maxlength="200" value={p.email ?? ''} readonly={Boolean(p.user_id)} autocomplete="off" />
+      {p.user_id && <span class="hint">This is their login, so it can't be changed here.</span>}
+    </label>
+  </div>
+  <div class="two">
+    <label>Mobile<input type="tel" name="phone" maxlength="30" value={p.phone ?? ''} placeholder="07700 900123" autocomplete="off" /></label>
+    <label>Notes (only admins see these)<input type="text" name="notes" maxlength="1000" value={p.notes ?? ''} placeholder="e.g. DBS checked Sept 2026" /></label>
+  </div>
+</fieldset>
+
+<fieldset>
+  <legend>Teams</legend>
+  <p class="hint">Tick every team and session they help with, for example a Saturday and a Sunday team.</p>
+  {groups.map((g) => (
+    <div class="team-group">
+      <h3>{g.label}</h3>
+      {g.teams.map((t) => {
+        const m = onTeam.get(t.id);
+        return (
+          <div class="team-pick" data-team-pick>
+            <label class="check"><input type="checkbox" name="team" value={t.id} checked={Boolean(m)} />{t.name}</label>
+            <select name={`role_${t.id}`} aria-label={`Role on ${t.name}`}>
+              {[...new Set([...TEAM_ROLES, m?.role_title ?? 'Coach'])].map((r) => (
+                <option value={r} selected={(m?.role_title ?? 'Coach') === r}>{r}</option>
+              ))}
+            </select>
+            <label class="check small"><input type="checkbox" name={`enquiries_${t.id}`} checked={m ? m.receives_enquiries : true} />Gets enquiries</label>
+          </div>
+        );
+      })}
+    </div>
+  ))}
+  {teams.length === 0 && <p class="empty">No teams yet. <a href="/portal/teams/new/">Add a team</a> first.</p>}
+</fieldset>
+
+<fieldset>
+  <legend>Portal login</legend>
+  {self ? (
+    <p class="hint">This is you. You're a club admin; another admin can change that.</p>
+  ) : (
+    <>
+      <label class="check"><input type="radio" name="access" value="none" checked={access === 'none'} />No login (just listed on their teams)</label>
+      <label class="check"><input type="radio" name="access" value="coach" checked={access === 'coach'} />Coach: can edit their own teams, vacancies and enquiries</label>
+      <label class="check"><input type="radio" name="access" value="admin" checked={access === 'admin'} />Club admin: can edit everything, and their own teams</label>
+      <span class="hint">
+        {access === 'none'
+          ? 'Choosing a login sends them an email to set a password. They need an email address above.'
+          : 'Choosing "No login" removes their login but keeps them on their teams.'}
+      </span>
+    </>
+  )}
+  {self && <input type="hidden" name="access" value={access} />}
+</fieldset>
+
+<script>
+  // Role and enquiries only matter for ticked teams.
+  document.querySelectorAll<HTMLElement>('[data-team-pick]').forEach((row) => {
+    const box = row.querySelector<HTMLInputElement>('input[name="team"]')!;
+    const sync = () => row.classList.toggle('off', !box.checked);
+    box.addEventListener('change', sync);
+    sync();
+  });
+</script>
+
+<style>
+  .team-group { display: grid; gap: 0.15rem; }
+  .team-group h3 { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 0.6rem 0 0.2rem; }
+  .team-pick {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 11rem 9rem;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.2rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .team-pick select { min-height: 38px; padding: 0.35rem 0.5rem; font-size: 0.9rem; }
+  .team-pick .small { font-size: 0.82rem; min-height: 0; }
+  .team-pick.off select, .team-pick.off .small { opacity: 0.35; }
+  @media (max-width: 640px) {
+    .team-pick { grid-template-columns: 1fr 1fr; }
+    .team-pick > .check:first-child { grid-column: 1 / -1; }
+  }
+</style>

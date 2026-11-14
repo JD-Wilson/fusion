@@ -1,36 +1,167 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import PortalTeamCard from '../../../components/portal/PortalTeamCard.astro';
+import { hasFulltimeData, unlinkedFulltimeTeams } from '../../../lib/matches';
 import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+import { groupOf, pageChecklist, sortTeams, teamStats } from '../../../lib/portal-overview';
+import { createTeamFromFulltime } from '../../../lib/portal-teams';
 
 export const prerender = false;
 const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
-const teams = await loadTeams(supabase, session.isAdmin ? undefined : session.teamIds);
-const newEnquiries = await countNewEnquiries(supabase);
+const admin = session.isAdmin;
+
+let notice: { ok: boolean; text: string } | null = null;
+
+// Admins: add teams found on Full-Time (hidden until someone checks them).
+if (admin && Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const current = await loadTeams(supabase);
+  const unlinked = unlinkedFulltimeTeams(current);
+  const wanted = form.get('intent') === 'add-all-fulltime'
+    ? unlinked.map((d) => d.fulltimeName)
+    : [String(form.get('fulltime_name') ?? '')].filter((n) => unlinked.some((d) => d.fulltimeName === n));
+  const added: string[] = [];
+  const failed: string[] = [];
+  let firstId: string | null = null;
+  for (const name of wanted) {
+    const { data, error } = await createTeamFromFulltime(supabase, name);
+    if (error || !data) failed.push(`${name}: ${error?.message ?? 'not added'}`);
+    else {
+      added.push(name);
+      firstId ??= data.id;
+    }
+  }
+  if (added.length === 1 && !failed.length && form.get('intent') !== 'add-all-fulltime') {
+    return Astro.redirect(`/portal/teams/${firstId}/?created=fulltime`);
+  }
+  notice = failed.length
+    ? { ok: false, text: `Added ${added.length}. Couldn't add ${failed.join('; ')}` }
+    : { ok: true, text: `Added ${added.length} ${added.length === 1 ? 'team' : 'teams'}. They're hidden until you've added coaches and ticked "Show this team on the website".` };
+}
+
+const teams = sortTeams(await loadTeams(supabase, admin ? undefined : session.teamIds));
+const [stats, newEnquiries] = await Promise.all([teamStats(supabase, admin ? undefined : session.teamIds), countNewEnquiries(supabase)]);
+const roleOn = new Map(session.myTeams.map((t) => [t.id, t.role_title]));
+
+// Filters (admins).
+const FILTERS = [
+  { id: 'all', label: 'All', test: () => true },
+  { id: 'saturday', label: 'Saturday', test: (t: (typeof teams)[number]) => t.kind !== 'development' && t.match_day === 'Saturday' },
+  { id: 'sunday', label: 'Sunday', test: (t: (typeof teams)[number]) => t.kind !== 'development' && t.match_day === 'Sunday' },
+  { id: 'development', label: 'Development sessions', test: (t: (typeof teams)[number]) => t.kind === 'development' },
+  { id: 'mine', label: 'Mine', test: (t: (typeof teams)[number]) => session.teamIds.includes(t.id) },
+  { id: 'no-coaches', label: 'Nobody assigned', test: (t: (typeof teams)[number]) => !(stats.get(t.id)?.coaches.length) },
+  { id: 'hidden', label: 'Hidden', test: (t: (typeof teams)[number]) => !t.published }
+].filter((f) => f.id !== 'mine' || session.teamIds.length);
+const show = FILTERS.find((f) => f.id === Astro.url.searchParams.get('show')) ?? FILTERS[0];
+const shown = teams.filter(show.test);
+const groups = [...new Set(shown.map(groupOf))].map((label) => ({ label, teams: shown.filter((t) => groupOf(t) === label) }));
+const unlinked = admin ? unlinkedFulltimeTeams(teams) : [];
 ---
 
-<PortalLayout title="Teams" session={session} active="teams" newEnquiries={newEnquiries}>
+<PortalLayout title={admin ? 'Teams & sessions' : 'Your teams'} session={session} active="teams" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <h1>Teams</h1>
-      <p class="p-sub">{session.isAdmin ? 'Create teams and choose who manages them.' : 'Update training details for your teams.'}</p>
+      <h1>{admin ? 'Teams & sessions' : session.teamIds.length === 1 ? 'Your team' : 'Your teams'}</h1>
+      <p class="p-sub">
+        {admin
+          ? 'Every team and development group, who runs it and how complete its page is.'
+          : 'Keep your team pages up to date and post vacancies when you have a space.'}
+      </p>
     </div>
-    {session.isAdmin && <a class="btn" href="/portal/teams/new/">+ New team</a>}
-  </div>
-  <div class="card">
-    {teams.length === 0 && <p class="empty">No teams yet.</p>}
-    {teams.map((t) => (
-      <div class="row">
-        <div class="grow">
-          <h3>{t.name} <span class="pill grey">{t.age_group}</span> {!t.published && <span class="pill warn">Hidden</span>}</h3>
-          <p>{[t.gender === 'Mixed' ? null : t.gender, t.match_day, t.league, t.training].filter(Boolean).join(' · ')}</p>
-        </div>
-        <div class="actions">
-          <a class="btn outline sm" href={`/portal/vacancies/new/?team=${t.id}`}>Add vacancy</a>
-          {t.published && <a class="btn outline sm" href={`/teams/${t.slug}/`} target="_blank" rel="noopener">View page ↗</a>}
-          <a class="btn outline sm" href={`/portal/teams/${t.id}/`}>Edit</a>
-        </div>
+    {admin && (
+      <div class="actions">
+        <a class="btn outline" href="/portal/teams/new/?kind=development">+ Development group</a>
+        <a class="btn" href="/portal/teams/new/">+ New team</a>
       </div>
-    ))}
+    )}
   </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  {!admin && (
+    teams.length === 0
+      ? <div class="msg info">You're not on a team yet. Ask a club admin to add you.</div>
+      : <div class="team-cards">{teams.map((t) => <PortalTeamCard team={t} stats={stats.get(t.id)} role={roleOn.get(t.id)} />)}</div>
+  )}
+
+  {admin && (
+    <>
+      <nav class="tabs" aria-label="Filter teams">
+        {FILTERS.map((f) => (
+          <a href={f.id === 'all' ? '/portal/teams/' : `/portal/teams/?show=${f.id}`} aria-current={f.id === show.id ? 'true' : undefined}>
+            {f.label}<span class="n">{teams.filter(f.test).length}</span>
+          </a>
+        ))}
+      </nav>
+
+      {shown.length === 0 && <div class="card"><p class="empty">No teams here.</p></div>}
+      {groups.map((g) => (
+        <section class="card">
+          <div class="card-head"><h2>{g.label}</h2><span class="count">{g.teams.length}</span></div>
+          {g.teams.map((t) => {
+            const s = stats.get(t.id);
+            const check = pageChecklist(t);
+            return (
+              <a class="row" href={`/portal/teams/${t.id}/`}>
+                <div class="grow">
+                  <h3>
+                    {t.name}
+                    <span class="pill grey">{t.age_group}</span>
+                    {roleOn.has(t.id) && <span class="pill">You: {roleOn.get(t.id)}</span>}
+                    {!t.published && <span class="pill warn">Hidden</span>}
+                  </h3>
+                  <p>{s?.coaches.length ? s.coaches.join(', ') : <span style="color:#f2c66b">Nobody assigned</span>}</p>
+                  <p>
+                    {[
+                      t.kind === 'development' ? t.training : t.league,
+                      check.done === check.total ? 'Page complete' : `Page ${check.done}/${check.total}`,
+                      s?.live ? `${s.live} live ${s.live === 1 ? 'vacancy' : 'vacancies'}` : null,
+                      s?.newEnquiries ? `${s.newEnquiries} new ${s.newEnquiries === 1 ? 'enquiry' : 'enquiries'}` : null
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <span class="go" aria-hidden="true" style="color:var(--text-3)">→</span>
+              </a>
+            );
+          })}
+        </section>
+      ))}
+
+      <section class="card" id="fulltime">
+        <div class="card-head">
+          <h2>On FA Full-Time, not on the website</h2>
+          {unlinked.length > 1 && (
+            <form method="post">
+              <input type="hidden" name="intent" value="add-all-fulltime" />
+              <button class="btn outline sm" type="submit">Add all {unlinked.length}</button>
+            </form>
+          )}
+        </div>
+        {!hasFulltimeData ? (
+          <p class="empty">This fills in after the first Full-Time update. Teams playing in the Saturday and Sunday leagues will appear here.</p>
+        ) : unlinked.length === 0 ? (
+          <p class="empty">Every Fusion team on Full-Time is on the website.</p>
+        ) : (
+          <>
+            <p class="p-sub" style="margin-bottom:0.4rem">Added teams start hidden, already linked to their fixtures and results. Check the name, add coaches, then show them on the website.</p>
+            {unlinked.map((d) => (
+              <div class="row">
+                <div class="grow">
+                  <h3>{d.name} <span class="pill grey">{d.age_group || '?'}</span></h3>
+                  <p>{[d.match_day, d.league, `“${d.fulltimeName}” on Full-Time`].filter(Boolean).join(' · ')}</p>
+                </div>
+                <form method="post">
+                  <input type="hidden" name="intent" value="add-fulltime" />
+                  <input type="hidden" name="fulltime_name" value={d.fulltimeName} />
+                  <button class="btn sm" type="submit">Add team</button>
+                </form>
+              </div>
+            ))}
+            <p class="hint" style="margin-top:0.6rem">Already on the website under a different name? Open that team and choose its Full-Time name instead.</p>
+          </>
+        )}
+      </section>
+    </>
+  )}
 </PortalLayout>

@@ -1,0 +1,129 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import PersonFields from '../../../components/portal/PersonFields.astro';
+import { isSiteUrlConfigured, siteConfig } from '../../../config/site';
+import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+import {
+  accessOf,
+  applyAccess,
+  draftFromForm,
+  loadPerson,
+  parsePersonForm,
+  saveAssignments,
+  signedInUserIds,
+  type Person
+} from '../../../lib/portal-people';
+import { adminSupabase, publicSupabase } from '../../../lib/supabase';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+const loaded = await loadPerson(supabase, Astro.params.id ?? '');
+if (!loaded) return Astro.redirect('/portal/people/');
+const isSelf = loaded.user_id === session.userId;
+let person: Partial<Person> = loaded;
+
+const q = Astro.url.searchParams;
+let notice: { ok: boolean; text: string } | null = q.get('problem')
+  ? { ok: false, text: q.get('problem')! }
+  : q.get('created') || q.get('saved')
+    ? { ok: true, text: [q.get('created') ? 'Person added.' : 'Saved.', q.get('note')].filter(Boolean).join(' ') }
+    : null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const intent = String(form.get('intent') ?? 'save');
+  const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
+
+  if (intent === 'delete' && !isSelf) {
+    // Their login goes too; their team places go with the person.
+    if (loaded.user_id) await adminSupabase()?.auth.admin.deleteUser(loaded.user_id);
+    await supabase.from('people').delete().eq('id', loaded.id);
+    return Astro.redirect('/portal/people/?deleted=1');
+  }
+
+  if (intent === 'resend' && !isSelf && loaded.user_id && loaded.email) {
+    // An invite can't be re-sent to an existing login; a sign-in link does the same job.
+    const { error } = (await publicSupabase()?.auth.signInWithOtp({
+      email: loaded.email,
+      options: { shouldCreateUser: false, emailRedirectTo: `${origin}/auth/confirm/?next=/portal/account/` }
+    })) ?? { error: { message: 'Supabase is not connected.' } };
+    notice = error ? { ok: false, text: error.message } : { ok: true, text: `Sign-in link sent to ${loaded.email}.` };
+  } else if (intent === 'save') {
+    const parsed = parsePersonForm(form);
+    if (parsed.error !== undefined) {
+      notice = { ok: false, text: parsed.error };
+      person = { ...loaded, ...draftFromForm(form), email: loaded.user_id ? loaded.email : String(form.get('email') ?? '') };
+    } else {
+      // A login's email belongs to the login.
+      const values = { ...parsed.values, email: loaded.user_id ? loaded.email : parsed.values.email };
+      const { error } = await supabase.from('people').update(values).eq('id', loaded.id);
+      if (error) {
+        notice = { ok: false, text: error.code === '23505' ? 'Someone else in People already has that email.' : error.message };
+        person = { ...loaded, ...draftFromForm(form) };
+      } else {
+        const teamError = await saveAssignments(supabase, loaded.id, parsed.teams);
+        const access = isSelf ? accessOf(loaded) : parsed.access;
+        const login = access === accessOf(loaded) ? {} : await applyAccess({ ...loaded, ...values }, access, origin);
+        const params = new URLSearchParams({ saved: '1' });
+        if (teamError) params.set('problem', teamError.message);
+        else if (login.error) params.set('problem', `Saved, but the login wasn't changed: ${login.error}`);
+        if (login.note) params.set('note', login.note);
+        return Astro.redirect(`/portal/people/${loaded.id}/?${params}`);
+      }
+    }
+  }
+}
+
+const [teams, signedIn, newEnquiries] = await Promise.all([loadTeams(supabase), signedInUserIds(), countNewEnquiries(supabase)]);
+const access = accessOf(loaded);
+const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user_id);
+---
+
+<PortalLayout title={loaded.full_name} session={session} active="people" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <a class="back" href="/portal/people/">← People</a>
+      <h1>
+        {loaded.full_name}
+        {access === 'admin' && <span class="pill">Club admin</span>}
+        {access === 'coach' && <span class="pill">Coach login</span>}
+        {invited && <span class="pill warn">Invite sent</span>}
+      </h1>
+      <p class="p-sub">{loaded.team_managers.length ? `On ${loaded.team_managers.length} ${loaded.team_managers.length === 1 ? 'team' : 'teams'}` : 'Not on a team yet'}</p>
+    </div>
+  </div>
+  {notice && <div class:list={['msg', notice.ok ? 'ok' : 'bad']} role="status">{notice.text}</div>}
+
+  <div class="card">
+    <form method="post" class="f">
+      <input type="hidden" name="intent" value="save" />
+      <PersonFields person={person} teams={teams} self={isSelf} />
+      <div><button class="btn" type="submit">Save</button></div>
+    </form>
+  </div>
+
+  {invited && !isSelf && (
+    <div class="card">
+      <h2>Haven't signed in yet</h2>
+      <p class="p-sub">If the invite email has gone missing, send them a sign-in link instead.</p>
+      <form method="post" style="margin-top:0.8rem">
+        <input type="hidden" name="intent" value="resend" />
+        <button class="btn outline" type="submit">Send a sign-in link</button>
+      </form>
+    </div>
+  )}
+
+  {!isSelf && (
+    <div class="card">
+      <h2>Remove {loaded.full_name}</h2>
+      <p class="p-sub">Takes them off all their teams{loaded.user_id ? ' and removes their login' : ''}. Vacancies and enquiries are kept.</p>
+      <form method="post" onsubmit="return confirm('Remove this person from the club?')" style="margin-top:0.8rem">
+        <input type="hidden" name="intent" value="delete" />
+        <button class="btn danger" type="submit">Remove person</button>
+      </form>
+    </div>
+  )}
+</PortalLayout>

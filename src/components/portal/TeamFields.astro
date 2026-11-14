@@ -1,6 +1,7 @@
 ---
 import type { TeamRow } from '../../lib/portal';
-import { fulltimeTeams } from '../../lib/matches';
+import { fulltimeInfo, fulltimeTeams } from '../../lib/matches';
+import { DAYS } from '../../lib/portal-teams';
 
 interface Props {
   team?: Partial<TeamRow> | null;
@@ -15,11 +16,15 @@ const t = team ?? {};
 ---
 
 {admin && (
-  <fieldset>
-    <legend>Team</legend>
+  <fieldset data-team-identity>
+    <legend>{t.kind === 'development' ? 'Group' : 'Team'}</legend>
+    <div class="chips" role="radiogroup" aria-label="Type">
+      <label class="check"><input type="radio" name="kind" value="team" checked={t.kind !== 'development'} />League team</label>
+      <label class="check"><input type="radio" name="kind" value="development" checked={t.kind === 'development'} />Development sessions</label>
+    </div>
     <div class="two">
-      <label>Team name<input type="text" name="name" required maxlength="80" value={t.name ?? ''} placeholder="e.g. U10 Black" /></label>
-      <label>Age group<input type="text" name="age_group" required maxlength="10" value={t.age_group ?? ''} placeholder="e.g. U10" /></label>
+      <label>Name<input type="text" name="name" required maxlength="80" value={t.name ?? ''} placeholder={t.kind === 'development' ? 'e.g. Development sessions (ages 5–7)' : 'e.g. U10 Black'} /></label>
+      <label>Age group<input type="text" name="age_group" required maxlength="10" value={t.age_group ?? ''} placeholder="e.g. U10, or 5–7" /></label>
     </div>
     <div class="two">
       <label>
@@ -29,25 +34,29 @@ const t = team ?? {};
         </select>
       </label>
       <label>
-        Match day
+        <span data-day-label>{t.kind === 'development' ? 'Session day' : 'Match day'}</span>
         <select name="match_day">
           <option value="">Not set</option>
-          {['Saturday', 'Sunday'].map((d) => <option value={d} selected={t.match_day === d}>{d}</option>)}
+          {DAYS.map((d) => <option value={d} selected={t.match_day === d}>{d}</option>)}
         </select>
       </label>
     </div>
-    <div class="two">
-      <label>League<input type="text" name="league" maxlength="120" value={t.league ?? ''} /></label>
+    <div class="two" data-league-only hidden={t.kind === 'development'}>
+      <label>League<input type="text" name="league" maxlength="120" value={t.league ?? ''} list="league-names" /></label>
       <label>Season<input type="text" name="season" maxlength="20" value={t.season ?? ''} placeholder="2026/27" /></label>
+      <datalist id="league-names">
+        {fulltimeInfo.leagues.map((l) => <option value={l} />)}
+      </datalist>
     </div>
-    <label class="check"><input type="checkbox" name="published" checked={t.published !== false} />Show this team on the website</label>
+    <label class="check"><input type="checkbox" name="published" checked={t.published !== false} />{t.kind === 'development' ? 'Live (its vacancies can show on the website)' : 'Show this team on the website'}</label>
+    <span class="hint" data-dev-hint hidden={t.kind !== 'development'}>Development groups don't get their own team page. Parents find them on the Development Sessions page.</span>
   </fieldset>
 )}
 
 {mode === 'edit' && (
   <>
     <fieldset>
-      <legend>Team page</legend>
+      <legend>{t.kind === 'development' ? 'Session details' : 'Team page'}</legend>
       <div class="photo-row">
         {t.photo_url ? <img class="photo-preview" src={t.photo_url} alt="" /> : <div class="photo-preview empty">No photo yet</div>}
         <div class="photo-fields">
@@ -60,7 +69,7 @@ const t = team ?? {};
         </div>
       </div>
       <label>
-        About the team
+        {t.kind === 'development' ? 'About the sessions' : 'About the team'}
         <textarea name="description" maxlength="1500" placeholder="A few friendly lines for parents: what the team is like, the coaching style, anything new players should know.">{t.description ?? ''}</textarea>
         <span class="hint">The first paragraph also appears at the top of the team page.</span>
       </label>
@@ -68,6 +77,8 @@ const t = team ?? {};
         <label>Training<input type="text" name="training" maxlength="160" value={t.training ?? ''} placeholder="e.g. Tuesdays 6–7pm" /></label>
         <label>Training venue<input type="text" name="training_venue" maxlength="120" value={t.training_venue ?? ''} placeholder="e.g. Excel Academy" /></label>
       </div>
+      {t.kind !== 'development' && (
+        <>
       <label>
         Team name on FA Full-Time
         <input type="text" name="fulltime_name" maxlength="120" value={t.fulltime_name ?? ''} list="fulltime-teams" placeholder="e.g. Fusion FC U8 Black" />
@@ -87,6 +98,8 @@ const t = team ?? {};
           <input type="url" name="fulltime_url" maxlength="300" value={t.fulltime_url ?? ''} placeholder="https://fulltime.thefa.com/…" />
         </label>
       </div>
+        </>
+      )}
     </fieldset>
 
     <fieldset>
@@ -110,3 +123,16 @@ const t = team ?? {};
     </fieldset>
   </>
 )}
+
+<script>
+  // League details only apply to league teams.
+  document.querySelectorAll<HTMLElement>('[data-team-identity]').forEach((box) => {
+    const sync = () => {
+      const dev = box.querySelector<HTMLInputElement>('input[name="kind"][value="development"]')!.checked;
+      box.querySelector<HTMLElement>('[data-league-only]')!.hidden = dev;
+      box.querySelector<HTMLElement>('[data-dev-hint]')!.hidden = !dev;
+      box.querySelector<HTMLElement>('[data-day-label]')!.textContent = dev ? 'Session day' : 'Match day';
+    };
+    box.querySelectorAll('input[name="kind"]').forEach((r) => r.addEventListener('change', sync));
+  });
+</script>

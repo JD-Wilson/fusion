@@ -42,7 +42,7 @@ export type LeagueTable = { league: string; division: string; rows: TableRow[] }
 
 type Snapshot = {
   scrapedAt: string | null;
-  leagues: { name: string; league: string; club: string; season: string | null }[];
+  leagues: { name: string; day?: "Saturday" | "Sunday"; league: string; club: string; season: string | null }[];
   teams: string[];
   results: Match[];
   fixtures: Match[];
@@ -224,4 +224,52 @@ export function fulltimeNameFor(team: { name: string; fulltime_name?: string | n
   const target = norm(team.name);
   const matches = data.teams.filter((t) => norm(shortName(t)) === target || norm(t) === target);
   return matches.length === 1 ? matches[0] : null;
+}
+
+/** A site name for a Full-Time team: "Fusion FC U10 Fusion FC PU Black" → "U10 Black Playing Up". */
+export function siteNameFor(fulltimeName: string): string {
+  let name = shortName(fulltimeName).replace(/\s+/g, " ").trim();
+  if (/\bPU\b/i.test(name)) name = `${name.replace(/\s*\bPU\b\s*/i, " ").trim()} Playing Up`;
+  return name;
+}
+
+export type FulltimeTeamDraft = {
+  fulltimeName: string;
+  name: string;
+  age_group: string;
+  gender: "Boys" | "Girls" | "Mixed";
+  match_day: "Saturday" | "Sunday" | null;
+  league: string | null;
+  season: string | null;
+};
+
+/** What we know about a Full-Time team, ready to become a team on the site. */
+export function fulltimeTeamDraft(fulltimeName: string): FulltimeTeamDraft | null {
+  if (!data.teams.includes(fulltimeName)) return null;
+  const game = [...data.fixtures, ...data.results].find((m) => m.home.name === fulltimeName || m.away.name === fulltimeName);
+  const league = data.leagues.find((l) => l.name === game?.league);
+  const name = siteNameFor(fulltimeName);
+  const age = name.match(/\bU(\d{1,2})\b/i)?.[1] ?? game?.competition.match(/Under (\d{1,2})/i)?.[1];
+  const day =
+    league?.day ??
+    (/Staffordshire Junior/i.test(league?.name ?? "") ? "Saturday" : /North Staffs/i.test(league?.name ?? "") ? "Sunday" : null);
+  return {
+    fulltimeName,
+    name,
+    age_group: age ? `U${age}` : "",
+    gender: /\bgirls\b/i.test(fulltimeName) ? "Girls" : "Mixed",
+    match_day: day,
+    league: league?.name ?? game?.league ?? null,
+    season: league?.season?.replace("-", "/") ?? null,
+  };
+}
+
+/** Full-Time teams that no team on the site is linked to yet. */
+export function unlinkedFulltimeTeams(teams: { name: string; fulltime_name?: string | null }[]): FulltimeTeamDraft[] {
+  const linked = new Set(teams.map(fulltimeNameFor).filter(Boolean));
+  return data.teams
+    .filter((t) => !linked.has(t))
+    .map(fulltimeTeamDraft)
+    .filter((d): d is FulltimeTeamDraft => d !== null)
+    .sort((a, b) => (a.match_day ?? "").localeCompare(b.match_day ?? "") || a.name.localeCompare(b.name, "en", { numeric: true }));
 }

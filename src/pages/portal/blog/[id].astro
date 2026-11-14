@@ -117,7 +117,7 @@ const newEnquiries = await countNewEnquiries(supabase);
 <PortalLayout title={isNew ? 'New post' : 'Edit post'} session={session} active="blog" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <p class="p-sub"><a href="/portal/blog/">← Blog</a></p>
+      <a class="back" href="/portal/blog/">← Blog</a>
       <h1>{isNew ? 'New post' : post.title}</h1>
       {!isNew && <p class="p-sub">/blog/{post.slug}/ · {post.draft ? 'Draft' : live ? 'Live' : `Scheduled for ${post.date}`}</p>}
     </div>

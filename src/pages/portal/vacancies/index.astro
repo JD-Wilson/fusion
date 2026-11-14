@@ -37,6 +37,16 @@ const shareLink = (v: VacancyRow) =>
 
 const newEnquiries = await countNewEnquiries(supabase);
 const saved = Astro.url.searchParams.get('saved');
+
+// Filters: live or not, and (for admins who also coach) just their teams.
+const FILTERS = [
+  { id: 'all', label: 'All', test: () => true },
+  { id: 'live', label: 'Live', test: isLive },
+  { id: 'ended', label: 'Filled or ended', test: (v: VacancyRow) => !isLive(v) },
+  ...(session.isAdmin && session.teamIds.length ? [{ id: 'mine', label: 'My teams', test: (v: VacancyRow) => session.teamIds.includes(v.team_id) }] : [])
+];
+const show = FILTERS.find((f) => f.id === Astro.url.searchParams.get('show')) ?? FILTERS[0];
+const shown = vacancies.filter(show.test);
 ---
 
 <PortalLayout title="Vacancies" session={session} active="vacancies" newEnquiries={newEnquiries}>
@@ -49,12 +59,23 @@ const saved = Astro.url.searchParams.get('saved');
   </div>
   {saved && <div class="msg ok" role="status">Saved.</div>}
 
+  {vacancies.length > 0 && (
+    <nav class="tabs" aria-label="Filter vacancies">
+      {FILTERS.map((f) => (
+        <a href={f.id === 'all' ? '/portal/vacancies/' : `/portal/vacancies/?show=${f.id}`} aria-current={f.id === show.id ? 'true' : undefined}>
+          {f.label}<span class="n">{vacancies.filter(f.test).length}</span>
+        </a>
+      ))}
+    </nav>
+  )}
+
   <div class="card">
     {vacancies.length === 0 && <p class="empty">No vacancies yet. Add one when your team has a space and share it in your parents' group chat.</p>}
-    {vacancies.map((v) => (
+    {vacancies.length > 0 && shown.length === 0 && <p class="empty">Nothing here.</p>}
+    {shown.map((v) => (
       <div class="row">
         <div class="grow">
-          <h3>{v.teams?.name} <span class="pill grey">{v.teams?.age_group}</span></h3>
+          <h3>{v.teams?.name} <span class="pill grey">{v.teams?.age_group}</span>{v.headline && <span style="font-weight:500;color:var(--text-2);font-family:var(--font-body);font-size:0.9rem">{v.headline}</span>}</h3>
           <p>
             {v.kind === 'coach' ? 'Coach / helper' : positionsLabel(v)}
             {v.kind === 'player' && v.spaces > 1 ? ` · ${v.spaces} places` : ''}

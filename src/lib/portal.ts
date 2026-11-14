@@ -6,7 +6,7 @@ export interface TeamRow {
   name: string;
   age_group: string;
   gender: 'Boys' | 'Girls' | 'Mixed';
-  match_day: 'Saturday' | 'Sunday' | null;
+  match_day: string | null;
   league: string | null;
   season: string | null;
   training: string | null;
@@ -21,6 +21,8 @@ export interface TeamRow {
   contact_name: string | null;
   whatsapp_enabled: boolean;
   email_enabled: boolean;
+  /** 'development' for development session groups (no public team page). */
+  kind?: 'team' | 'development';
 }
 
 /** RLS decides what's returned: admins get every team, managers only their own. */

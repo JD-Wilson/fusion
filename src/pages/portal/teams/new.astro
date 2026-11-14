@@ -1,8 +1,8 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import TeamFields from '../../../components/portal/TeamFields.astro';
-import { countNewEnquiries } from '../../../lib/portal';
-import { newTeamSlug, parseAdminTeamFields } from '../../../lib/portal-teams';
+import { countNewEnquiries, type TeamRow } from '../../../lib/portal';
+import { insertTeam, parseAdminTeamFields } from '../../../lib/portal-teams';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -10,36 +10,39 @@ const supabase = Astro.locals.supabase!;
 if (!session.isAdmin) return Astro.redirect('/portal/teams/');
 
 let error: string | null = null;
+let draft: Partial<TeamRow> = Astro.url.searchParams.get('kind') === 'development'
+  ? { kind: 'development', match_day: 'Wednesday', age_group: '', name: 'Development sessions ' }
+  : { kind: 'team' };
+
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const parsed = parseAdminTeamFields(form);
   if (!parsed.values) {
     error = parsed.error ?? 'Please check the form.';
   } else {
-    const { data, error: dbError } = await supabase
-      .from('teams')
-      .insert({ ...parsed.values, slug: newTeamSlug(parsed.values.name, parsed.values.match_day) })
-      .select('id')
-      .single();
-    if (dbError) error = dbError.code === '23505' ? 'A team with that name already exists.' : dbError.message;
+    draft = parsed.values as Partial<TeamRow>;
+    const { data, error: dbError } = await insertTeam(supabase, parsed.values);
+    if (dbError || !data) error = dbError?.message ?? 'The team could not be created.';
     else return Astro.redirect(`/portal/teams/${data.id}/?created=1`);
   }
 }
+const isDev = draft.kind === 'development';
 const newEnquiries = await countNewEnquiries(supabase);
 ---
 
-<PortalLayout title="New team" session={session} active="teams" newEnquiries={newEnquiries}>
+<PortalLayout title={isDev ? 'New development group' : 'New team'} session={session} active="teams" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <h1>New team</h1>
-      <p class="p-sub">Add the basics. Next you'll choose its managers, and they can fill in the rest of the team page.</p>
+      <a class="back" href="/portal/teams/">← Teams & sessions</a>
+      <h1>{isDev ? 'New development group' : 'New team'}</h1>
+      <p class="p-sub">Add the basics. Next you'll choose its coaches, and they can fill in the rest.</p>
     </div>
   </div>
   <div class="card">
     {error && <div class="msg bad" role="alert">{error}</div>}
     <form method="post" class="f">
-      <TeamFields admin={true} mode="create" />
-      <div><button class="btn" type="submit">Create team</button> <a class="btn outline" href="/portal/teams/">Cancel</a></div>
+      <TeamFields team={draft} admin={true} mode="create" />
+      <div><button class="btn" type="submit">Create</button> <a class="btn outline" href="/portal/teams/">Cancel</a></div>
     </form>
   </div>
 </PortalLayout>

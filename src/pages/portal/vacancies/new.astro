@@ -21,7 +21,7 @@ let defaults: Record<string, any> = {
   whatsapp_enabled: Boolean(session.phone),
   email_enabled: true,
   published: true,
-  team_id: Astro.url.searchParams.get('team') ?? (teams.length === 1 ? teams[0].id : undefined)
+  team_id: Astro.url.searchParams.get('team') ?? (teams.length === 1 ? teams[0].id : session.teamIds.length === 1 ? session.teamIds[0] : undefined)
 };
 
 if (Astro.request.method === 'POST') {
@@ -77,7 +77,7 @@ const newEnquiries = await countNewEnquiries(supabase);
   ) : (
     <div class="card">
       {error && <div class="msg bad" role="alert">{error}</div>}
-      <VacancyForm teams={teams} defaults={defaults} submitLabel="Publish vacancy" />
+      <VacancyForm teams={teams} defaults={defaults} submitLabel="Publish vacancy" mine={session.teamIds} />
     </div>
   )}
 </PortalLayout>

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { EMAIL, checked, line, slugify, text } from './forms';
-import { fulltimeTeams } from './matches';
+import { fulltimeTeamDraft, fulltimeTeams } from './matches';
 import { cleanFulltimeUrl } from './teams';
 import { normaliseWhatsApp } from './vacancies';
 
 const GENDERS = ['Boys', 'Girls', 'Mixed'];
-const DAYS = ['Saturday', 'Sunday'];
+export const DAYS = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 /** Identity fields: club admins only (the database trigger enforces the same split). */
 export function parseAdminTeamFields(form: FormData) {
@@ -14,20 +14,41 @@ export function parseAdminTeamFields(form: FormData) {
   if (!name || !age_group) return { error: 'Team name and age group are needed.' };
   const gender = text(form, 'gender');
   const day = text(form, 'match_day');
+  const kind = form.get('kind') === 'development' ? 'development' : 'team';
   return {
     values: {
+      kind,
       name,
       age_group,
       gender: gender && GENDERS.includes(gender) ? gender : 'Mixed',
       match_day: day && DAYS.includes(day) ? day : null,
-      league: line(form, 'league', 120),
-      season: line(form, 'season', 20),
+      league: kind === 'team' ? line(form, 'league', 120) : null,
+      season: kind === 'team' ? line(form, 'season', 20) : null,
       published: checked(form, 'published')
     }
   };
 }
 
 export const newTeamSlug = (name: string, day: string | null) => slugify(`${day === 'Saturday' ? 'sat' : day === 'Sunday' ? 'sun' : ''} ${name}`);
+
+/** Insert a team, adding -2, -3… to the address if another team already has it. */
+export async function insertTeam(supabase: SupabaseClient, values: Record<string, unknown> & { name: string; match_day: string | null }) {
+  const base = newTeamSlug(values.name, values.match_day);
+  for (let n = 1; n <= 5; n++) {
+    const slug = n === 1 ? base : `${base}-${n}`;
+    const result = await supabase.from('teams').insert({ ...values, slug }).select('id').single();
+    if (result.error?.code !== '23505' || !/slug/.test(result.error.message)) return result;
+  }
+  return { data: null, error: { code: '23505', message: 'A team with that name already exists.' } };
+}
+
+/** A hidden team made from a Full-Time team, linked to its fixtures. */
+export async function createTeamFromFulltime(supabase: SupabaseClient, fulltimeName: string) {
+  const draft = fulltimeTeamDraft(fulltimeName);
+  if (!draft) return { data: null, error: { code: '', message: 'That team is no longer on Full-Time.' } };
+  const { fulltimeName: fulltime_name, ...rest } = draft;
+  return insertTeam(supabase, { ...rest, age_group: rest.age_group || 'U?', fulltime_name, published: false, kind: 'team' });
+}
 
 /** Day-to-day details any of the team's managers may change. */
 export function parseManagerTeamFields(form: FormData) {

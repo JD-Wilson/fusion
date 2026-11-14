@@ -1,0 +1,65 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import PersonFields from '../../../components/portal/PersonFields.astro';
+import { isSiteUrlConfigured, siteConfig } from '../../../config/site';
+import { countNewEnquiries, loadTeams } from '../../../lib/portal';
+import { applyAccess, draftFromForm, parsePersonForm, saveAssignments, type Person } from '../../../lib/portal-people';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+let error: string | null = null;
+let draft: Partial<Person> | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  draft = draftFromForm(form);
+  const parsed = parsePersonForm(form);
+  if (parsed.error !== undefined) {
+    error = parsed.error;
+  } else {
+    const { data, error: dbError } = await supabase.from('people').insert(parsed.values).select('id').single();
+    if (dbError) {
+      error = dbError.code === '23505' ? 'Someone with that email is already in People.' : dbError.message;
+    } else {
+      const teamError = await saveAssignments(supabase, data.id, parsed.teams);
+      const origin = isSiteUrlConfigured ? siteConfig.siteUrl : Astro.url.origin;
+      const login = parsed.access === 'none'
+        ? {}
+        : await applyAccess({ id: data.id, user_id: null, ...parsed.values }, parsed.access, origin);
+      const params = new URLSearchParams({ created: '1' });
+      if (teamError) params.set('problem', teamError.message);
+      else if (login.error) params.set('problem', `Saved, but the login wasn't set up: ${login.error}`);
+      if (login.note) params.set('note', login.note);
+      return Astro.redirect(`/portal/people/${data.id}/?${params}`);
+    }
+  }
+}
+
+const teams = await loadTeams(supabase);
+// "Add a person" from a team's page ticks that team.
+const preselect = Astro.url.searchParams.get('team');
+if (!draft && preselect && teams.some((t) => t.id === preselect)) {
+  draft = { team_managers: [{ id: '', team_id: preselect, role_title: 'Coach', receives_enquiries: true, teams: null }] };
+}
+const newEnquiries = await countNewEnquiries(supabase);
+---
+
+<PortalLayout title="Add person" session={session} active="people" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <a class="back" href="/portal/people/">← People</a>
+      <h1>Add person</h1>
+      <p class="p-sub">Only their name is needed. Add an email if they should get enquiries or a login.</p>
+    </div>
+  </div>
+  <div class="card">
+    {error && <div class="msg bad" role="alert">{error}</div>}
+    <form method="post" class="f">
+      <PersonFields person={draft} teams={teams} />
+      <div><button class="btn" type="submit">Add person</button> <a class="btn outline" href="/portal/people/">Cancel</a></div>
+    </form>
+  </div>
+</PortalLayout>

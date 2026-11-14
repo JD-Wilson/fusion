@@ -73,6 +73,6 @@ const newEnquiries = await countNewEnquiries(supabase);
   </div>
   <div class="card">
     {error && <div class="msg bad" role="alert">{error}</div>}
-    <VacancyForm teams={teams} vacancy={vacancy} defaults={defaults} submitLabel="Save changes" />
+    <VacancyForm teams={teams} vacancy={vacancy} defaults={defaults} submitLabel="Save changes" mine={session.teamIds} />
   </div>
 </PortalLayout>

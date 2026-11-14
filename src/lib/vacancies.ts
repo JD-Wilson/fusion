@@ -37,6 +37,8 @@ export interface PublicVacancy {
   created_at: string;
   team_name: string;
   team_slug: string;
+  /** 'development' for development sessions, which have no team page. */
+  team_kind?: 'team' | 'development';
   age_group: string;
   gender: 'Boys' | 'Girls' | 'Mixed';
   match_day: 'Saturday' | 'Sunday' | null;

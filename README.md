@@ -195,10 +195,14 @@ Parents see which teams need players (by age group, position, match day) at `/va
 | Who | What they can do |
 | --- | --- |
 | **Parents** (no login) | Filter vacancies, tap *Message on WhatsApp* (opens WhatsApp with a pre-written message) or send a message through the form |
-| **Team managers** | Post, edit, fill and delete vacancies for **their own teams**; edit their teams' training details; see and update enquiries about their teams |
-| **Club admins** | Everything above for every team, plus create teams, invite people, assign managers, change roles |
+| **Coaches** (managers, coaches, assistants, helpers with a login) | Post, edit, fill and delete vacancies for **their own teams**; edit their team pages; see and update enquiries about their teams. One person can run several teams, e.g. a Saturday and a Sunday team |
+| **Club admins** | Everything above for every team and development group, plus the website, adding teams (including straight from Full-Time) and managing **People**. An admin can also be a coach on teams, and sees those teams first |
 
-Pages: `/vacancies/` (public) · `/login/` · `/portal/` (dashboard) · `/portal/vacancies/` · `/portal/teams/` · `/portal/enquiries/` · `/portal/people/` (admins) · `/portal/account/`.
+**People** are everyone who helps run the club. Add someone with just their name, tick the teams and development groups they help with (and their role on each), and give them a login only if they need one. Enquiries go to anyone on the team with an email, login or not.
+
+**Development sessions** are groups that work like teams in the portal (coaches, vacancies, enquiries) but don't get a public team page.
+
+Pages: `/vacancies/` (public) · `/login/` · `/portal/` (home: a to-do list and your teams) · `/portal/vacancies/` · `/portal/enquiries/` · `/portal/teams/` · `/portal/people/` (admins) · `/portal/account/`.
 
 ### Privacy and safeguarding
 
@@ -212,7 +216,7 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (dashboard) · `/portal
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL editor**: run `supabase/schema.sql`, then `supabase/seed.sql` (your existing teams, from `src/content/teams` via `npm run seed:sql`), then `supabase/seed-content.sql` (the site's pages and blog posts, from `src/content` via `npm run content:sql`). All are safe to re-run and never overwrite edits made in the portal.
 
-   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
+   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`, `005_people.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
 3. **Project Settings → API**: copy the URL, anon key and service-role key into `.env.local` and Vercel's environment variables (see `.env.example`).
 4. **Authentication → URL Configuration**: set the Site URL to the live site and add `https://<your-site>/auth/confirm/` (and `http://localhost:4321/auth/confirm/`) to Redirect URLs.
 5. **Authentication → Email Templates**: point the links at the site so they work with server-side login:
@@ -226,7 +230,7 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (dashboard) · `/portal
    update public.profiles set role = 'club_admin' where email = 'you@example.com';
    ```
 
-   From then on, invite managers from **People** in the portal and add them to teams from each team's page.
+   From then on, add coaches from **People** in the portal (tick their teams, and choose a login if they need one).
 8. Optional: set `RESEND_API_KEY` and `EMAIL_FROM` so enquiries are also emailed to managers.
 
 Without Supabase variables the rest of the site works as before and `/vacancies/` shows a "coming soon" message.

@@ -1,30 +1,53 @@
 ---
 import '../../styles/portal.css';
-import type { Session } from '../../lib/auth';
+import { roleLabel, shortDay, type Session } from '../../lib/auth';
 
 interface Props {
   title: string;
   session: Session;
   active: 'dashboard' | 'vacancies' | 'teams' | 'enquiries' | 'pages' | 'blog' | 'media' | 'people' | 'account';
+  /** On a team's page: highlights that team under "Your teams". */
+  activeTeam?: string;
   newEnquiries?: number;
 }
-const { title, session, active, newEnquiries = 0 } = Astro.props as Props;
+const { title, session, active, activeTeam, newEnquiries = 0 } = Astro.props as Props;
 
-const links = [
-  { id: 'dashboard', href: '/portal/', label: 'Dashboard' },
-  { id: 'vacancies', href: '/portal/vacancies/', label: 'Vacancies' },
-  { id: 'teams', href: '/portal/teams/', label: 'Teams' },
-  { id: 'enquiries', href: '/portal/enquiries/', label: 'Enquiries', badge: newEnquiries },
+type Link = { id: string; href: string; label: string; badge?: number };
+const groups: { label: string | null; links: Link[] }[] = [
+  { label: null, links: [{ id: 'dashboard', href: '/portal/', label: 'Home' }] },
+  {
+    label: 'Recruiting',
+    links: [
+      { id: 'vacancies', href: '/portal/vacancies/', label: 'Vacancies' },
+      { id: 'enquiries', href: '/portal/enquiries/', label: 'Enquiries', badge: newEnquiries }
+    ]
+  },
   ...(session.isAdmin
     ? [
-        { id: 'pages', href: '/portal/pages/', label: 'Pages' },
-        { id: 'blog', href: '/portal/blog/', label: 'Blog' },
-        { id: 'media', href: '/portal/media/', label: 'Media' },
-        { id: 'people', href: '/portal/people/', label: 'People' }
+        {
+          label: 'Club',
+          links: [
+            { id: 'teams', href: '/portal/teams/', label: 'Teams & sessions' },
+            { id: 'people', href: '/portal/people/', label: 'People' }
+          ]
+        },
+        {
+          label: 'Website',
+          links: [
+            { id: 'pages', href: '/portal/pages/', label: 'Pages' },
+            { id: 'blog', href: '/portal/blog/', label: 'Blog' },
+            { id: 'media', href: '/portal/media/', label: 'Photos & files' }
+          ]
+        }
       ]
-    : []),
-  { id: 'account', href: '/portal/account/', label: 'My account' }
+    : [])
 ];
+const initials = (session.fullName || session.email)
+  .split(/[\s@.]+/)
+  .filter(Boolean)
+  .slice(0, 2)
+  .map((w) => w[0]!.toUpperCase())
+  .join('');
 ---
 
 <!doctype html>
@@ -33,32 +56,92 @@ const links = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#090b0a" />
     <title>{title} | Fusion FC portal</title>
     <link rel="icon" href="/favicon.ico" />
     <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <noscript><style>.p-side { display: flex !important; } .p-menu-btn { display: none !important; }</style></noscript>
   </head>
   <body>
-    <div class="p-shell">
-      <aside class="p-side">
+    <div class="p-shell" data-shell>
+      <header class="p-top">
         <a class="p-brand" href="/portal/">
-          <img src="/brand/logo.jpeg" alt="" width="40" height="40" />
-          <span><strong>Fusion FC</strong><small>{session.isAdmin ? 'Club admin' : 'Team manager'}</small></span>
+          <img src="/brand/logo.jpeg" alt="" width="34" height="34" />
+          <span><strong>Fusion FC</strong><small>Team hub</small></span>
         </a>
+        <button class="p-menu-btn" type="button" aria-controls="p-side" aria-expanded="false" data-menu>
+          Menu{newEnquiries > 0 && <span class="p-badge">{newEnquiries}</span>}
+        </button>
+      </header>
+
+      <aside class="p-side" id="p-side">
+        <button class="p-close" type="button" data-close>Close ✕</button>
+        <a class="p-brand desk" href="/portal/">
+          <img src="/brand/logo.jpeg" alt="" width="38" height="38" />
+          <span><strong>Fusion FC</strong><small>Team hub</small></span>
+        </a>
+
         <nav class="p-nav" aria-label="Portal">
-          {links.map((l) => (
-            <a href={l.href} aria-current={l.id === active ? 'page' : undefined}>
-              {l.label}
-              {'badge' in l && l.badge ? <span class="p-badge">{l.badge}</span> : null}
-            </a>
+          {groups[0].links.map((l) => (
+            <a href={l.href} aria-current={l.id === active ? 'page' : undefined}>{l.label}</a>
+          ))}
+
+          {session.myTeams.length > 0 && (
+            <div class="p-group">
+              <span class="p-group-label">{session.myTeams.length === 1 ? 'Your team' : 'Your teams'}</span>
+              {session.myTeams.map((t) => (
+                <a href={`/portal/teams/${t.id}/`} aria-current={t.id === activeTeam ? 'page' : undefined} class="team-link">
+                  <span class="t-name">{t.name}</span>
+                  {t.match_day && <span class="t-day">{t.kind === 'development' ? 'Dev' : shortDay(t.match_day)}</span>}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {groups.slice(1).map((g) => (
+            <div class="p-group">
+              <span class="p-group-label">{g.label}</span>
+              {g.links.map((l) => (
+                <a href={l.href} aria-current={l.id === active && !activeTeam ? 'page' : undefined}>
+                  {l.label}
+                  {l.badge ? <span class="p-badge">{l.badge}</span> : null}
+                </a>
+              ))}
+            </div>
           ))}
         </nav>
+
         <div class="p-foot">
-          <span>{session.fullName || session.email}</span>
-          <a class="site" href="/vacancies/">View public vacancies ↗</a>
-          <form method="post" action="/auth/signout/"><button type="submit">Sign out</button></form>
+          <a class="p-me" href="/portal/account/" aria-current={active === 'account' ? 'page' : undefined}>
+            <span class="p-avatar" aria-hidden="true">{initials}</span>
+            <span><strong>{session.fullName || session.email}</strong><small>{roleLabel(session)}</small></span>
+          </a>
+          <div class="p-foot-links">
+            <a href="/" target="_blank" rel="noopener">View website ↗</a>
+            <form method="post" action="/auth/signout/"><button type="submit">Sign out</button></form>
+          </div>
         </div>
       </aside>
+
+      <div class="p-scrim" data-scrim hidden></div>
       <main class="p-main"><slot /></main>
     </div>
+
+    <script>
+      // Phone menu: slide the sidebar in over the page.
+      const shell = document.querySelector<HTMLElement>('[data-shell]')!;
+      const button = document.querySelector<HTMLButtonElement>('[data-menu]')!;
+      const scrim = document.querySelector<HTMLElement>('[data-scrim]')!;
+      const set = (open: boolean) => {
+        shell.toggleAttribute('data-nav-open', open);
+        button.setAttribute('aria-expanded', String(open));
+        scrim.hidden = !open;
+        document.body.style.overflow = open ? 'hidden' : '';
+      };
+      button.addEventListener('click', () => set(!shell.hasAttribute('data-nav-open')));
+      scrim.addEventListener('click', () => set(false));
+      document.querySelector('[data-close]')!.addEventListener('click', () => set(false));
+      document.addEventListener('keydown', (e) => e.key === 'Escape' && set(false));
+    </script>
   </body>
 </html>

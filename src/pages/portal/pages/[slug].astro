@@ -104,7 +104,7 @@ const newEnquiries = await countNewEnquiries(supabase);
 <PortalLayout title={`Edit ${name}`} session={session} active="pages" newEnquiries={newEnquiries}>
   <div class="p-head">
     <div>
-      <p class="p-sub"><a href="/portal/pages/">← Pages</a></p>
+      <a class="back" href="/portal/pages/">← Pages</a>
       <h1>{name} {!page.published && <span class="pill warn">Hidden</span>}</h1>
       <p class="p-sub">{publicPath(slug)}{!page.inDatabase && ' · showing the original wording until you save'}</p>
     </div>

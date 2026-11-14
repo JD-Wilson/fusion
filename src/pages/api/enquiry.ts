@@ -147,11 +147,12 @@ async function teamRecipients(db: SupabaseClient, teamId: string): Promise<strin
 
   const { data: managers } = await db
     .from('team_managers')
-    .select('receives_enquiries, profiles(email)')
+    .select('receives_enquiries, people(email)')
     .eq('team_id', teamId);
-  const emails = ((managers ?? []) as unknown as { receives_enquiries: boolean; profiles: { email: string } | null }[])
-    .filter((m) => m.receives_enquiries && m.profiles?.email)
-    .map((m) => m.profiles!.email);
+  // Coaches don't need a login to get enquiries, just an email in People.
+  const emails = ((managers ?? []) as unknown as { receives_enquiries: boolean; people: { email: string | null } | null }[])
+    .filter((m) => m.receives_enquiries && m.people?.email)
+    .map((m) => m.people!.email!);
   if (emails.length) return emails;
 
   const { data: priv } = await db.from('club_private').select('inbox_email').eq('id', 1).maybeSingle();

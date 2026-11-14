@@ -1,0 +1,116 @@
+---
+import PortalLayout from '../../../components/portal/PortalLayout.astro';
+import { countNewEnquiries } from '../../../lib/portal';
+import { accessOf, loadPeople, signedInUserIds } from '../../../lib/portal-people';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+const notice = Astro.url.searchParams.get('deleted') ? { ok: true, text: 'Person removed.' } : null;
+const [people, signedIn, newEnquiries] = await Promise.all([loadPeople(supabase), signedInUserIds(), countNewEnquiries(supabase)]);
+
+const ACCESS = { admin: 'Club admin', coach: 'Coach login', none: 'No login' } as const;
+type P = (typeof people)[number];
+const FILTERS = [
+  { id: 'all', label: 'Everyone', test: () => true },
+  { id: 'admins', label: 'Club admins', test: (p: P) => accessOf(p) === 'admin' },
+  { id: 'saturday', label: 'Saturday', test: (p: P) => p.team_managers.some((t) => t.teams?.match_day === 'Saturday') },
+  { id: 'sunday', label: 'Sunday', test: (p: P) => p.team_managers.some((t) => t.teams?.match_day === 'Sunday') },
+  { id: 'both', label: 'Saturday and Sunday', test: (p: P) => ['Saturday', 'Sunday'].every((d) => p.team_managers.some((t) => t.teams?.match_day === d)) },
+  { id: 'no-login', label: 'No login', test: (p: P) => accessOf(p) === 'none' },
+  { id: 'invited', label: 'Invite not used', test: (p: P) => Boolean(p.user_id && !signedIn.has(p.user_id)) },
+  { id: 'no-team', label: 'Not on a team', test: (p: P) => p.team_managers.length === 0 }
+];
+const show = FILTERS.find((f) => f.id === Astro.url.searchParams.get('show')) ?? FILTERS[0];
+const shown = people.filter(show.test);
+---
+
+<PortalLayout title="People" session={session} active="people" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>People</h1>
+      <p class="p-sub">Coaches, helpers and club admins. Add someone with just their name, put them on their teams, and give them a login when they need one.</p>
+    </div>
+    <a class="btn" href="/portal/people/new/">+ Add person</a>
+  </div>
+  {notice && <div class="msg ok" role="status">{notice.text}</div>}
+
+  {people.length > 0 && (
+    <nav class="tabs" aria-label="Filter people">
+      {FILTERS.map((f) => {
+        const n = people.filter(f.test).length;
+        return (f.id === 'all' || n > 0) && (
+          <a href={f.id === 'all' ? '/portal/people/' : `/portal/people/?show=${f.id}`} aria-current={f.id === show.id ? 'true' : undefined}>
+            {f.label}<span class="n">{n}</span>
+          </a>
+        );
+      })}
+    </nav>
+  )}
+
+  <div class="card">
+    <div class="list-head">
+      <input type="search" placeholder="Search by name, email or team" aria-label="Search people" data-search />
+      <span class="count">{shown.length} {shown.length === 1 ? 'person' : 'people'}</span>
+    </div>
+    {people.length === 0 && <p class="empty">Nobody yet. Start by adding yourself and the coaches.</p>}
+    {people.length > 0 && shown.length === 0 && <p class="empty">Nobody here.</p>}
+    {shown.map((p) => {
+      const access = accessOf(p);
+      const invited = access !== 'none' && p.user_id && !signedIn.has(p.user_id);
+      const teams = [...p.team_managers].sort((a, b) => (a.teams?.name ?? '').localeCompare(b.teams?.name ?? ''));
+      return (
+        <a class="row person" href={`/portal/people/${p.id}/`} data-text={[p.full_name, p.email, ...teams.map((t) => t.teams?.name)].join(' ').toLowerCase()}>
+          <div class="grow">
+            <h3>
+              {p.full_name}
+              {p.user_id === session.userId && <span class="pill grey">You</span>}
+            </h3>
+            <p>{[p.email, p.phone].filter(Boolean).join(' · ') || 'No contact details'}</p>
+            <p class="teams">
+              {teams.length
+                ? teams.map((t) => <span class="team-tag">{t.teams?.name}{t.teams?.match_day ? ` · ${t.teams.match_day.slice(0, 3)}` : ''}{t.role_title !== 'Coach' ? ` (${t.role_title})` : ''}</span>)
+                : <span class="none">Not on a team</span>}
+            </p>
+          </div>
+          <div class="actions">
+            {invited ? <span class="pill warn">Invite sent</span> : <span class:list={['pill', access === 'none' && 'grey']}>{ACCESS[access]}</span>}
+          </div>
+        </a>
+      );
+    })}
+  </div>
+</PortalLayout>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-search]');
+  input?.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    document.querySelectorAll<HTMLElement>('.person').forEach((row) => {
+      row.hidden = Boolean(q) && !(row.dataset.text ?? '').includes(q);
+    });
+  });
+</script>
+
+<style>
+  .list-head { display: flex; gap: 0.8rem; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 0.4rem; }
+  .list-head input {
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+    font: inherit;
+    font-size: 16px;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-s);
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  a.person { color: inherit; text-decoration: none; }
+  a.person:hover h3 { color: var(--accent); }
+  .teams { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+  .team-tag { font-size: 0.78rem; padding: 0.1rem 0.5rem; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2); }
+  .none { font-size: 0.8rem; color: var(--text-3); }
+</style>

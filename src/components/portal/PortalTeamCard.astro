@@ -1,0 +1,49 @@
+---
+import type { TeamRow } from '../../lib/portal';
+import { groupOf, nextGame, pageChecklist, type TeamStats } from '../../lib/portal-overview';
+
+interface Props {
+  team: TeamRow;
+  stats?: TeamStats;
+  /** The viewer's role on this team, e.g. "Manager". */
+  role?: string | null;
+}
+const { team, stats, role } = Astro.props as Props;
+const check = pageChecklist(team);
+const next = nextGame(team);
+const isDev = team.kind === 'development';
+const meta = [isDev ? team.match_day : groupOf(team), isDev ? team.training : team.league].filter(Boolean).join(' · ');
+---
+
+<article class="team-card">
+  <div class="tc-top">
+    <div>
+      <h3><a href={`/portal/teams/${team.id}/`}>{team.name}</a></h3>
+      <p class="tc-meta">{meta || 'Day not set'}</p>
+    </div>
+    <div style="display:flex;gap:0.3rem;flex-wrap:wrap;justify-content:flex-end">
+      {role && <span class="pill grey">{role}</span>}
+      {!team.published && <span class="pill warn">Hidden</span>}
+    </div>
+  </div>
+
+  {stats && (
+    <div class="tc-stats">
+      <span><b>{stats.live}</b>{stats.live === 1 ? 'vacancy' : 'vacancies'}</span>
+      <span><b>{stats.newEnquiries}</b>new {stats.newEnquiries === 1 ? 'enquiry' : 'enquiries'}</span>
+    </div>
+  )}
+
+  {next && <p class="tc-next"><small>Next game</small>{next.when}: {next.text}</p>}
+
+  <div class="meter" title={check.missing.length ? `Still to add: ${check.missing.join(', ')}` : 'Team page complete'}>
+    <span>{check.done === check.total ? 'Page complete' : `Page ${check.done}/${check.total}: add ${check.missing[0]!.toLowerCase()}`}</span>
+    <div class="meter-bar"><span style={`width:${Math.round((check.done / check.total) * 100)}%`}></span></div>
+  </div>
+
+  <div class="tc-actions">
+    <a class="btn outline sm" href={`/portal/teams/${team.id}/`}>Edit page</a>
+    <a class="btn outline sm" href={`/portal/vacancies/new/?team=${team.id}`}>+ Vacancy</a>
+    {team.published && !isDev && <a class="btn outline sm" href={`/teams/${team.slug}/`} target="_blank" rel="noopener">View ↗</a>}
+  </div>
+</article>
