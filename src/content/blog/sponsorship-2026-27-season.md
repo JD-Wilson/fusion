@@ -8,40 +8,40 @@ tags:
   - Community
   - Club News
 author: Fusion Football Club
-seoTitle: Sponsor Fusion FC — Partnership Opportunities 2026/27
+seoTitle: "Sponsor Fusion FC: Partnership Opportunities 2026/27"
 seoDescription: Fusion FC is looking for local business sponsors for the 2026/27 season. Get your brand in front of families and the local community through our teams, website, and socials.
 ogImage: /brand/blog/sponsorship-2026-27.svg
 ---
 
-Grassroots football runs on community support. The pitches, the kit, the coaching, the matchday experience — none of it happens without the people and businesses who believe in what clubs like ours are trying to build.
+Grassroots football runs on community support. The pitches, the kit, the coaching, the matchday experience: none of it happens without the people and businesses who believe in what clubs like ours are trying to build.
 
-As we head into the 2026/27 season, Fusion FC is actively looking for local businesses to come on board as partners. Whether you are a sole trader, a small business, or an established company, there is a sponsorship package that works for you — and a genuine opportunity to make a meaningful difference to young players in your area.
+As we head into the 2026/27 season, Fusion FC is actively looking for local businesses to come on board as partners. Whether you are a sole trader, a small business, or an established company, there is a sponsorship package that works for you, and a genuine opportunity to make a meaningful difference to young players in your area.
 
 ## Sixteen Teams. Hundreds of Touchpoints.
 
 We are fielding sixteen teams this season across two matchday programmes:
 
-**Saturday — Staffordshire Junior Football League**
-- U10 Playing Up — coached by Russ Leadbetter
-- U10 Black Playing Up — coached by Ali Johnson
-- U10 — coached by Mark Woolridge
-- U9 White — coached by Sam Rosillo
-- U8 — coached by Ryan Foster
-- U8 White — coached by James Wilson
+**Saturday: Staffordshire Junior Football League**
+- U10 Playing Up, coached by Russ Leadbetter
+- U10 Black Playing Up, coached by Ali Johnson
+- U10, coached by Mark Woolridge
+- U9 White, coached by Sam Rosillo
+- U8, coached by Ryan Foster
+- U8 White, coached by James Wilson
 
-**Sunday — NSJYL (North Staffs Junior Youth League)**
-- U11 — coached by Tom Pope
-- U10 Green — coached by Sam Cummins
-- U10 Black — coached by Mark Woolridge
-- U10 Green Playing Up — coached by Ben Chapman
-- U10 White — coached by Jake Hodgkinson
-- U9 — coached by Lee Ralphson
-- U9 Green — coached by Greg Woodcock
-- U9 Black — coached by Jon Bloor
-- U8 Green — coached by Ryan Foster
-- U8 Black — coached by Tom Kilgariff
+**Sunday: NSJYL (North Staffs Junior Youth League)**
+- U11, coached by Tom Pope
+- U10 Green, coached by Sam Cummins
+- U10 Black, coached by Mark Woolridge
+- U10 Green Playing Up, coached by Ben Chapman
+- U10 White, coached by Jake Hodgkinson
+- U9, coached by Lee Ralphson
+- U9 Green, coached by Greg Woodcock
+- U9 Black, coached by Jon Bloor
+- U8 Green, coached by Ryan Foster
+- U8 Black, coached by Tom Kilgariff
 
-Each team plays regularly across the season, trains weekly, and is supported by coaches invested in each player's development. That is a lot of touchpoints — matchdays, training sessions, social posts, kit days, and end-of-season events — where your brand can be part of the story.
+Each team plays regularly across the season, trains weekly, and is supported by coaches invested in each player's development. That is a lot of touchpoints: matchdays, training sessions, social posts, kit days, and end-of-season events, where your brand can be part of the story.
 
 ## What Sponsors Receive
 
@@ -51,7 +51,7 @@ We want partnerships to work for the businesses that make them possible. Dependi
 Your business name and logo featured on the club website, including a dedicated sponsor profile page and a link back to your site. The site is growing steadily with families, coaches, and local supporters visiting regularly throughout the season.
 
 **Social Media Exposure**
-Shoutouts across our social channels when deals are agreed, at key points in the season, and whenever your support directly helps the club. We talk about our sponsors because we are genuinely grateful — it is not just a logo placement.
+Shoutouts across our social channels when deals are agreed, at key points in the season, and whenever your support directly helps the club. We talk about our sponsors because we are genuinely grateful; it is not just a logo placement.
 
 **Kit and Matchday Presence**
 Depending on the package, your business name can appear on training kit or matchday shirts, putting your brand in front of parents, spectators, referees, and opposition players at every fixture.
@@ -67,11 +67,11 @@ Professional football gets the headlines, but grassroots is where the game actua
 
 When you sponsor Fusion FC, your money does not disappear into a marketing budget. It buys kit that keeps a child warm in January. It covers pitch hire so a team can train. It funds equipment that makes sessions better. Every pound is visible and every pound counts.
 
-And in return, you get your brand associated with all of that — with community, with youth, with doing something genuinely good.
+And in return, you get your brand associated with all of that: community, with youth, with doing something genuinely good.
 
 ## Who We Are Looking For
 
-We are open to all kinds of partnerships. If you are a local business of any size and you care about the area you operate in, we want to talk to you. Previous sponsors have included trades, professional services, retail, and hospitality — the common thread is local roots and a willingness to back something worth backing.
+We are open to all kinds of partnerships. If you are a local business of any size and you care about the area you operate in, we want to talk to you. Previous sponsors have included trades, professional services, retail, and hospitality. The common thread is local roots and a willingness to back something worth backing.
 
 There is no minimum spend. We will work with you to find a level that makes sense, with clear visibility on what your support will deliver.
 

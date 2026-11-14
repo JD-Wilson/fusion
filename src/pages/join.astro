@@ -16,8 +16,8 @@ const breadcrumbs = createBreadcrumbJsonLd([
 const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
 
 const ageGroups = [
-  { value: 'development-3-4', label: 'Development Sessions — ages 3–4' },
-  { value: 'development-5-7', label: 'Development Sessions — ages 5–7' },
+  { value: 'development-3-4', label: 'Development Sessions: ages 3–4' },
+  { value: 'development-5-7', label: 'Development Sessions: ages 5–7' },
   { value: 'u7', label: 'U7' },
   { value: 'u8', label: 'U8' },
   { value: 'u9', label: 'U9' },
@@ -28,7 +28,7 @@ const ageGroups = [
   { value: 'u14', label: 'U14' },
   { value: 'u15', label: 'U15' },
   { value: 'u16plus', label: 'U16+' },
-  { value: 'unsure', label: "Not sure — I'd like advice" },
+  { value: 'unsure', label: "Not sure, I'd like advice" },
 ];
 
 const schoolYears = [
@@ -47,7 +47,7 @@ const schoolYears = [
 ];
 
 const experienceLevels = [
-  { value: 'none', label: 'No experience — brand new to football' },
+  { value: 'none', label: 'No experience, brand new to football' },
   { value: 'informal', label: 'Played informally (kickabouts, PE, etc.)' },
   { value: 'club-before', label: 'Previously played for a club' },
   { value: 'current-club', label: 'Currently in a club, looking to join or switch' },
@@ -78,7 +78,7 @@ const experienceLevels = [
         <div class="context-block">
           <span class="context-num" aria-hidden="true">01</span>
           <h3 class="context-title">Tell us about your child</h3>
-          <p class="context-body">Share their age, experience level, and which age group you're interested in — we'll help find the best fit.</p>
+          <p class="context-body">Share their age, experience level, and which age group you're interested in, and we'll help find the best fit.</p>
         </div>
         <div class="context-block">
           <span class="context-num" aria-hidden="true">02</span>
@@ -88,7 +88,7 @@ const experienceLevels = [
         <div class="context-block">
           <span class="context-num" aria-hidden="true">03</span>
           <h3 class="context-title">Come and try us out</h3>
-          <p class="context-body">We invite all new players to a trial session before any commitment — so your child can see if Fusion FC is right for them.</p>
+          <p class="context-body">We invite all new players to a trial session before any commitment, so your child can see if Fusion FC is right for them.</p>
         </div>
       </div>
 
@@ -100,7 +100,7 @@ const experienceLevels = [
           novalidate
         >
           <input type="hidden" name="access_key" value={web3formsKey} />
-          <input type="hidden" name="subject" value="New Player Enquiry — Fusion FC" />
+          <input type="hidden" name="subject" value="New Player Enquiry | Fusion FC" />
           <input type="hidden" name="from_name" value="Fusion FC Website" />
           <!-- honeypot -->
           <input type="checkbox" name="botcheck" style="display:none" />
@@ -231,7 +231,7 @@ const experienceLevels = [
     <div class="callout-inner">
       <div>
         <p class="callout-eyebrow">Already decided?</p>
-        <p class="callout-text">Come along to a development session first — no commitment required.</p>
+        <p class="callout-text">Come along to a development session first. No commitment required.</p>
       </div>
       <div class="callout-actions">
         <a class="button" href="/development-sessions/">Development sessions</a>

@@ -7,15 +7,15 @@ showInNav: true
 seoTitle: Fusion FC Club Values
 seoDescription: Read the values that shape training, matchdays, and club culture at Fusion FC.
 ---
-At Fusion, our values shape everything we do—from training sessions to matchdays, and every moment in between.
+At Fusion, our values shape everything we do, from training sessions to matchdays, and every moment in between.
 
 ## Respect
 
-We treat everyone with care and kindness—teammates, opponents, referees, and coaches—because the environment we create matters.
+We treat everyone with care and kindness (teammates, opponents, referees, and coaches) because the environment we create matters.
 
 ## Commitment
 
-We show up ready to give our best, support each other, and keep improving—whatever stage we're at.
+We show up ready to give our best, support each other, and keep improving, whatever stage we're at.
 
 ## Learning & Growth
 

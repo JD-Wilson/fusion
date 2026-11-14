@@ -10,9 +10,9 @@ We're a community-focused club creating a positive, structured environment where
 
 ## Our Story
 
-Fusion began with two football dads—Russ Leadbetter and Ben Chapman.
+Fusion began with two football dads: Russ Leadbetter and Ben Chapman.
 
-With experience in the game and a shared passion for doing things differently, they wanted to create a better environment for their own children—and others—to develop.
+With experience in the game and a shared passion for doing things differently, they wanted to create a better environment for their own children, and others, to develop.
 
 An environment that focused on:
 - Development over pressure
@@ -44,10 +44,10 @@ Because that's how real development happens.
 
 ## Our Culture
 
-At Fusion, we want every player to feel they belong. We ask everyone—coaches, parents, and supporters—to help create a positive environment built on respect, encouragement, effort, and enjoyment.
+At Fusion, we want every player to feel they belong. We ask everyone (coaches, parents, and supporters) to help create a positive environment built on respect, encouragement, effort, and enjoyment.
 
 *More than a club. A place to grow.*
-$md$, null, false, 100, 'About Fusion FC', 'Learn about Fusion FC—our story, our people, and our commitment to player development and community at the heart of grassroots football.', false)
+$md$, null, false, 100, 'About Fusion FC', 'Learn about Fusion FC: our story, our people, and our commitment to player development and community at the heart of grassroots football.', false)
 on conflict (slug) do nothing;
 
 insert into public.site_pages (slug, title, description, body, nav_label, show_in_nav, sort_order, seo_title, seo_description, noindex)
@@ -73,15 +73,15 @@ $md$, null, false, 100, 'Fusion FC Blog', 'Read latest Fusion FC updates, announ
 on conflict (slug) do nothing;
 
 insert into public.site_pages (slug, title, description, body, nav_label, show_in_nav, sort_order, seo_title, seo_description, noindex)
-values ('club-values', 'Club Values', 'The values that shape every training session, matchday, and moment in between at Fusion Football Club.', $md$At Fusion, our values shape everything we do—from training sessions to matchdays, and every moment in between.
+values ('club-values', 'Club Values', 'The values that shape every training session, matchday, and moment in between at Fusion Football Club.', $md$At Fusion, our values shape everything we do, from training sessions to matchdays, and every moment in between.
 
 ## Respect
 
-We treat everyone with care and kindness—teammates, opponents, referees, and coaches—because the environment we create matters.
+We treat everyone with care and kindness (teammates, opponents, referees, and coaches) because the environment we create matters.
 
 ## Commitment
 
-We show up ready to give our best, support each other, and keep improving—whatever stage we're at.
+We show up ready to give our best, support each other, and keep improving, whatever stage we're at.
 
 ## Learning & Growth
 
@@ -136,14 +136,14 @@ $md$, 'Cookies', false, 90, 'Cookie Policy | Fusion FC', 'Which cookies the Fusi
 on conflict (slug) do nothing;
 
 insert into public.site_pages (slug, title, description, body, nav_label, show_in_nav, sort_order, seo_title, seo_description, noindex)
-values ('development-sessions', 'Development Sessions', 'Weekly football sessions for children aged 3 and above. No club membership needed—just show up, get involved, and enjoy the game.', $md$Fusion FC runs weekly development sessions for children who want to play football in a structured, supportive environment—no club membership required.
+values ('development-sessions', 'Development Sessions', 'Weekly football sessions for children aged 3 and above. No club membership needed. Just show up, get involved, and enjoy the game.', $md$Fusion FC runs weekly development sessions for children who want to play football in a structured, supportive environment, with no club membership required.
 
 Sessions run every Wednesday from 17:30–18:30, with groups for ages 3 through to 12+ and a dedicated girls session for ages 7 and above.
-$md$, null, false, 100, 'Development Sessions | Fusion FC', 'Weekly Fusion FC development sessions for children aged 3+. Fun, structured, and coached—every Wednesday. Book your child''s place today.', false)
+$md$, null, false, 100, 'Development Sessions | Fusion FC', 'Weekly Fusion FC development sessions for children aged 3+. Fun, structured, and coached, every Wednesday. Book your child''s place today.', false)
 on conflict (slug) do nothing;
 
 insert into public.site_pages (slug, title, description, body, nav_label, show_in_nav, sort_order, seo_title, seo_description, noindex)
-values ('home', 'Fusion Football Club', 'Where players grow. Where people belong.', $md$Fusion Football Club exists to provide a structured, welcoming environment where young players can thrive—on and off the pitch.
+values ('home', 'Fusion Football Club', 'Where players grow. Where people belong.', $md$Fusion Football Club exists to provide a structured, welcoming environment where young players can thrive, on and off the pitch.
 
 We're intentional about what we're building: not just teams, but a community where development, encouragement, and belonging come first.
 
@@ -163,7 +163,7 @@ Players will:
 - Grow in technical ability and game understanding
 - Learn to work as part of a team
 - Develop positive habits on and off the pitch
-- Be encouraged to try, learn, and improve—without fear of mistakes
+- Be encouraged to try, learn, and improve, without fear of mistakes
 
 Because when players enjoy it, they stick at it. And when they stick at it, they grow.
 
@@ -171,7 +171,7 @@ Because when players enjoy it, they stick at it. And when they stick at it, they
 
 At Fusion, belonging matters. We want every player to feel seen, supported, and part of something.
 
-We ask everyone—coaches, parents, and supporters—to play their part in creating a positive environment, where respect, encouragement, and sportsmanship lead the way.
+We ask everyone (coaches, parents, and supporters) to play their part in creating a positive environment, where respect, encouragement, and sportsmanship lead the way.
 $md$, null, false, 100, 'Fusion FC | Grassroots Football Club', 'Fusion FC is a grassroots football club built around player development, community, and belonging. A structured, welcoming environment for young players.', false)
 on conflict (slug) do nothing;
 
@@ -373,35 +373,35 @@ $md$, '/brand/partners/her-game-too.png', array['Club News', 'Girls Football', '
 on conflict (slug) do nothing;
 
 insert into public.posts (slug, title, date, excerpt, body, cover_image, tags, author, draft, seo_title, seo_description)
-values ('sponsorship-2026-27-season', 'Partner With Us: Sponsorship Opportunities for the 2026/27 Season', '2026-03-08', 'Fusion FC is actively looking for local businesses to partner with for the upcoming season. With sixteen teams, development sessions, and a growing online presence, there has never been a better time to get involved.', $md$Grassroots football runs on community support. The pitches, the kit, the coaching, the matchday experience — none of it happens without the people and businesses who believe in what clubs like ours are trying to build.
+values ('sponsorship-2026-27-season', 'Partner With Us: Sponsorship Opportunities for the 2026/27 Season', '2026-03-08', 'Fusion FC is actively looking for local businesses to partner with for the upcoming season. With sixteen teams, development sessions, and a growing online presence, there has never been a better time to get involved.', $md$Grassroots football runs on community support. The pitches, the kit, the coaching, the matchday experience: none of it happens without the people and businesses who believe in what clubs like ours are trying to build.
 
-As we head into the 2026/27 season, Fusion FC is actively looking for local businesses to come on board as partners. Whether you are a sole trader, a small business, or an established company, there is a sponsorship package that works for you — and a genuine opportunity to make a meaningful difference to young players in your area.
+As we head into the 2026/27 season, Fusion FC is actively looking for local businesses to come on board as partners. Whether you are a sole trader, a small business, or an established company, there is a sponsorship package that works for you, and a genuine opportunity to make a meaningful difference to young players in your area.
 
 ## Sixteen Teams. Hundreds of Touchpoints.
 
 We are fielding sixteen teams this season across two matchday programmes:
 
-**Saturday — Staffordshire Junior Football League**
-- U10 Playing Up — coached by Russ Leadbetter
-- U10 Black Playing Up — coached by Ali Johnson
-- U10 — coached by Mark Woolridge
-- U9 White — coached by Sam Rosillo
-- U8 — coached by Ryan Foster
-- U8 White — coached by James Wilson
+**Saturday: Staffordshire Junior Football League**
+- U10 Playing Up, coached by Russ Leadbetter
+- U10 Black Playing Up, coached by Ali Johnson
+- U10, coached by Mark Woolridge
+- U9 White, coached by Sam Rosillo
+- U8, coached by Ryan Foster
+- U8 White, coached by James Wilson
 
-**Sunday — NSJYL (North Staffs Junior Youth League)**
-- U11 — coached by Tom Pope
-- U10 Green — coached by Sam Cummins
-- U10 Black — coached by Mark Woolridge
-- U10 Green Playing Up — coached by Ben Chapman
-- U10 White — coached by Jake Hodgkinson
-- U9 — coached by Lee Ralphson
-- U9 Green — coached by Greg Woodcock
-- U9 Black — coached by Jon Bloor
-- U8 Green — coached by Ryan Foster
-- U8 Black — coached by Tom Kilgariff
+**Sunday: NSJYL (North Staffs Junior Youth League)**
+- U11, coached by Tom Pope
+- U10 Green, coached by Sam Cummins
+- U10 Black, coached by Mark Woolridge
+- U10 Green Playing Up, coached by Ben Chapman
+- U10 White, coached by Jake Hodgkinson
+- U9, coached by Lee Ralphson
+- U9 Green, coached by Greg Woodcock
+- U9 Black, coached by Jon Bloor
+- U8 Green, coached by Ryan Foster
+- U8 Black, coached by Tom Kilgariff
 
-Each team plays regularly across the season, trains weekly, and is supported by coaches invested in each player's development. That is a lot of touchpoints — matchdays, training sessions, social posts, kit days, and end-of-season events — where your brand can be part of the story.
+Each team plays regularly across the season, trains weekly, and is supported by coaches invested in each player's development. That is a lot of touchpoints: matchdays, training sessions, social posts, kit days, and end-of-season events, where your brand can be part of the story.
 
 ## What Sponsors Receive
 
@@ -411,7 +411,7 @@ We want partnerships to work for the businesses that make them possible. Dependi
 Your business name and logo featured on the club website, including a dedicated sponsor profile page and a link back to your site. The site is growing steadily with families, coaches, and local supporters visiting regularly throughout the season.
 
 **Social Media Exposure**
-Shoutouts across our social channels when deals are agreed, at key points in the season, and whenever your support directly helps the club. We talk about our sponsors because we are genuinely grateful — it is not just a logo placement.
+Shoutouts across our social channels when deals are agreed, at key points in the season, and whenever your support directly helps the club. We talk about our sponsors because we are genuinely grateful; it is not just a logo placement.
 
 **Kit and Matchday Presence**
 Depending on the package, your business name can appear on training kit or matchday shirts, putting your brand in front of parents, spectators, referees, and opposition players at every fixture.
@@ -427,11 +427,11 @@ Professional football gets the headlines, but grassroots is where the game actua
 
 When you sponsor Fusion FC, your money does not disappear into a marketing budget. It buys kit that keeps a child warm in January. It covers pitch hire so a team can train. It funds equipment that makes sessions better. Every pound is visible and every pound counts.
 
-And in return, you get your brand associated with all of that — with community, with youth, with doing something genuinely good.
+And in return, you get your brand associated with all of that: community, with youth, with doing something genuinely good.
 
 ## Who We Are Looking For
 
-We are open to all kinds of partnerships. If you are a local business of any size and you care about the area you operate in, we want to talk to you. Previous sponsors have included trades, professional services, retail, and hospitality — the common thread is local roots and a willingness to back something worth backing.
+We are open to all kinds of partnerships. If you are a local business of any size and you care about the area you operate in, we want to talk to you. Previous sponsors have included trades, professional services, retail, and hospitality. The common thread is local roots and a willingness to back something worth backing.
 
 There is no minimum spend. We will work with you to find a level that makes sense, with clear visibility on what your support will deliver.
 
@@ -448,5 +448,5 @@ We will get back to you quickly, answer any questions, and talk through what a p
 ---
 
 *Fusion FC is a grassroots football club supporting players aged 8 to 11 across sixteen registered teams competing in the Staffordshire Junior Football League on Saturdays and the North Staffs Junior Youth League on Sundays.*
-$md$, '/brand/blog/sponsorship-2026-27.svg', array['Sponsors', 'Community', 'Club News']::text[], 'Fusion Football Club', false, 'Sponsor Fusion FC — Partnership Opportunities 2026/27', 'Fusion FC is looking for local business sponsors for the 2026/27 season. Get your brand in front of families and the local community through our teams, website, and socials.')
+$md$, '/brand/blog/sponsorship-2026-27.svg', array['Sponsors', 'Community', 'Club News']::text[], 'Fusion Football Club', false, 'Sponsor Fusion FC: Partnership Opportunities 2026/27', 'Fusion FC is looking for local business sponsors for the 2026/27 season. Get your brand in front of families and the local community through our teams, website, and socials.')
 on conflict (slug) do nothing;

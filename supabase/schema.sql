@@ -1,5 +1,5 @@
 -- =============================================================================
--- Fusion FC — Supabase schema
+-- Fusion FC: Supabase schema
 -- Run once in the Supabase SQL editor (Project → SQL → New query), then run
 -- supabase/seed.sql. Safe to re-run: everything is IF NOT EXISTS / OR REPLACE.
 --

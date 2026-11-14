@@ -1,5 +1,5 @@
 -- =============================================================================
--- 002 — Team pages (2026-11-13)
+-- 002: Team pages (2026-11-13)
 -- Run in the Supabase SQL editor. Safe to re-run. Also included at the end of
 -- supabase/schema.sql, so fresh projects get it automatically.
 --

@@ -1,5 +1,5 @@
 -- =============================================================================
--- 003 — FA Full-Time link (2026-11-13)
+-- 003: FA Full-Time link (2026-11-13)
 -- Run in the Supabase SQL editor. Safe to re-run. Also in supabase/schema.sql.
 --
 -- Links each team to its exact name on FA Full-Time (e.g. "Fusion FC U8 Black")

@@ -165,7 +165,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
 
   /* ─── Prose enhancements ─────────────────────────────── */
 
-  /* Blockquotes — dramatic pull-quote style */
+  /* Blockquotes: dramatic pull-quote style */
   .article-prose :global(blockquote) {
     position: relative;
     margin: var(--space-l) 0;
@@ -194,7 +194,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
     line-height: 1.65;
   }
 
-  /* Section headings — lime left tick */
+  /* Section headings: lime left tick */
   .article-prose :global(h2),
   .article-prose :global(h3) {
     position: relative;
@@ -387,7 +387,7 @@ const formattedDate = entry.data.date.toLocaleDateString('en-GB', {
           if (label) label.textContent = 'Copy link';
         }, 2000);
       } catch {
-        // Clipboard not available — silently ignore
+        // Clipboard not available, so silently ignore
       }
     });
   }

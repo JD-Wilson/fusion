@@ -6,7 +6,7 @@ seoDescription: Fusion FC is a grassroots football club built around player deve
 ogImage: /brand/logo.jpeg
 showInNav: false
 ---
-Fusion Football Club exists to provide a structured, welcoming environment where young players can thrive—on and off the pitch.
+Fusion Football Club exists to provide a structured, welcoming environment where young players can thrive, on and off the pitch.
 
 We're intentional about what we're building: not just teams, but a community where development, encouragement, and belonging come first.
 
@@ -26,7 +26,7 @@ Players will:
 - Grow in technical ability and game understanding
 - Learn to work as part of a team
 - Develop positive habits on and off the pitch
-- Be encouraged to try, learn, and improve—without fear of mistakes
+- Be encouraged to try, learn, and improve, without fear of mistakes
 
 Because when players enjoy it, they stick at it. And when they stick at it, they grow.
 
@@ -34,4 +34,4 @@ Because when players enjoy it, they stick at it. And when they stick at it, they
 
 At Fusion, belonging matters. We want every player to feel seen, supported, and part of something.
 
-We ask everyone—coaches, parents, and supporters—to play their part in creating a positive environment, where respect, encouragement, and sportsmanship lead the way.
+We ask everyone (coaches, parents, and supporters) to play their part in creating a positive environment, where respect, encouragement, and sportsmanship lead the way.

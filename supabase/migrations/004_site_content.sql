@@ -1,5 +1,5 @@
 -- =============================================================================
--- 004 — Editable website content (2026-11-13)
+-- 004: Editable website content (2026-11-13)
 -- Run in the Supabase SQL editor, then run supabase/seed-content.sql to copy
 -- the current pages and blog posts in. Safe to re-run. Also in schema.sql.
 --
