@@ -1,8 +1,11 @@
 ---
 import PortalLayout from '../../components/portal/PortalLayout.astro';
+import ProfileFields from '../../components/portal/ProfileFields.astro';
+import ResizeUploads from '../../components/portal/ResizeUploads.astro';
 import { roleLabel } from '../../lib/auth';
 import { line } from '../../lib/forms';
 import { countNewEnquiries } from '../../lib/portal';
+import { loadOwnPerson, saveProfile } from '../../lib/portal-people';
 import { normaliseWhatsApp } from '../../lib/vacancies';
 
 export const prerender = false;
@@ -14,13 +17,22 @@ let notice: { ok: boolean; text: string } | null = q.get('welcome')
   ? { ok: true, text: 'Welcome! Choose a password below so you can sign in next time.' }
   : q.get('reset')
     ? { ok: true, text: 'Choose a new password below.' }
-    : null;
+    : q.get('profile')
+      ? { ok: true, text: 'Profile saved.' }
+      : null;
+// Only approved logins can edit their public profile (a sign-up could have been
+// linked to someone else's People entry by email).
+const me = session.approved ? await loadOwnPerson(session.userId) : null;
 let fullName = session.fullName;
 let phone = session.phone ?? '';
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
-  if (form.get('intent') === 'password') {
+  if (form.get('intent') === 'public_profile' && me) {
+    const error = await saveProfile(me.id, form, me);
+    if (!error) return Astro.redirect('/portal/account/?profile=1#profile');
+    notice = { ok: false, text: error };
+  } else if (form.get('intent') === 'password') {
     const password = String(form.get('password') ?? '');
     if (password.length < 8) {
       notice = { ok: false, text: 'Please use at least 8 characters.' };
@@ -80,6 +92,18 @@ const newEnquiries = session.approved ? await countNewEnquiries(supabase) : 0;
     </form>
   </div>
 
+  {me && (
+    <div class="card" id="profile">
+      <h2>Your profile</h2>
+      <p class="p-sub" style="margin-bottom:0.8rem">Your photo shows in the team hub. Tick the box at the bottom to also appear in "Meet the coaches" on your team pages, so parents know who's who.</p>
+      <form method="post" class="f" enctype="multipart/form-data">
+        <input type="hidden" name="intent" value="public_profile" />
+        <ProfileFields person={me} self />
+        <div><button class="btn" type="submit">Save profile</button></div>
+      </form>
+    </div>
+  )}
+
   {session.approved && (
     <div class="card">
       <h2>{session.myTeams.length === 1 ? 'Your team' : 'Your teams'}</h2>
@@ -108,6 +132,8 @@ const newEnquiries = session.approved ? await countNewEnquiries(supabase) : 0;
   </div>
   </div>
 </PortalLayout>
+
+<ResizeUploads />
 
 <style>
   .acct { display: grid; gap: 1rem; }

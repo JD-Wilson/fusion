@@ -65,10 +65,12 @@ const shown = people.filter(show.test);
       const teams = [...p.team_managers].sort((a, b) => (a.teams?.name ?? '').localeCompare(b.teams?.name ?? ''));
       return (
         <a class="row person" href={`/portal/people/${p.id}/`} data-text={[p.full_name, p.email, ...teams.map((t) => t.teams?.name)].join(' ').toLowerCase()}>
+          <span class="face" aria-hidden="true">{p.photo_url ? <img src={p.photo_url} alt="" loading="lazy" /> : p.full_name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')}</span>
           <div class="grow">
             <h3>
               {p.full_name}
               {p.user_id === session.userId && <span class="pill grey">You</span>}
+              {p.show_on_site && <span class="pill grey" title="Shown in Meet the coaches on their team pages">On team pages</span>}
             </h3>
             <p>{[p.email, p.phone].filter(Boolean).join(' · ') || 'No contact details'}</p>
             <p class="teams">
@@ -110,7 +112,8 @@ const shown = people.filter(show.test);
     background: var(--surface-2);
     color: var(--text);
   }
-  a.person { color: inherit; text-decoration: none; }
+  a.person { color: inherit; text-decoration: none; flex-wrap: nowrap; }
+  @media (max-width: 640px) { a.person { flex-wrap: wrap; } }
   a.person:hover h3 { color: var(--accent); }
   .teams { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
   .team-tag { font-size: 0.78rem; padding: 0.1rem 0.5rem; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2); }

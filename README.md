@@ -216,7 +216,7 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (home: a to-do list and
 1. Create a project at [supabase.com](https://supabase.com).
 2. **SQL editor**: run `supabase/schema.sql`, then `supabase/seed.sql` (your existing teams, from `src/content/teams` via `npm run seed:sql`), then `supabase/seed-content.sql` (the site's pages and blog posts, from `src/content` via `npm run content:sql`). All are safe to re-run and never overwrite edits made in the portal.
 
-   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`, `005_people.sql`, `006_signups.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
+   **Already set up from an earlier version?** Run the newer migrations in `supabase/migrations/` in order (each is safe to re-run): `002_team_pages.sql`, `003_fulltime.sql`, `004_site_content.sql`, `005_people.sql`, `006_signups.sql`, `007_people_profiles.sql`; then `seed.sql` again (fills in coach names) and `seed-content.sql`.
 3. **Project Settings → API**: copy the URL, anon key and service-role key into `.env.local` and Vercel's environment variables (see `.env.example`).
 4. **Authentication → URL Configuration**: set the Site URL to the live site (e.g. `https://www.fusionfc.co.uk`) and add `https://www.fusionfc.co.uk/**` (and `http://localhost:4399/**` for local testing) to Redirect URLs.
 5. **No emails are needed.** Coaches create their own login at `/signup/` (name, email, password); it starts **waiting for approval** and can't see anything until a club admin approves it in **People** and puts it on teams. Admins can also give someone a login with a temporary password, and set a temporary password for anyone who's locked out ("break glass"); either way they choose their own password when they next sign in. The website creates these logins itself, so Supabase sends nothing.
@@ -228,7 +228,8 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (home: a to-do list and
    ```
 
    From then on, approve sign-ups and add coaches from **People** in the portal.
-8. Optional: set `RESEND_API_KEY` and `EMAIL_FROM` so enquiries are also emailed to managers.
+8. **Profiles:** everyone in People can have a photo, an "About me" line and qualifications (from **My account**, or an admin from **People**). They appear in **Meet the coaches** on their team pages only if "Show me on my team pages" is ticked. Photos are stored in the public `people-photos` bucket (migration 007).
+9. Optional: set `RESEND_API_KEY` and `EMAIL_FROM` so enquiries are also emailed to managers.
 
 Without Supabase variables the rest of the site works as before and `/vacancies/` shows a "coming soon" message.
 

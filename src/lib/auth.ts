@@ -21,6 +21,8 @@ export interface Session {
   approved: boolean;
   /** Set when an admin gave them a temporary password. */
   mustChangePassword: boolean;
+  /** Their profile photo, if they've added one. */
+  photoUrl: string | null;
   /** Teams this person is on (admins can edit every team, and may coach some). */
   teamIds: string[];
   myTeams: MyTeam[];
@@ -36,9 +38,10 @@ export async function loadSession(supabase: SupabaseClient): Promise<Session | n
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: managed }] = await Promise.all([
+  const [{ data: profile }, { data: managed }, { data: person }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
-    supabase.from('team_managers').select('team_id, role_title, teams(*)').eq('user_id', user.id)
+    supabase.from('team_managers').select('team_id, role_title, teams(*)').eq('user_id', user.id),
+    supabase.from('people').select('*').eq('user_id', user.id).maybeSingle()
   ]);
   if (!profile) return null;
   // Before migration 006 there is no "approved" column: everyone is approved.
@@ -66,6 +69,7 @@ export async function loadSession(supabase: SupabaseClient): Promise<Session | n
     isAdmin: approved && profile.role === 'club_admin',
     approved,
     mustChangePassword: Boolean(user.user_metadata?.must_change_password),
+    photoUrl: approved ? ((person as { photo_url?: string | null } | null)?.photo_url ?? null) : null,
     teamIds: myTeams.map((t) => t.id),
     myTeams
   };

@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
-import { getPublicTeam, getVacanciesByTeam, teamPath, teamPhoto } from '../../lib/teams';
+import { getPublicTeam, getTeamCoaches, getVacanciesByTeam, teamPath, teamPhoto } from '../../lib/teams';
 import { EXPERIENCE, positionsLabel } from '../../lib/vacancies';
 import MatchList from '../../components/fixtures/MatchList.astro';
 import LeagueTable from '../../components/fixtures/LeagueTable.astro';
@@ -17,7 +17,10 @@ if (!team) {
   Astro.response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
 }
 
-const vacancies = team ? ((await getVacanciesByTeam()).get(team.id) ?? []) : [];
+const [vacancies, coaches] = team
+  ? await Promise.all([getVacanciesByTeam().then((m) => m.get(team.id) ?? []), getTeamCoaches(team.id)])
+  : [[], []];
+const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 const sent = Astro.url.searchParams.get('sent');
 const error = Astro.url.searchParams.get('error');
 const errors: Record<string, string> = {
@@ -131,6 +134,27 @@ const teamJsonLd = team
               <h2 class="band-eyebrow">About the team</h2>
               <div class="prose">
                 {team.description.split(/\n{2,}/).map((p) => <p>{p}</p>)}
+              </div>
+            </section>
+          )}
+
+          {coaches.length > 0 && (
+            <section class="coaches" aria-labelledby="coaches-title">
+              <h2 class="band-eyebrow" id="coaches-title">Meet the coaches</h2>
+              <div class="coach-grid">
+                {coaches.map((c) => (
+                  <article class="coach">
+                    <div class="coach-photo">
+                      {c.photo_url ? <img src={c.photo_url} alt={`${c.full_name}, ${c.role_title}`} loading="lazy" /> : <span aria-hidden="true">{initialsOf(c.full_name)}</span>}
+                    </div>
+                    <div class="coach-text">
+                      <h3>{c.full_name}</h3>
+                      <p class="coach-role">{c.role_title}</p>
+                      {c.bio && <p class="coach-bio">{c.bio}</p>}
+                      {c.qualifications && <p class="coach-quals">{c.qualifications}</p>}
+                    </div>
+                  </article>
+                ))}
               </div>
             </section>
           )}
@@ -304,6 +328,23 @@ const teamJsonLd = team
 
   .fact span { font-size: 0.78rem; color: var(--text-3); }
   .fact strong { font-weight: 600; color: var(--text); line-height: 1.4; }
+
+  .coach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.9rem; }
+  .coach {
+    display: flex; gap: 1rem; align-items: flex-start; padding: 1.1rem; border-radius: var(--radius-l);
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .coach-photo {
+    flex: none; width: 72px; height: 72px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+    background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--accent);
+    font-family: var(--font-display); font-weight: 700; font-size: 1.3rem;
+  }
+  .coach-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .coach-text { display: grid; gap: 0.2rem; min-width: 0; }
+  .coach h3 { font-size: 1.05rem; line-height: 1.25; }
+  .coach-role { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+  .coach-bio { font-size: 0.9rem; color: var(--text-2); line-height: 1.5; margin-top: 0.2rem; }
+  .coach-quals { font-size: 0.8rem; color: var(--text-3); line-height: 1.45; }
 
   .vac-list { display: grid; gap: 0.8rem; }
 

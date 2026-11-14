@@ -1,6 +1,8 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import PersonFields from '../../../components/portal/PersonFields.astro';
+import ProfileFields from '../../../components/portal/ProfileFields.astro';
+import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import { countNewEnquiries, loadTeams, ukDate } from '../../../lib/portal';
 import {
   accessOf,
@@ -11,6 +13,7 @@ import {
   loadPerson,
   parsePersonForm,
   saveAssignments,
+  saveProfile,
   setTemporaryPassword,
   signedInUserIds,
   type Person
@@ -45,7 +48,11 @@ if (Astro.request.method === 'POST') {
     return Astro.redirect('/portal/people/?deleted=1');
   }
 
-  if (intent === 'approve' && !isSelf && loaded.user_id) {
+  if (intent === 'public_profile') {
+    const error = await saveProfile(loaded.id, form, loaded);
+    if (!error) return Astro.redirect(`/portal/people/${loaded.id}/?saved=1#profile`);
+    notice = { ok: false, text: error };
+  } else if (intent === 'approve' && !isSelf && loaded.user_id) {
     const error = await approveLogin(loaded.user_id);
     if (!error) return Astro.redirect(`/portal/people/${loaded.id}/?saved=1&note=${encodeURIComponent(`${loaded.full_name} is approved and can now use the team hub.`)}`);
     notice = { ok: false, text: error };
@@ -126,6 +133,16 @@ const invited = !pending && access !== 'none' && loaded.user_id && !signedIn.has
     </form>
   </div>
 
+  <div class="card" id="profile">
+    <h2>Profile</h2>
+    <p class="p-sub" style="margin-bottom:0.8rem">{loaded.user_id && !isSelf ? `${loaded.full_name.split(' ')[0]} can also do this themselves from My account. ` : ''}Only shown on team pages if the box at the bottom is ticked.</p>
+    <form method="post" class="f" enctype="multipart/form-data">
+      <input type="hidden" name="intent" value="public_profile" />
+      <ProfileFields person={loaded} self={isSelf} />
+      <div><button class="btn" type="submit">Save profile</button></div>
+    </form>
+  </div>
+
   {loaded.user_id && !isSelf && (
     <div class="card">
       <h2>Set a temporary password</h2>
@@ -153,3 +170,4 @@ const invited = !pending && access !== 'none' && loaded.user_id && !signedIn.has
   )}
 </PortalLayout>
 
+<ResizeUploads />

@@ -96,3 +96,28 @@ export function cleanFulltimeUrl(raw: string | null): string | null | false {
     return false;
   }
 }
+
+export interface PublicCoach {
+  person_id: string;
+  full_name: string;
+  role_title: string;
+  photo_url: string | null;
+  bio: string | null;
+  qualifications: string | null;
+}
+
+/** Coaches who chose to appear on their team's page (empty if none, or before migration 007). */
+export async function getTeamCoaches(teamId: string): Promise<PublicCoach[]> {
+  const db = publicSupabase();
+  if (!db) return [];
+  const { data, error } = await db
+    .from('team_coaches_public')
+    .select('person_id, full_name, role_title, photo_url, bio, qualifications, sort_order')
+    .eq('team_id', teamId)
+    .order('sort_order')
+    .order('full_name');
+  if (error) return [];
+  // Managers first, then coaches, assistants and helpers.
+  const rank = (r: string) => ['Manager', 'Coach', 'Assistant coach', 'Helper'].indexOf(r) >>> 0;
+  return (data as PublicCoach[]).sort((a, b) => rank(a.role_title) - rank(b.role_title));
+}

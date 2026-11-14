@@ -24,13 +24,19 @@ export interface Person {
   phone: string | null;
   notes: string | null;
   user_id: string | null;
+  /** Profile (migration 007): shown on public team pages only if show_on_site. */
+  photo_url?: string | null;
+  bio?: string | null;
+  qualifications?: string | null;
+  show_on_site?: boolean;
   /** Their login's profile. approved is false while a sign-up waits for an admin. */
   profiles: { role: 'club_admin' | 'team_manager'; approved?: boolean; created_at?: string } | null;
   team_managers: PersonTeam[];
 }
 
+// "*" so the page still works before the newer columns exist.
 const PERSON_SELECT =
-  'id, full_name, email, phone, notes, user_id, profiles(*), team_managers(id, team_id, role_title, receives_enquiries, teams(name, age_group, match_day))';
+  '*, profiles(*), team_managers(id, team_id, role_title, receives_enquiries, teams(name, age_group, match_day))';
 
 export const accessOf = (p: Pick<Person, 'user_id' | 'profiles'>): Access =>
   !p.user_id ? 'none' : p.profiles?.role === 'club_admin' ? 'admin' : 'coach';
@@ -210,4 +216,51 @@ export async function approveLogin(userId: string): Promise<string | null> {
   if (!admin) return 'Logins need SUPABASE_SERVICE_ROLE_KEY to be set on the server.';
   const { error } = await admin.from('profiles').update({ approved: true }).eq('id', userId);
   return error?.message ?? null;
+}
+
+const PHOTO_BUCKET = 'people-photos';
+const PHOTO_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+/**
+ * Save the public profile from a form (photo, About me, qualifications, and
+ * whether to show on team pages). Goes through the server's key, so callers
+ * must check the signed-in person may edit this person first.
+ */
+export async function saveProfile(personId: string, form: FormData, current: { photo_url?: string | null }): Promise<string | null> {
+  const admin = adminSupabase();
+  if (!admin) return 'Profiles need SUPABASE_SERVICE_ROLE_KEY to be set on the server.';
+  const values: Record<string, unknown> = {
+    bio: text(form, 'bio', 300),
+    qualifications: line(form, 'qualifications', 200),
+    show_on_site: checked(form, 'show_on_site')
+  };
+
+  const file = form.get('photo');
+  if (file instanceof File && file.size > 0) {
+    const ext = PHOTO_TYPES[file.type];
+    if (!ext) return 'Please choose a JPEG, PNG or WebP photo.';
+    if (file.size > 4 * 1024 * 1024) return 'That photo is over 4MB. Please choose a smaller one.';
+    const path = `${personId}/${Date.now()}.${ext}`;
+    const { error } = await admin.storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type, cacheControl: '31536000' });
+    if (error) return /not found/i.test(error.message) ? 'Photos need migration 007_people_profiles.sql to be run in Supabase.' : `Upload failed: ${error.message}`;
+    values.photo_url = admin.storage.from(PHOTO_BUCKET).getPublicUrl(path).data.publicUrl;
+  } else if (checked(form, 'remove_photo')) {
+    values.photo_url = null;
+  }
+
+  const { error } = await admin.from('people').update(values).eq('id', personId);
+  if (error) return /column/i.test(error.message) ? 'Profiles need migration 007_people_profiles.sql to be run in Supabase.' : error.message;
+
+  // Tidy up the old photo once the new one (or none) is saved.
+  const old = current.photo_url?.split(`/${PHOTO_BUCKET}/`)[1];
+  if (old && 'photo_url' in values) await admin.storage.from(PHOTO_BUCKET).remove([decodeURIComponent(old)]);
+  return null;
+}
+
+/** The signed-in person's own People entry (for My account). */
+export async function loadOwnPerson(userId: string): Promise<Person | null> {
+  const admin = adminSupabase();
+  if (!admin) return null;
+  const { data } = await admin.from('people').select(PERSON_SELECT).eq('user_id', userId).maybeSingle();
+  return (data as unknown as Person) ?? null;
 }

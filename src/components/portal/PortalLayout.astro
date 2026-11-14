@@ -114,7 +114,7 @@ const initials = (session.fullName || session.email)
 
         <div class="p-foot">
           <a class="p-me" href="/portal/account/" aria-current={active === 'account' ? 'page' : undefined}>
-            <span class="p-avatar" aria-hidden="true">{initials}</span>
+            <span class="p-avatar" aria-hidden="true">{session.photoUrl ? <img src={session.photoUrl} alt="" /> : initials}</span>
             <span><strong>{session.fullName || session.email}</strong><small>{roleLabel(session)}</small></span>
           </a>
           <div class="p-foot-links">

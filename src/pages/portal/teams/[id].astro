@@ -96,7 +96,7 @@ const [{ data: teamData }, { data: contactData }, { data: managerData }, { data:
   supabase.from('team_contacts').select('whatsapp_number, email').eq('team_id', id).maybeSingle(),
   supabase
     .from('team_managers')
-    .select('id, person_id, display_name, role_title, receives_enquiries, people(email, user_id)')
+    .select('id, person_id, display_name, role_title, receives_enquiries, people(*)')
     .eq('team_id', id)
     .order('sort_order'),
   supabase.from('vacancies').select('*').eq('team_id', id).order('created_at', { ascending: false })
@@ -106,7 +106,7 @@ if (!team) return Astro.redirect('/portal/teams/');
 const contact = contactData as { whatsapp_number: string | null; email: string | null } | null;
 const managers = (managerData ?? []) as unknown as {
   id: string; person_id: string | null; display_name: string; role_title: string; receives_enquiries: boolean;
-  people: { email: string | null; user_id: string | null } | null;
+  people: { email: string | null; user_id: string | null; photo_url?: string | null; show_on_site?: boolean } | null;
 }[];
 const vacancies = (vacancyData ?? []) as unknown as VacancyRow[];
 const today = new Date().toISOString().slice(0, 10);
@@ -173,13 +173,14 @@ const newEnquiries = await countNewEnquiries(supabase);
     <p class="p-sub" style="margin-bottom:0.6rem">Coaches with a login can edit this team's page, post its vacancies and read its enquiries.</p>
     {managers.length === 0 && <p class="empty">Nobody on this team yet.</p>}
     {managers.map((m) => (
-      <div class="row">
+      <div class="row coach-row">
+        <span class="face" aria-hidden="true">{m.people?.photo_url ? <img src={m.people.photo_url} alt="" loading="lazy" /> : m.display_name.split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('')}</span>
         <div class="grow">
           <h3>
             {session.isAdmin && m.person_id ? <a href={`/portal/people/${m.person_id}/`}>{m.display_name}</a> : m.display_name}
             <span class="pill grey">{m.role_title}</span>
           </h3>
-          <p>{[m.people?.email, m.people?.user_id ? 'has a login' : 'no login', m.receives_enquiries && m.people?.email ? 'gets enquiries' : null].filter(Boolean).join(' · ')}</p>
+          <p>{[m.people?.email, m.people?.user_id ? 'has a login' : 'no login', m.receives_enquiries && m.people?.email ? 'gets enquiries' : null, m.people?.show_on_site ? 'on the team page' : null].filter(Boolean).join(' · ')}</p>
         </div>
         {session.isAdmin && (
           <form method="post">
