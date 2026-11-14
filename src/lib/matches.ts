@@ -212,7 +212,14 @@ export function ordinal(n: number) {
  * "Playing Up": "U10 PU Black" matches the site's "U10 Black Playing Up".
  */
 const norm = (s: string) =>
-  s.toLowerCase().replace(/\bpu\b/g, 'playing up').split(/\s+/).filter(Boolean).sort().join(' ');
+  s
+    .toLowerCase()
+    .replace(/\bpu\b/g, 'playing up')
+    .replace(/\b\d+\s*(vs?|-a-side)\s*\d*\b/g, ' ') // formats Full-Time leaves out: "3vs3", "5v5", "7-a-side"
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(' ');
 
 /**
  * The Full-Time name for one of our teams: the name a manager linked in the
