@@ -37,29 +37,74 @@ if (Astro.request.method === 'POST' && tokenHash && type) {
   return Astro.redirect(error ? '/login/?error=link' : destination);
 }
 
+// Default email templates: Supabase signs the person in on its own page and
+// sends them back with the session after a "#", which only the browser can
+// read. The script below posts it here.
+const accessToken = Astro.request.method === 'POST' ? String(params.get('access_token') ?? '') : '';
+const refreshToken = Astro.request.method === 'POST' ? String(params.get('refresh_token') ?? '') : '';
+if (accessToken && refreshToken) {
+  const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  return Astro.redirect(error ? '/login/?error=link' : destination);
+}
+
 if (code) {
   // Links that come back via Supabase's own page (the default email templates).
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   return Astro.redirect(error ? '/login/?error=link' : destination);
 }
 
-if (!tokenHash || !type) return Astro.redirect('/login/?error=link');
+// Nothing in the query string: the session (or an error) may be after the "#".
+const fromHash = !tokenHash || !type;
 ---
 
 <BaseLayout title="Sign in | Fusion FC" description="Fusion FC team hub sign-in." canonical="/auth/confirm/" noindex>
   <section class="confirm section-card">
     <img class="crest" src="/brand/logo.jpeg" alt="" width="56" height="56" />
     <p class="band-eyebrow">Fusion FC team hub</p>
-    <h1 class="section-title">{isInvite ? "You're invited" : isReset ? 'Reset your password' : 'Sign in'}</h1>
-    <p class="section-copy">{isInvite ? "Press the button to open the Fusion FC team hub, then choose a password." : isReset ? 'Press the button, then choose a new password.' : 'Press the button to finish signing in.'}</p>
-    <form method="post">
-      <input type="hidden" name="token_hash" value={tokenHash} />
-      <input type="hidden" name="type" value={type} />
-      <input type="hidden" name="next" value={next} />
-      <button class="button primary" type="submit" autofocus>{isInvite ? 'Open the team hub' : isReset ? 'Continue' : 'Sign in'}</button>
-    </form>
+    {fromHash ? (
+      <>
+        <h1 class="section-title">Signing you in…</h1>
+        <form method="post" data-hash-form>
+          <input type="hidden" name="access_token" />
+          <input type="hidden" name="refresh_token" />
+          <input type="hidden" name="type" />
+          <input type="hidden" name="next" value={next} />
+        </form>
+        <noscript><p class="section-copy">Please turn on JavaScript, or <a href="/login/">sign in here</a>.</p></noscript>
+      </>
+    ) : (
+      <>
+        <h1 class="section-title">{isInvite ? "You're invited" : isReset ? 'Reset your password' : 'Sign in'}</h1>
+        <p class="section-copy">{isInvite ? "Press the button to open the Fusion FC team hub, then choose a password." : isReset ? 'Press the button, then choose a new password.' : 'Press the button to finish signing in.'}</p>
+        <form method="post">
+          <input type="hidden" name="token_hash" value={tokenHash} />
+          <input type="hidden" name="type" value={type} />
+          <input type="hidden" name="next" value={next} />
+          <button class="button primary" type="submit" autofocus>{isInvite ? 'Open the team hub' : isReset ? 'Continue' : 'Sign in'}</button>
+        </form>
+      </>
+    )}
   </section>
 </BaseLayout>
+
+<script>
+  // Default-template links: read the session from after the "#" and post it.
+  const form = document.querySelector<HTMLFormElement>('[data-hash-form]');
+  if (form) {
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const access = hash.get('access_token');
+    const refresh = hash.get('refresh_token');
+    history.replaceState(null, '', location.pathname + location.search); // keep tokens out of history
+    if (access && refresh) {
+      form.access_token.value = access;
+      form.refresh_token.value = refresh;
+      form.elements.namedItem('type') && ((form.elements.namedItem('type') as HTMLInputElement).value = hash.get('type') ?? '');
+      form.submit();
+    } else {
+      location.replace('/login/?error=link');
+    }
+  }
+</script>
 
 <style>
   .confirm { max-width: 440px; margin: var(--space-xl) auto 0; text-align: center; }

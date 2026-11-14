@@ -11,10 +11,11 @@ html, body { margin: 0; }
 body {
   font-family: var(--font-body);
   color: var(--text);
-  /* A soft green glow at the top, fading to the usual near-black. */
+  /* A soft green glow top right (and faintly bottom left), fading to near-black. */
   background:
-    radial-gradient(1200px 600px at 70% -10%, rgba(63, 209, 127, 0.07), transparent 70%),
-    linear-gradient(180deg, #0c110e 0%, var(--bg) 55%);
+    radial-gradient(1100px 650px at 75% -8%, rgba(63, 209, 127, 0.16), transparent 70%),
+    radial-gradient(900px 600px at -10% 105%, rgba(63, 209, 127, 0.07), transparent 70%),
+    linear-gradient(180deg, #0f1612 0%, var(--bg) 60%);
   background-color: var(--bg);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
