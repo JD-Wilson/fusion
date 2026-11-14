@@ -45,12 +45,11 @@ if (Astro.request.method === 'POST') {
   }
 
   if (intent === 'resend' && !isSelf && loaded.user_id && loaded.email) {
-    // An invite can't be re-sent to an existing login; a sign-in link does the same job.
-    const { error } = (await publicSupabase()?.auth.signInWithOtp({
-      email: loaded.email,
-      options: { shouldCreateUser: false, emailRedirectTo: `${origin}/auth/confirm/?next=/portal/account/` }
+    // An invite can't be re-sent to an existing login; a password link does the same job.
+    const { error } = (await publicSupabase()?.auth.resetPasswordForEmail(loaded.email, {
+      redirectTo: `${origin}/auth/confirm/?next=/portal/account/`
     })) ?? { error: { message: 'Supabase is not connected.' } };
-    notice = error ? { ok: false, text: error.message } : { ok: true, text: `Sign-in link sent to ${loaded.email}.` };
+    notice = error ? { ok: false, text: error.message } : { ok: true, text: `Password link sent to ${loaded.email}.` };
   } else if (intent === 'save') {
     const parsed = parsePersonForm(form);
     if (parsed.error !== undefined) {
@@ -108,10 +107,10 @@ const invited = access !== 'none' && loaded.user_id && !signedIn.has(loaded.user
   {invited && !isSelf && (
     <div class="card">
       <h2>Haven't signed in yet</h2>
-      <p class="p-sub">If the invite email has gone missing, send them a sign-in link instead.</p>
+      <p class="p-sub">If the invite email has gone missing, send them a link to choose a password instead.</p>
       <form method="post" style="margin-top:0.8rem">
         <input type="hidden" name="intent" value="resend" />
-        <button class="btn outline" type="submit">Send a sign-in link</button>
+        <button class="btn outline" type="submit">Send a password link</button>
       </form>
     </div>
   )}

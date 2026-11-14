@@ -10,14 +10,24 @@ const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
 
 let notice: { ok: boolean; text: string } | null = Astro.url.searchParams.get('welcome')
-  ? { ok: true, text: "Welcome to the team hub! Check your name and mobile below. Next time, sign in with your email and we'll send you a link." }
-  : null;
+  ? { ok: true, text: 'Welcome! Choose a password below so you can sign in next time.' }
+  : Astro.url.searchParams.get('reset')
+    ? { ok: true, text: 'Choose a new password below.' }
+    : null;
 let fullName = session.fullName;
 let phone = session.phone ?? '';
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
-  {
+  if (form.get('intent') === 'password') {
+    const password = String(form.get('password') ?? '');
+    if (password.length < 8) {
+      notice = { ok: false, text: 'Please use at least 8 characters.' };
+    } else {
+      const { error } = await supabase.auth.updateUser({ password });
+      notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Password updated.' };
+    }
+  } else {
     fullName = line(form, 'full_name', 80) ?? '';
     const rawPhone = line(form, 'phone', 30);
     if (rawPhone && !normaliseWhatsApp(rawPhone)) {
@@ -66,5 +76,13 @@ const newEnquiries = await countNewEnquiries(supabase);
       </a>
     ))}
     {session.isAdmin && <p class="hint" style="margin-top:0.6rem;font-size:0.82rem;color:var(--text-3)">To change your teams, open yourself in <a href="/portal/people/">People</a>.</p>}
+  </div>
+  <div class="card">
+    <h2>Password</h2>
+    <form method="post" class="f">
+      <input type="hidden" name="intent" value="password" />
+      <label>New password<input type="password" name="password" minlength="8" autocomplete="new-password" required /></label>
+      <div><button class="btn outline" type="submit">Change password</button></div>
+    </form>
   </div>
 </PortalLayout>
