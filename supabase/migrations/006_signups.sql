@@ -7,6 +7,10 @@
 -- Logins made by an admin are approved straight away. Safe to re-run.
 
 alter table public.profiles add column if not exists approved boolean not null default true;
+-- Existing logins were approved above. From now on a login starts unapproved
+-- unless the portal approves it (admin-made logins are approved straight away),
+-- so a login made any other way, e.g. directly through Supabase, can do nothing.
+alter table public.profiles alter column approved set default false;
 
 -- Unapproved logins have no permissions.
 create or replace function public.is_club_admin()

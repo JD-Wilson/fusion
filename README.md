@@ -220,11 +220,11 @@ Pages: `/vacancies/` (public) · `/login/` · `/portal/` (home: a to-do list and
 3. **Project Settings → API**: copy the URL, anon key and service-role key into `.env.local` and Vercel's environment variables (see `.env.example`).
 4. **Authentication → URL Configuration**: set the Site URL to the live site (e.g. `https://www.fusionfc.co.uk`) and add `https://www.fusionfc.co.uk/**` (and `http://localhost:4399/**` for local testing) to Redirect URLs.
 5. **No emails are needed.** Coaches create their own login at `/signup/` (name, email, password); it starts **waiting for approval** and can't see anything until a club admin approves it in **People** and puts it on teams. Admins can also give someone a login with a temporary password, and set a temporary password for anyone who's locked out ("break glass"); either way they choose their own password when they next sign in. The website creates these logins itself, so Supabase sends nothing.
-6. **Turn off "Allow new users to sign up"** (Authentication → Sign In / Providers). That only stops sign-ups that go around the website; `/signup/` still works.
+6. **Turn off "Allow new users to sign up"** (Authentication → Sign In / Providers). That only stops sign-ups that go around the website; `/signup/` still works. (Logins made any other way start unapproved anyway.)
 7. **Make the first admin.** In Authentication → Users → *Add user → Create new user*, enter your email and a password and tick *Auto Confirm User*, then run:
 
    ```sql
-   update public.profiles set role = 'club_admin' where email = 'you@example.com';
+   update public.profiles set role = 'club_admin', approved = true where email = 'you@example.com';
    ```
 
    From then on, approve sign-ups and add coaches from **People** in the portal.
