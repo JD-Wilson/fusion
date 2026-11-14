@@ -315,7 +315,7 @@ form.f { display: grid; gap: 0.95rem; }
   .p-brand.desk { display: none; }
   .p-menu-btn {
     display: inline-flex; align-items: center; gap: 0.45rem; font: inherit; font-size: 0.88rem; font-weight: 600;
-    padding: 0.45rem 0.95rem; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; min-height: 40px;
+    padding: 0.45rem 0.95rem; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--text); cursor: pointer; min-height: 44px;
   }
   .p-side {
     display: none; position: fixed; z-index: 50; top: 0; right: 0; bottom: 0; left: auto; width: min(320px, 86vw); height: 100%;
@@ -335,7 +335,7 @@ form.f { display: grid; gap: 0.95rem; }
 @media (max-width: 860px) {
   .p-close {
     display: block; align-self: flex-end; font: inherit; font-size: 0.85rem; color: var(--text-2); cursor: pointer;
-    background: none; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.35rem 0.85rem; min-height: 36px;
+    background: none; border: 1px solid var(--line-strong); border-radius: 999px; padding: 0.35rem 0.85rem; min-height: 44px;
   }
 }
 .card.approve, .card.urgent { border-color: rgba(240, 190, 70, 0.4); background: rgba(240, 190, 70, 0.05); }

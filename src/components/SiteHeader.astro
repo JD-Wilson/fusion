@@ -108,6 +108,8 @@ const isActive = (href: string) => currentPath.startsWith(normalizePath(href));
       toggle.setAttribute('aria-expanded', String(open));
       label.textContent = open ? 'Close' : 'Menu';
       menu.hidden = !open;
+      // While the menu is open, the page behind it can't be tabbed to or read out.
+      for (const el of document.body.children) if (!el.contains(header)) (el as HTMLElement).inert = open;
       document.documentElement.style.overflow = open ? 'hidden' : '';
       if (open) menu.querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
     };
@@ -334,7 +336,9 @@ const isActive = (href: string) => currentPath.startsWith(normalizePath(href));
   }
 
   .menu-group a {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     padding: 0.3rem 0;
     font-family: var(--font-display);
     font-size: clamp(1.4rem, 2.6vw, 2rem);
@@ -362,7 +366,9 @@ const isActive = (href: string) => currentPath.startsWith(normalizePath(href));
     font-size: 0.92rem;
   }
 
-  .menu-email { color: var(--text-2); }
+  /* Comfortable touch targets for the footer links. */
+  .menu-email, .menu-login { display: inline-flex; align-items: center; min-height: 44px; }
+  .menu-email { color: var(--text-2); overflow-wrap: anywhere; }
   .menu-email:hover { color: var(--text); }
   .menu-login { color: var(--text-3); }
   .menu-login:hover { color: var(--text); }
@@ -381,11 +387,21 @@ const isActive = (href: string) => currentPath.startsWith(normalizePath(href));
     .header-inner,
     .menu-inner { width: calc(100vw - 32px); }
     .header-inner { gap: 0.75rem; }
+    .header-actions { gap: 0.5rem; }
+    /* 44px touch targets (WCAG 2.5.5, Apple HIG). */
+    .h-join { height: 44px; padding: 0 1rem; }
     /* Visually hidden but still the button's accessible name */
     .menu-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    .menu-toggle { width: 40px; padding: 0; justify-content: center; }
+    .menu-toggle { width: 44px; height: 44px; padding: 0; justify-content: center; }
+    .brand { min-height: 44px; }
     .menu-groups { grid-template-columns: 1fr; gap: 2rem; }
     .menu-group a { font-size: 1.5rem; }
+  }
+
+  /* Very narrow screens (e.g. folded phones): the crest alone, so nothing crowds.
+     The link keeps its "Fusion FC home" name for screen readers. */
+  @media (max-width: 319px) {
+    .brand span { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
