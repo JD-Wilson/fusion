@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-15T19:11:47.866Z",
+ "scrapedAt": "2026-11-16T17:48:06.632Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -5102,6 +5102,24 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990264",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "09:00",
+   "competition": "Under 9",
+   "home": {
+    "id": "afc-alsager-u9-eagles",
+    "name": "AFC Alsager U9 Eagles"
+   },
+   "away": {
+    "id": "fusion-fc-u9",
+    "name": "Fusion FC U9"
+   },
+   "venue": "ALSAGER SPORTS HUB #2",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990201",
    "type": "League",
    "date": "2026-11-22",
@@ -5116,24 +5134,6 @@
     "name": "Fusion FC U9 Fusion FC Black"
    },
    "venue": "THE GORDON BANKS SPORTS CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990264",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "17:00",
-   "competition": "Under 9",
-   "home": {
-    "id": "afc-alsager-u9-eagles",
-    "name": "AFC Alsager U9 Eagles"
-   },
-   "away": {
-    "id": "fusion-fc-u9",
-    "name": "Fusion FC U9"
-   },
-   "venue": "ALSAGER SPORTS HUB",
    "status": null,
    "league": "North Staffs Junior Youth League"
   },
