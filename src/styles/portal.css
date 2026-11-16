@@ -90,10 +90,10 @@ p { margin: 0; line-height: 1.55; }
 
 /* ─── Editor (pages and blog posts): writing on the left, settings on the right ─── */
 .editor { display: grid; gap: 1rem; align-items: start; }
-.editor-main, .editor-side { display: grid; gap: 1rem; min-width: 0; }
+.editor-main, .editor-side { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; min-width: 0; }
 .editor-side .card + .card, .editor-main .card + .card { margin-top: 0; }
 .editor-side .card h2 { font-size: 1rem; }
-.editor-side .photo-row { grid-template-columns: 1fr; }
+.editor-side .photo-row { grid-template-columns: minmax(0, 1fr); }
 .editor-side .photo-preview { width: 100%; }
 .f .title-input { font-family: var(--font-display); font-size: 1.5rem !important; font-weight: 700; letter-spacing: -0.01em; padding: 0.7rem 0.85rem !important; }
 .publish { border-color: var(--accent-line); }
@@ -283,14 +283,15 @@ form.f { display: grid; gap: 0.95rem; }
 .f input:focus, .f select:focus, .f textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
 .f input[readonly] { color: var(--text-3); }
 .f textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
-.f .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0.95rem; }
+.f .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.95rem; }
 .f fieldset { border: 1px solid var(--line); border-radius: var(--radius-m); padding: 1rem; margin: 0; display: grid; gap: 0.7rem; background: rgba(255, 255, 255, 0.012); }
 .f legend { padding: 0 0.4rem; font-family: var(--font-display); font-size: 1rem; color: var(--text); }
 .f .check { display: flex; align-items: center; gap: 0.6rem; font-weight: 500; color: var(--text); font-size: 0.92rem; min-height: 32px; }
 .f .check input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
 .f .hint { font-size: 0.8rem; font-weight: 400; color: var(--text-3); }
 .f .chips { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; }
-.f input[type='file'] { font: inherit; font-size: 0.9rem; color: var(--text-2); }
+/* Native file inputs have a fixed ~320px intrinsic width; let them shrink to the column. */
+.f input[type='file'] { font: inherit; font-size: 0.9rem; color: var(--text-2); width: 100%; max-width: 100%; min-width: 0; }
 
 .msg { padding: 0.8rem 1rem; border-radius: var(--radius-s); margin-bottom: 1rem; font-size: 0.92rem; }
 .msg.ok { background: var(--accent-soft); border: 1px solid var(--accent-line); }
@@ -324,8 +325,8 @@ form.f { display: grid; gap: 0.95rem; }
   .p-shell[data-nav-open] .p-side { display: flex; }
   .p-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.55); }
   .p-nav a[aria-current='page']::before { display: none; }
-  .f .two { grid-template-columns: 1fr; }
-  .photo-row { grid-template-columns: 1fr; }
+  .f .two { grid-template-columns: minmax(0, 1fr); }
+  .photo-row { grid-template-columns: minmax(0, 1fr); }
   .p-hero { min-height: 0; }
 }
 @media (min-width: 861px) { .p-menu-btn { display: none; } }
