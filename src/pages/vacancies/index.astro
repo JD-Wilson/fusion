@@ -240,14 +240,16 @@ const expiry = (d: string) =>
 
                     {v.description && <p class="vac-desc">{v.description}</p>}
 
-                    <dl class="vac-facts">
-                      {v.training && (
-                        <div><dt>Training</dt><dd>{v.training}</dd></div>
-                      )}
-                      {v.expires_on && (
-                        <div><dt>Open until</dt><dd>{expiry(v.expires_on)}</dd></div>
-                      )}
-                    </dl>
+                    {(v.training || v.expires_on) && (
+                      <dl class="vac-facts">
+                        {v.training && (
+                          <div><dt>Training</dt><dd>{v.training}</dd></div>
+                        )}
+                        {v.expires_on && (
+                          <div><dt>Open until</dt><dd>{expiry(v.expires_on)}</dd></div>
+                        )}
+                      </dl>
+                    )}
 
                     <div class="coach">
                       <span class="coach-av" aria-hidden="true">{initial(v.contact_name)}</span>
@@ -352,14 +354,14 @@ const expiry = (d: string) =>
   .age-chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   .age-chip.on small { background: rgba(0, 0, 0, 0.15); color: var(--on-accent); }
 
-  .coach { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; border-radius: var(--radius-s); background: rgba(255, 255, 255, 0.05); }
+  .coach { margin-top: auto; display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; border-radius: var(--radius-s); background: rgba(255, 255, 255, 0.05); }
   .coach-av {
     flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; display: grid; place-items: center;
     background: var(--color-lime); color: var(--color-ink); font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
   }
   .coach strong { display: block; color: var(--color-paper); font-family: var(--font-display); line-height: 1.2; }
   .coach small { color: rgba(241, 244, 242, 0.55); font-size: 0.78rem; }
-  .share { font-size: 0.8rem; color: rgba(241, 244, 242, 0.55); text-decoration: underline; text-underline-offset: 3px; }
+  .share { align-self: center; text-align: center; font-size: 0.8rem; color: rgba(241, 244, 242, 0.55); text-decoration: underline; text-underline-offset: 3px; }
   .share:hover { color: var(--color-lime); }
 
   .empty-title { font-family: var(--font-display); font-size: 1.2rem; color: var(--color-paper); }
@@ -441,7 +443,7 @@ const expiry = (d: string) =>
   .vac-facts div { display: flex; gap: 0.6rem; }
   .vac-facts dt { min-width: 5.2rem; color: rgba(241, 244, 242, 0.45); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.08em; padding-top: 0.15rem; }
   .vac-facts dd { margin: 0; color: rgba(241, 244, 242, 0.85); }
-  .vac-actions { margin-top: auto; display: grid; gap: var(--space-xs); padding-top: var(--space-xs); }
+  .vac-actions { display: grid; gap: var(--space-xs); padding-top: var(--space-xs); }
   .wa-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
     background: #25d366; color: #052e16; font-weight: 700; border-radius: 999px;
