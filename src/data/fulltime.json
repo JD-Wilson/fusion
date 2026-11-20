@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-19T00:02:06.443Z",
+ "scrapedAt": "2026-11-20T23:47:45.287Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -2801,29 +2801,6 @@
    "league": "North Staffs Junior Youth League"
   },
   {
-   "id": "30724454",
-   "type": "League",
-   "date": "2026-10-04",
-   "time": "10:10",
-   "competition": "Under 8",
-   "home": {
-    "id": "fusion-fc-u8-black",
-    "name": "Fusion FC U8 Black"
-   },
-   "away": {
-    "id": "x-cel-u8-x-cel-scorpions",
-    "name": "X-CEL U8 X-CEL Scorpions"
-   },
-   "venue": null,
-   "status": "Postponed",
-   "hidden": false,
-   "homeScore": null,
-   "awayScore": null,
-   "penalties": null,
-   "afterExtraTime": false,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
    "id": "30724484",
    "type": "League",
    "date": "2026-10-04",
@@ -4814,24 +4791,6 @@
    "league": "North Staffs Junior Youth League"
   },
   {
-   "id": "30724454",
-   "type": "League",
-   "date": "2026-10-04",
-   "time": "10:10",
-   "competition": "Under 8",
-   "home": {
-    "id": "fusion-fc-u8-black",
-    "name": "Fusion FC U8 Black"
-   },
-   "away": {
-    "id": "x-cel-u8-x-cel-scorpions",
-    "name": "X-CEL U8 X-CEL Scorpions"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": "Postponed",
-   "league": "North Staffs Junior Youth League"
-  },
-  {
    "id": "30989622",
    "type": "League",
    "date": "2026-10-11",
@@ -5192,6 +5151,24 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990188",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "11:15",
+   "competition": "Under 10",
+   "home": {
+    "id": "cheadle-s-m-u-youth-u10-yellow",
+    "name": "Cheadle S.M.U. Youth U10 Yellow"
+   },
+   "away": {
+    "id": "fusion-fc-u10-pu-green",
+    "name": "Fusion FC U10 PU Green"
+   },
+   "venue": "MYACTIVE CHEADLE #1",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990277",
    "type": "League",
    "date": "2026-11-22",
@@ -5206,24 +5183,6 @@
     "name": "Fusion FC U10 Green"
    },
    "venue": "CO-OP ACADEMY STOKE-ON-TRENT",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990188",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "17:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "cheadle-s-m-u-youth-u10-yellow",
-    "name": "Cheadle S.M.U. Youth U10 Yellow"
-   },
-   "away": {
-    "id": "fusion-fc-u10-pu-green",
-    "name": "Fusion FC U10 PU Green"
-   },
-   "venue": "MYACTIVE CHEADLE #1",
    "status": null,
    "league": "North Staffs Junior Youth League"
   },
