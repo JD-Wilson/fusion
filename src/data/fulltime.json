@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-20T23:47:45.287Z",
+ "scrapedAt": "2026-11-21T19:52:35.507Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -40,6 +40,75 @@
   "Fusion FC U9 Fusion FC White"
  ],
  "results": [
+  {
+   "id": "31096750",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-fusion-fc-pu",
+    "name": "Fusion FC U10 Fusion FC PU"
+   },
+   "away": {
+    "id": "dna-football-club-roma",
+    "name": "DNA Football Club Roma"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096758",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 9",
+   "home": {
+    "id": "fusion-fc-u9-fusion-fc-white",
+    "name": "Fusion FC U9 Fusion FC White"
+   },
+   "away": {
+    "id": "pro-level-u9-black",
+    "name": "Pro Level U9 Black"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096715",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 8",
+   "home": {
+    "id": "dna-football-club-napoli",
+    "name": "DNA Football Club Napoli"
+   },
+   "away": {
+    "id": "fusion-fc-u8-fusion-fc-white",
+    "name": "Fusion FC U8 Fusion FC White"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
   {
    "id": "31096711",
    "type": "League",
@@ -4193,7 +4262,7 @@
     "name": "Pro Level U9 Black"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -4211,7 +4280,7 @@
     "name": "Fusion FC U8 Fusion FC White"
    },
    "venue": "ALSAGER LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
