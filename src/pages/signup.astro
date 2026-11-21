@@ -1,8 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { loadSession, shortDay, type Session } from '../lib/auth';
+import { loadSession } from '../lib/auth';
 import { line } from '../lib/forms';
-import { adminSupabase, isolatedSupabase, isSupabaseConfigured, serverSupabase } from '../lib/supabase';
+import type { TeamRow } from '../lib/portal';
+import { groupOf, sortTeams } from '../lib/portal-overview';
+import { TEAM_ROLES } from '../lib/portal-people';
+import { parseSignupRequest, type SignupRequest } from '../lib/team-requests';
+import { adminSupabase, isSupabaseConfigured, serverSupabase } from '../lib/supabase';
 import { normaliseWhatsApp } from '../lib/vacancies';
 
 export const prerender = false;
@@ -16,82 +20,62 @@ Astro.response.headers.set('Cache-Control', 'private, no-store');
 
 let error: string | null = null;
 const values = { full_name: '', email: '', phone: '' };
-
-/*
- * "Check my teams": someone who already has a login confirms it with their
- * password and sees the teams they're on and their role on each. Nothing is
- * shown without the right password (the page is public, and a coach's email
- * shouldn't reveal which children's teams they run). The check uses a
- * throwaway client, so it doesn't sign them in on this browser.
- */
-let checkError: string | null = null;
-let checked: Session | null = null;
-let checkEmail = '';
+// Which teams they help with, and their role: a note for the approving admin only.
+let request: SignupRequest = { teams: [], other: null };
+let teams: Pick<TeamRow, 'id' | 'name' | 'match_day' | 'kind'>[] = [];
 
 if (isSupabaseConfigured) {
   const supabase = serverSupabase(Astro.request, Astro.cookies);
+  const { data: teamData } = (await adminSupabase()?.from('teams').select('id, name, match_day, kind, published')) ?? { data: null };
+  teams = sortTeams(((teamData ?? []) as (TeamRow & { published: boolean })[]).filter((t) => t.published || t.kind === 'development'));
 
   if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData();
-    if (form.get('intent') === 'check') {
-      checkEmail = String(form.get('check_email') ?? '').trim().toLowerCase().slice(0, 200);
-      const password = String(form.get('check_password') ?? '');
-      const probe = isolatedSupabase();
-      if (!checkEmail || !password) {
-        checkError = 'Enter the email and password of your login.';
-      } else if (!probe) {
-        checkError = "Logins aren't switched on yet.";
-      } else {
-        const { error: signInError } = await probe.auth.signInWithPassword({ email: checkEmail, password });
-        if (signInError) {
-          checkError = "That email and password don't match a login. If you haven't got one yet, create it below.";
-        } else {
-          checked = await loadSession(probe);
-          await probe.auth.signOut({ scope: 'local' });
-          if (!checked) checkError = 'Your teams could not be loaded. Please try again.';
-        }
-      }
-    } else {
-      values.full_name = line(form, 'full_name', 80) ?? '';
-      values.email = String(form.get('email') ?? '').trim().toLowerCase().slice(0, 200);
-      values.phone = line(form, 'phone', 30) ?? '';
-      const password = String(form.get('password') ?? '');
-      const admin = adminSupabase();
+    values.full_name = line(form, 'full_name', 80) ?? '';
+    values.email = String(form.get('email') ?? '').trim().toLowerCase().slice(0, 200);
+    values.phone = line(form, 'phone', 30) ?? '';
+    const password = String(form.get('password') ?? '');
+    const admin = adminSupabase();
+    request = parseSignupRequest(form, new Set(teams.map((t) => t.id)));
 
-      if (String(form.get('website') ?? '')) {
-        error = 'Something went wrong. Please try again.'; // honeypot: bots fill every field
-      } else if (!values.full_name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-        error = 'Please enter your name and email address.';
-      } else if (password.length < 8) {
-        error = 'Please choose a password of at least 8 characters.';
-      } else if (values.phone && !normaliseWhatsApp(values.phone)) {
-        error = "That mobile number doesn't look right.";
-      } else if (!admin) {
-        error = "Sign-ups aren't switched on yet. Please ask a club admin.";
+    if (String(form.get('website') ?? '')) {
+      error = 'Something went wrong. Please try again.'; // honeypot: bots fill every field
+    } else if (!values.full_name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+      error = 'Please enter your name and email address.';
+    } else if (password.length < 8) {
+      error = 'Please choose a password of at least 8 characters.';
+    } else if (values.phone && !normaliseWhatsApp(values.phone)) {
+      error = "That mobile number doesn't look right.";
+    } else if (!admin) {
+      error = "Sign-ups aren't switched on yet. Please ask a club admin.";
+    } else {
+      const { data, error: createError } = await admin.auth.admin.createUser({
+        email: values.email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: values.full_name,
+          self_signup: true,
+          requested_teams: request.teams,
+          requested_other: request.other
+        }
+      });
+      if (createError || !data.user) {
+        error = /already|registered|exists/i.test(createError?.message ?? '')
+          ? 'That email already has a login. Sign in instead, or ask a club admin to set you a temporary password.'
+          : 'Your login could not be created. Please try again.';
       } else {
-        const { data, error: createError } = await admin.auth.admin.createUser({
-          email: values.email,
-          password,
-          email_confirm: true,
-          user_metadata: { full_name: values.full_name, self_signup: true }
-        });
-        if (createError || !data.user) {
-          error = /already|registered|exists/i.test(createError?.message ?? '')
-            ? 'That email already has a login. Sign in instead, or ask a club admin to set you a temporary password.'
-            : 'Your login could not be created. Please try again.';
+        // Hold it until a club admin approves. If that can't be recorded, undo the sign-up.
+        const { error: holdError } = await admin
+          .from('profiles')
+          .update({ approved: false, full_name: values.full_name, phone: values.phone || null })
+          .eq('id', data.user.id);
+        if (holdError) {
+          await admin.auth.admin.deleteUser(data.user.id);
+          error = "Sign-ups aren't switched on yet. Please ask a club admin.";
         } else {
-          // Hold it until a club admin approves. If that can't be recorded, undo the sign-up.
-          const { error: holdError } = await admin
-            .from('profiles')
-            .update({ approved: false, full_name: values.full_name, phone: values.phone || null })
-            .eq('id', data.user.id);
-          if (holdError) {
-            await admin.auth.admin.deleteUser(data.user.id);
-            error = "Sign-ups aren't switched on yet. Please ask a club admin.";
-          } else {
-            await supabase.auth.signInWithPassword({ email: values.email, password });
-            return Astro.redirect('/portal/account/?signed_up=1');
-          }
+          await supabase.auth.signInWithPassword({ email: values.email, password });
+          return Astro.redirect('/portal/account/?signed_up=1');
         }
       }
     }
@@ -120,47 +104,50 @@ if (isSupabaseConfigured) {
         <input type="password" name="password" autocomplete="new-password" minlength="8" required />
         <span class="hint">At least 8 characters.</span>
       </label>
+      <fieldset class="teams">
+        <legend>Your teams</legend>
+        <p class="hint">Tick the teams you help with and your role on each. This tells the club admin which teams to add you to. It doesn't give you access on its own.</p>
+        {[...new Set(teams.map(groupOf))].map((group) => (
+          <div class="team-group">
+            <h3>{group}</h3>
+            {teams.filter((t) => groupOf(t) === group).map((t) => {
+              const picked = request.teams.find((r) => r.team_id === t.id);
+              return (
+                <div class="team-pick" data-team-pick>
+                  <label class="check"><input type="checkbox" name="team" value={t.id} checked={Boolean(picked)} />{t.name}</label>
+                  <select name={`role_${t.id}`} aria-label={`Your role on ${t.name}`}>
+                    {TEAM_ROLES.map((r) => <option value={r} selected={(picked?.role ?? 'Coach') === r}>{r}</option>)}
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        <label>
+          Team not listed, or anything else? (optional)
+          <input type="text" name="teams_other" value={request.other ?? ''} maxlength="300" placeholder="e.g. New U9 team starting in January" />
+        </label>
+      </fieldset>
       <label class="hp" aria-hidden="true">Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
       <button class="button primary" type="submit">Create login</button>
     </form>
     <p class="small">Already have a login? <a href="/login/">Sign in</a></p>
   </section>
-
-  <section class="login section-card check" id="check">
-    <h2 class="check-title">Check my teams</h2>
-    <p class="section-copy">Already have a login? See which Fusion FC teams you're on and your role on each. This doesn't sign you in.</p>
-
-    {checkError && <div class="msg bad" role="alert">{checkError}</div>}
-
-    {checked && (
-      <div class="result" role="status">
-        <p class="who"><strong>{checked.fullName || checked.email}</strong>{checked.isAdmin && <span class="chip">Club admin</span>}</p>
-        {!checked.approved ? (
-          <p class="note">Your login is waiting for a club admin to approve it. Once they have, and added you to your teams, they'll show here.</p>
-        ) : checked.myTeams.length === 0 ? (
-          <p class="note">{checked.isAdmin ? "You're a club admin but not on any teams." : "You're not on any teams yet. Ask a club admin to add you."}</p>
-        ) : (
-          <ul class="teams">
-            {checked.myTeams.map((t) => (
-              <li>
-                <span class="t-name">{t.name}{t.kind === 'development' && <span class="t-meta"> · Development</span>}{t.match_day && <span class="t-meta"> · {shortDay(t.match_day)}</span>}</span>
-                <span class="chip">{t.role_title}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p class="note">Something wrong? Ask a club admin to update you in People.</p>
-      </div>
-    )}
-
-    <form method="post" action="/signup/#check" class="stack">
-      <input type="hidden" name="intent" value="check" />
-      <label>Email<input type="email" name="check_email" value={checkEmail} autocomplete="username" maxlength="200" required /></label>
-      <label>Password<input type="password" name="check_password" autocomplete="current-password" required /></label>
-      <button class="button primary" type="submit">Check my teams</button>
-    </form>
-  </section>
 </BaseLayout>
+
+<script>
+  // The role only matters for ticked teams.
+  document.querySelectorAll<HTMLElement>('[data-team-pick]').forEach((row) => {
+    const box = row.querySelector<HTMLInputElement>('input[name="team"]')!;
+    const select = row.querySelector<HTMLSelectElement>('select')!;
+    const sync = () => {
+      row.classList.toggle('off', !box.checked);
+      select.disabled = !box.checked;
+    };
+    box.addEventListener('change', sync);
+    sync();
+  });
+</script>
 
 <style>
   .login { max-width: 440px; margin: var(--space-xl) auto 0; }
@@ -169,22 +156,20 @@ if (isSupabaseConfigured) {
   label { display: grid; gap: 0.3rem; font-size: 0.8rem; font-weight: 600; color: var(--color-muted); }
   input { font: inherit; font-size: 16px; padding: 0.7rem 0.85rem; border: 1px solid var(--line); border-radius: var(--radius-s); min-height: 46px; background: var(--surface-2); color: var(--text); }
   input:focus { outline: none; border-color: var(--accent-line); }
+  .teams { border: 0; padding: 0; margin: 0; display: grid; gap: 0.4rem; min-width: 0; }
+  .teams legend { padding: 0; font-size: 0.8rem; font-weight: 600; color: var(--color-muted); margin-bottom: 0.3rem; }
+  .teams .hint { font-size: 0.8rem; margin: 0; }
+  .team-group h3 { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 0.5rem 0 0.2rem; }
+  .team-pick { display: grid; grid-template-columns: minmax(0, 1fr) 9.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; border-top: 1px solid var(--line); }
+  .team-pick .check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; font-weight: 500; color: var(--text); }
+  .team-pick .check input { min-height: 0; width: 18px; height: 18px; padding: 0; }
+  .team-pick select { font: inherit; font-size: 16px; min-height: 40px; padding: 0.3rem 0.5rem; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface-2); color: var(--text); }
+  .team-pick.off select { opacity: 0.4; }
   .hint { font-weight: 400; color: var(--text-3); }
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   .primary { border: 0; cursor: pointer; }
   .small { margin-top: var(--space-s); font-size: 0.9rem; color: var(--text-3); }
   .small a { color: var(--accent); }
   .msg { margin-top: var(--space-s); padding: 0.8rem 1rem; border-radius: var(--radius-s); font-size: 0.92rem; }
-  .check { margin-top: var(--space-m); }
-  .check-title { font-size: 1.25rem; margin: 0 0 0.4rem; }
-  .result { margin-top: var(--space-s); padding: 0.9rem 1rem; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface-2); }
-  .who { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0 0 0.6rem; }
-  .teams { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.4rem; }
-  .teams li { display: flex; justify-content: space-between; align-items: center; gap: 0.6rem; padding: 0.5rem 0; border-top: 1px solid var(--line); }
-  .teams li:first-child { border-top: 0; }
-  .t-name { font-weight: 600; color: var(--text); }
-  .t-meta { font-weight: 400; color: var(--text-3); }
-  .chip { flex-shrink: 0; font-size: 0.78rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--accent-line); color: var(--accent); }
-  .note { margin: 0.6rem 0 0; font-size: 0.88rem; color: var(--text-3); }
   .msg.bad { background: rgba(240, 90, 90, 0.1); border: 1px solid rgba(240, 90, 90, 0.35); color: #f5a3a3; }
 </style>
