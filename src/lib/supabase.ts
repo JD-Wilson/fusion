@@ -36,18 +36,6 @@ export function publicSupabase(): SupabaseClient | null {
 }
 
 /**
- * A fresh anonymous client with its own in-memory session, never shared
- * between requests. For checking someone's password without setting a login
- * cookie (e.g. "Check my teams" on the sign-up page).
- */
-export function isolatedSupabase(): SupabaseClient | null {
-  if (!isSupabaseConfigured) return null;
-  return createClient(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-  });
-}
-
-/**
  * Service-role client: bypasses RLS. Server-only, and only for things the
  * public can't be trusted to do themselves: saving enquiries, looking up a
  * manager's private WhatsApp number or email, and inviting managers.
