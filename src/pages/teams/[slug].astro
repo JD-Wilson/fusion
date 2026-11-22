@@ -4,6 +4,7 @@ import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
 import { getPublicTeam, getTeamCoaches, getVacanciesByTeam, teamPath, teamPhoto } from '../../lib/teams';
 import { EXPERIENCE, positionsLabel } from '../../lib/vacancies';
+import { getTeamSponsors, websiteLabel } from '../../lib/team-sponsors';
 import MatchList from '../../components/fixtures/MatchList.astro';
 import LeagueTable from '../../components/fixtures/LeagueTable.astro';
 import { fulltimeNameFor, latestResults, seasonRecord, tableFor, upcomingFixtures } from '../../lib/matches';
@@ -17,9 +18,9 @@ if (!team) {
   Astro.response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
 }
 
-const [vacancies, coaches] = team
-  ? await Promise.all([getVacanciesByTeam().then((m) => m.get(team.id) ?? []), getTeamCoaches(team.id)])
-  : [[], []];
+const [vacancies, coaches, sponsors] = team
+  ? await Promise.all([getVacanciesByTeam().then((m) => m.get(team.id) ?? []), getTeamCoaches(team.id), getTeamSponsors(team.id)])
+  : [[], [], []];
 const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('');
 const sent = Astro.url.searchParams.get('sent');
 const error = Astro.url.searchParams.get('error');
@@ -209,6 +210,32 @@ const teamJsonLd = team
             </section>
           )}
 
+          {sponsors.length > 0 && (
+            <section class="sponsors" aria-labelledby="sponsors-title">
+              <h2 class="band-eyebrow" id="sponsors-title">{sponsors.length === 1 ? 'Team sponsor' : 'Team sponsors'}</h2>
+              <p class="sponsors-thanks">Thank you to the {sponsors.length === 1 ? 'business' : 'businesses'} supporting {team.name}.</p>
+              <div class="sponsor-grid">
+                {sponsors.map((sp) => {
+                  const body = (
+                    <>
+                      <div class="sponsor-logo">
+                        {sp.logo_url ? <img src={sp.logo_url} alt={`${sp.name} logo`} loading="lazy" /> : <span aria-hidden="true">{sp.name}</span>}
+                      </div>
+                      <div class="sponsor-text">
+                        <h3>{sp.name}</h3>
+                        {sp.blurb && <p>{sp.blurb}</p>}
+                        {sp.website && <small>{websiteLabel(sp.website)} ↗</small>}
+                      </div>
+                    </>
+                  );
+                  return sp.website
+                    ? <a class="sponsor" href={sp.website} target="_blank" rel="sponsored noopener">{body}</a>
+                    : <article class="sponsor">{body}</article>;
+                })}
+              </div>
+            </section>
+          )}
+
           {team.fulltime_url && (
             <a class="fulltime" href={team.fulltime_url} target="_blank" rel="noopener">
               <span>
@@ -345,6 +372,23 @@ const teamJsonLd = team
   .coach-role { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
   .coach-bio { font-size: 0.9rem; color: var(--text-2); line-height: 1.5; margin-top: 0.2rem; }
   .coach-quals { font-size: 0.8rem; color: var(--text-3); line-height: 1.45; }
+
+  .sponsors-thanks { color: var(--text-2); margin: -0.3rem 0 0.9rem; font-size: 0.95rem; }
+  .sponsor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.9rem; }
+  .sponsor {
+    display: grid; gap: 0.8rem; align-content: start; padding: 1rem; border-radius: var(--radius-l);
+    background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none;
+  }
+  a.sponsor:hover { border-color: var(--line-strong); }
+  .sponsor-logo {
+    height: 96px; border-radius: var(--radius-s); background: #fff; display: grid; place-items: center; overflow: hidden; padding: 0.6rem;
+  }
+  .sponsor-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .sponsor-logo span { color: #222; font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; text-align: center; line-height: 1.2; }
+  .sponsor-text { display: grid; gap: 0.25rem; min-width: 0; }
+  .sponsor h3 { font-size: 1.02rem; line-height: 1.25; }
+  .sponsor p { font-size: 0.9rem; color: var(--text-2); line-height: 1.5; }
+  .sponsor small { font-size: 0.82rem; color: var(--accent); overflow-wrap: anywhere; }
 
   .vac-list { display: grid; gap: 0.8rem; }
 

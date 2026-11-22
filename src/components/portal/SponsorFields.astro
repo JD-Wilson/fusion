@@ -1,0 +1,31 @@
+---
+import type { TeamSponsor } from '../../lib/team-sponsors';
+
+interface Props {
+  sponsor?: TeamSponsor | null;
+}
+const { sponsor } = Astro.props as Props;
+const sp = sponsor ?? null;
+---
+
+<div class="two">
+  <label>Sponsor's name<input type="text" name="sponsor_name" required maxlength="80" value={sp?.name ?? ''} placeholder="e.g. Smith & Sons Builders" /></label>
+  <label>Website (optional)<input type="text" name="sponsor_website" maxlength="300" inputmode="url" value={sp?.website ?? ''} placeholder="www.example.co.uk" /></label>
+</div>
+<label>
+  A line about them (optional)
+  <input type="text" name="sponsor_blurb" maxlength="300" value={sp?.blurb ?? ''} placeholder="e.g. Proud kit sponsor for the 2026/27 season" />
+</label>
+<div class="two">
+  <label>
+    Logo (optional)
+    <input type="file" name="sponsor_logo" accept="image/png,image/jpeg,image/webp" />
+    <span class="hint">PNG, JPEG or WebP, up to 2MB. A PNG with a clear background looks best.</span>
+  </label>
+  <label>
+    Order
+    <input type="number" name="sponsor_order" min="0" max="999" value={sp?.sort_order ?? 100} />
+    <span class="hint">Lower numbers show first.</span>
+  </label>
+</div>
+{sp?.logo_url && <label class="check"><input type="checkbox" name="remove_logo" />Remove the current logo</label>}
