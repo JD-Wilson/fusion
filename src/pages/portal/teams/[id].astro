@@ -3,7 +3,10 @@ import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import SponsorFields from '../../../components/portal/SponsorFields.astro';
 import TeamFields from '../../../components/portal/TeamFields.astro';
+import { siteConfig, toAbsoluteUrl } from '../../../config/site';
 import { canEditTeam } from '../../../lib/auth';
+import { sendEmail } from '../../../lib/email';
+import { adminSupabase } from '../../../lib/supabase';
 import { UUID, checked, line } from '../../../lib/forms';
 import { countNewEnquiries, type TeamRow } from '../../../lib/portal';
 import {
@@ -22,6 +25,29 @@ const session = Astro.locals.session!;
 const supabase = Astro.locals.supabase!;
 const id = Astro.params.id ?? '';
 if (!UUID.test(id) || !canEditTeam(session, id)) return Astro.redirect('/portal/teams/');
+
+// Club admins, and anyone who is a Manager on this team, can add people to it,
+// change their roles and take them off. Approving logins stays with admins, so
+// someone added here can't see or change anything until an admin approves them.
+const leadsTeam = session.myTeams.some((t) => t.id === id && t.role_title === 'Manager');
+const canManageCoaches = session.isAdmin || leadsTeam;
+
+/** When a team's Manager (not an admin) changes its coaches, let the club inbox know. */
+async function tellClub(teamName: string, what: string) {
+  if (session.isAdmin) return;
+  await sendEmail({
+    to: [siteConfig.clubContactEmail],
+    subject: `[Fusion FC] ${teamName}: coaches changed by ${session.fullName || session.email}`,
+    replyTo: session.email,
+    text: [
+      `${session.fullName || session.email} (Manager of ${teamName}) ${what}.`,
+      '',
+      'New people need a club admin to approve their login (and give them one, if they need it) before they can use the team hub.',
+      '',
+      toAbsoluteUrl(`/portal/teams/${id}/`)
+    ].join('\n')
+  });
+}
 
 const created = Astro.url.searchParams.get('created');
 let notice: { ok: boolean; text: string } | null = created === 'fulltime'
@@ -98,35 +124,62 @@ if (Astro.request.method === 'POST') {
       for (const row of (data ?? []) as Pick<TeamSponsor, 'logo_url'>[]) await removeSponsorLogo(supabase, row.logo_url);
     }
     return Astro.redirect(`/portal/teams/${id}/?sponsor=removed#sponsors`);
-  } else if (session.isAdmin && intent === 'add-manager') {
-    // Someone already in People, or a new person by name.
-    let personId = String(form.get('person_id') ?? '');
-    const newName = line(form, 'new_name', 80);
-    if (personId === 'new') {
-      if (!newName) personId = '';
-      else {
-        const { data: created, error: createError } = await supabase.from('people').insert({ full_name: newName }).select('id').single();
-        personId = createError ? '' : created.id;
+  } else if (canManageCoaches && ['add-manager', 'remove-manager', 'role-manager'].includes(intent)) {
+    // Admins use their own login (RLS). A team's Managers go through the
+    // server's key, only for this team, after the check above.
+    const db = session.isAdmin ? supabase : adminSupabase();
+    const teamName = ((await supabase.from('teams').select('name').eq('id', id).maybeSingle()).data as { name: string } | null)?.name ?? 'a team';
+    const role = line(form, 'role_title', 40);
+    const role_title = role && TEAM_ROLES.includes(role) ? role : 'Coach';
+    if (!db) {
+      notice = { ok: false, text: 'This needs SUPABASE_SERVICE_ROLE_KEY to be set on the server.' };
+    } else if (intent === 'add-manager') {
+      // Someone already in People, or a new person by name.
+      let personId = String(form.get('person_id') ?? '');
+      const newName = line(form, 'new_name', 80);
+      if (personId === 'new') {
+        if (!newName) personId = '';
+        else {
+          const { data: created, error: createError } = await db.from('people').insert({ full_name: newName }).select('id').single();
+          personId = createError ? '' : created.id;
+        }
+      }
+      if (!UUID.test(personId)) {
+        notice = { ok: false, text: personId === '' && String(form.get('person_id')) === 'new' ? 'Enter their name.' : 'Choose someone to add.' };
+      } else {
+        const { data: added, error } = await db
+          .from('team_managers')
+          .insert({ team_id: id, person_id: personId, display_name: '', role_title, receives_enquiries: checked(form, 'receives_enquiries') })
+          .select('display_name')
+          .single();
+        if (error) {
+          notice = { ok: false, text: error.code === '23505' ? "They're already on this team." : error.message };
+        } else {
+          notice = { ok: true, text: 'Added to the team.' };
+          await tellClub(teamName, `added ${added.display_name} as ${role_title}`);
+        }
+      }
+    } else {
+      const managerId = String(form.get('manager_id') ?? '');
+      const { data: row } = UUID.test(managerId)
+        ? await db.from('team_managers').select('id, user_id, display_name, role_title').eq('id', managerId).eq('team_id', id).maybeSingle()
+        : { data: null };
+      const target = row as { id: string; user_id: string | null; display_name: string; role_title: string } | null;
+      if (!target) {
+        notice = { ok: false, text: "They're not on this team." };
+      } else if (!session.isAdmin && target.user_id === session.userId) {
+        // Stops a manager locking themselves out; an admin can change it.
+        notice = { ok: false, text: "You can't change your own place on the team. Ask a club admin." };
+      } else if (intent === 'remove-manager') {
+        const { error } = await db.from('team_managers').delete().eq('id', target.id).eq('team_id', id);
+        notice = error ? { ok: false, text: error.message } : { ok: true, text: 'Taken off the team.' };
+        if (!error) await tellClub(teamName, `took ${target.display_name} off the team (was ${target.role_title})`);
+      } else if (role_title !== target.role_title) {
+        const { error } = await db.from('team_managers').update({ role_title }).eq('id', target.id).eq('team_id', id);
+        notice = error ? { ok: false, text: error.message } : { ok: true, text: `${target.display_name} is now ${role_title}.` };
+        if (!error) await tellClub(teamName, `changed ${target.display_name} from ${target.role_title} to ${role_title}`);
       }
     }
-    if (!UUID.test(personId)) {
-      notice = { ok: false, text: personId === '' && String(form.get('person_id')) === 'new' ? 'Enter their name.' : 'Choose someone to add.' };
-    } else {
-      const role = line(form, 'role_title', 40);
-      const { error } = await supabase.from('team_managers').insert({
-        team_id: id,
-        person_id: personId,
-        display_name: '',
-        role_title: role && TEAM_ROLES.includes(role) ? role : 'Coach',
-        receives_enquiries: checked(form, 'receives_enquiries')
-      });
-      notice = error
-        ? { ok: false, text: error.code === '23505' ? "They're already on this team." : error.message }
-        : { ok: true, text: 'Added to the team.' };
-    }
-  } else if (session.isAdmin && intent === 'remove-manager') {
-    await supabase.from('team_managers').delete().eq('id', String(form.get('manager_id') ?? '')).eq('team_id', id);
-    notice = { ok: true, text: 'Removed.' };
   } else if (session.isAdmin && intent === 'delete') {
     await supabase.from('teams').delete().eq('id', id);
     return Astro.redirect('/portal/teams/');
@@ -155,9 +208,20 @@ const today = new Date().toISOString().slice(0, 10);
 const isLive = (v: VacancyRow) => v.status === 'open' && v.published && (!v.expires_on || v.expires_on >= today);
 
 const onTeam = new Set(managers.map((m) => m.person_id));
-const people = session.isAdmin
-  ? (((await supabase.from('people').select('id, full_name, email').order('full_name')).data ?? []) as { id: string; full_name: string; email: string | null }[])
+// Admins see emails to tell people apart; Managers see names only.
+type Pickable = { id: string; full_name: string; email: string | null; user_id: string | null; profiles: { approved?: boolean } | null };
+const peopleDb = session.isAdmin ? supabase : canManageCoaches ? adminSupabase() : null;
+const people = peopleDb
+  ? (((await peopleDb.from('people').select('id, full_name, email, user_id, profiles(approved)').order('full_name')).data ?? []) as unknown as Pickable[])
       .filter((p) => !onTeam.has(p.id))
+      .map((p) => ({
+        id: p.id,
+        label: [
+          p.full_name,
+          session.isAdmin && p.email ? `(${p.email})` : null,
+          p.user_id && p.profiles?.approved === false ? '· waiting for approval' : null
+        ].filter(Boolean).join(' ')
+      }))
   : [];
 const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([countNewEnquiries(supabase), loadSponsorsForPortal(supabase, id)]);
 ---
@@ -259,7 +323,7 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
 
   <div class="card">
     <h2>Coaches</h2>
-    <p class="p-sub" style="margin-bottom:0.6rem">Coaches with a login can edit this team's page, post its vacancies and read its enquiries.</p>
+    <p class="p-sub" style="margin-bottom:0.6rem">Coaches with a login can edit this team's page, post its vacancies and read its enquiries.{leadsTeam && !session.isAdmin ? " As this team's Manager, you can add people, change their roles and take them off." : ''}</p>
     {managers.length === 0 && <p class="empty">Nobody on this team yet.</p>}
     {managers.map((m) => (
       <div class="row coach-row">
@@ -271,16 +335,26 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
           </h3>
           <p>{[m.people?.email, m.people?.user_id ? 'has a login' : 'no login', m.receives_enquiries && m.people?.email ? 'gets enquiries' : null, m.people?.show_on_site ? 'on the team page' : null].filter(Boolean).join(' · ')}</p>
         </div>
-        {session.isAdmin && (
-          <form method="post">
-            <input type="hidden" name="intent" value="remove-manager" />
-            <input type="hidden" name="manager_id" value={m.id} />
-            <button class="btn danger sm" type="submit">Take off team</button>
-          </form>
+        {canManageCoaches && (session.isAdmin || m.people?.user_id !== session.userId) && (
+          <div class="coach-actions">
+            <form method="post" class="role-form">
+              <input type="hidden" name="intent" value="role-manager" />
+              <input type="hidden" name="manager_id" value={m.id} />
+              <select name="role_title" aria-label={`Role for ${m.display_name}`} onchange="this.form.requestSubmit()">
+                {[...new Set([...TEAM_ROLES, m.role_title])].map((r) => <option value={r} selected={r === m.role_title}>{r}</option>)}
+              </select>
+              <noscript><button class="btn outline sm" type="submit">Save</button></noscript>
+            </form>
+            <form method="post" onsubmit={`return confirm('Take ${m.display_name.replace(/'/g, '')} off this team?')`}>
+              <input type="hidden" name="intent" value="remove-manager" />
+              <input type="hidden" name="manager_id" value={m.id} />
+              <button class="btn danger sm" type="submit">Take off team</button>
+            </form>
+          </div>
         )}
       </div>
     ))}
-    {session.isAdmin && (
+    {canManageCoaches && (
       <form method="post" class="f" style="margin-top:1rem" data-add-coach>
         <input type="hidden" name="intent" value="add-manager" />
         <div class="two">
@@ -288,7 +362,7 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
             Add someone
             <select name="person_id" required>
               <option value="" disabled selected>Choose a person…</option>
-              {people.map((p) => <option value={p.id}>{p.full_name}{p.email ? ` (${p.email})` : ''}</option>)}
+              {people.map((p) => <option value={p.id}>{p.label}</option>)}
               <option value="new">Someone new…</option>
             </select>
           </label>
@@ -301,7 +375,14 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
         </div>
         <label data-new-name hidden>Their name<input type="text" name="new_name" maxlength="80" /></label>
         <label class="check"><input type="checkbox" name="receives_enquiries" checked />Send them this team's enquiries by email</label>
-        <p class="hint">To add their email, mobile or a login, open them in <a href="/portal/people/">People</a>.</p>
+        {session.isAdmin ? (
+          <p class="hint">To add their email, mobile or a login, open them in <a href="/portal/people/">People</a>.</p>
+        ) : (
+          <p class="hint">
+            A club admin is told about every change. Someone new can't use the team hub until a club admin approves them and, if they need one, gives
+            them a login. If they haven't already, they can create one at <a href="/signup/">/signup/</a>.
+          </p>
+        )}
         <div><button class="btn outline" type="submit">Add to team</button></div>
       </form>
     )}
@@ -338,6 +419,8 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
 </script>
 
 <style>
+  .coach-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .role-form select { min-height: 34px; padding: 0.25rem 0.5rem; font-size: 0.88rem; }
   .sponsor-row { align-items: flex-start; }
   .sponsor-row .logo {
     flex: none; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; display: grid; place-items: center;
