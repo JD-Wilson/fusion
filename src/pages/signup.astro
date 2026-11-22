@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { loadSession } from '../lib/auth';
+import { siteConfig, toAbsoluteUrl } from '../config/site';
+import { sendEmail } from '../lib/email';
 import { line } from '../lib/forms';
 import type { TeamRow } from '../lib/portal';
 import { groupOf, sortTeams } from '../lib/portal-overview';
@@ -23,6 +25,33 @@ const values = { full_name: '', email: '', phone: '' };
 // Which teams they help with, and their role: a note for the approving admin only.
 let request: SignupRequest = { teams: [], other: null };
 let teams: Pick<TeamRow, 'id' | 'name' | 'match_day' | 'kind'>[] = [];
+
+/** Let the club inbox know someone is waiting for approval. A failed email never stops the sign-up. */
+async function notifyClub(admin: NonNullable<ReturnType<typeof adminSupabase>>, userId: string) {
+  const { data: person } = await admin.from('people').select('id').eq('user_id', userId).maybeSingle();
+  const link = toAbsoluteUrl(person ? `/portal/people/${person.id}/` : '/portal/people/?show=pending');
+  const names = new Map(teams.map((t) => [t.id, t.name]));
+  const asked = request.teams.map((r) => `  - ${names.get(r.team_id)}: ${r.role}`);
+  const lines: (string | null)[] = [
+    `${values.full_name} has created a coach login on the Fusion FC website and is waiting for approval.`,
+    '',
+    `Email: ${values.email}`,
+    values.phone ? `Mobile: ${values.phone}` : null,
+    '',
+    asked.length ? 'Teams they said they help with:' : "They didn't tick any teams.",
+    ...asked,
+    request.other ? `Also said: "${request.other}"` : null,
+    '',
+    "Check it's really them, then approve them and add them to their teams in People:",
+    link
+  ];
+  await sendEmail({
+    to: [siteConfig.clubContactEmail],
+    subject: `[Fusion FC] New coach sign-up: ${values.full_name}`,
+    replyTo: values.email,
+    text: lines.filter((l) => l !== null).join('\n')
+  });
+}
 
 if (isSupabaseConfigured) {
   const supabase = serverSupabase(Astro.request, Astro.cookies);
@@ -74,6 +103,7 @@ if (isSupabaseConfigured) {
           await admin.auth.admin.deleteUser(data.user.id);
           error = "Sign-ups aren't switched on yet. Please ask a club admin.";
         } else {
+          await notifyClub(admin, data.user.id);
           await supabase.auth.signInWithPassword({ email: values.email, password });
           return Astro.redirect('/portal/account/?signed_up=1');
         }
