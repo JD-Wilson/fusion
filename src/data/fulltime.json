@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-21T19:52:35.507Z",
+ "scrapedAt": "2026-11-22T20:01:40.527Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -41,6 +41,52 @@
  ],
  "results": [
   {
+   "id": "31096728",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "dna-football-club-madrid",
+    "name": "DNA Football Club Madrid"
+   },
+   "away": {
+    "id": "fusion-fc-u10-fusion-fc-pu-black",
+    "name": "Fusion FC U10 Fusion FC PU Black"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096749",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-fusion-fc",
+    "name": "Fusion FC U10 Fusion FC"
+   },
+   "away": {
+    "id": "biddulph-town-fc-u10-black-u9-playing-u",
+    "name": "Biddulph Town FC U10 Black (U9 Playing U"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
    "id": "31096750",
    "type": "League",
    "date": "2026-11-21",
@@ -64,6 +110,52 @@
    "league": "Staffordshire Junior Football League"
   },
   {
+   "id": "31096756",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-fusion-fc-white",
+    "name": "Fusion FC U10 Fusion FC White"
+   },
+   "away": {
+    "id": "congleton-town-juniors-u10-blues",
+    "name": "Congleton Town Juniors U10 Blues"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31101040",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "newcastle-town-juniors-u10",
+    "name": "Newcastle Town Juniors U10"
+   },
+   "away": {
+    "id": "fusion-fc-u10-fusion-fc-gold",
+    "name": "Fusion FC U10 Fusion FC Gold"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
    "id": "31096758",
    "type": "League",
    "date": "2026-11-21",
@@ -76,6 +168,29 @@
    "away": {
     "id": "pro-level-u9-black",
     "name": "Pro Level U9 Black"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096732",
+   "type": "League",
+   "date": "2026-11-21",
+   "time": "10:20",
+   "competition": "Under 8",
+   "home": {
+    "id": "fusion-fc-u8-fusion-fc",
+    "name": "Fusion FC U8 Fusion FC"
+   },
+   "away": {
+    "id": "x-cel-u8-x-cel-football-lions",
+    "name": "X-CEL U8 X- CEL Football Lions"
    },
    "venue": null,
    "status": "Postponed",
@@ -1695,6 +1810,259 @@
    "penalties": null,
    "afterExtraTime": false,
    "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "30990229",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "10:10",
+   "competition": "Under 8",
+   "home": {
+    "id": "fusion-fc-u8-black",
+    "name": "Fusion FC U8 Black"
+   },
+   "away": {
+    "id": "kidsgrove-athletic-youth-u8-blue",
+    "name": "Kidsgrove Athletic Youth U8 Blue"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990230",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "10:10",
+   "competition": "Under 8",
+   "home": {
+    "id": "fusion-fc-u8-green",
+    "name": "Fusion FC U8 Green"
+   },
+   "away": {
+    "id": "cheadle-s-m-u-youth-u8-white",
+    "name": "Cheadle S.M.U. Youth U8 White"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990201",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "11:30",
+   "competition": "Under 9",
+   "home": {
+    "id": "city-of-stoke-youth-u9-red",
+    "name": "City of Stoke Youth U9 Red"
+   },
+   "away": {
+    "id": "fusion-fc-u9-fusion-fc-black",
+    "name": "Fusion FC U9 Fusion FC Black"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "31157504",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "11:30",
+   "competition": "Under 9",
+   "home": {
+    "id": "unity-fc-u9-unity-fc-wolves",
+    "name": "Unity FC U9 Unity FC Wolves"
+   },
+   "away": {
+    "id": "fusion-fc-u9-fusion-fc-green",
+    "name": "Fusion FC U9 Fusion FC Green"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990225",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "10:10",
+   "competition": "Under 9",
+   "home": {
+    "id": "fusion-fc-u10-girls",
+    "name": "Fusion FC U10 Girls"
+   },
+   "away": {
+    "id": "pyramid-u9-sharks",
+    "name": "Pyramid U9 Sharks"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990264",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "09:00",
+   "competition": "Under 9",
+   "home": {
+    "id": "afc-alsager-u9-eagles",
+    "name": "AFC Alsager U9 Eagles"
+   },
+   "away": {
+    "id": "fusion-fc-u9",
+    "name": "Fusion FC U9"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990277",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "12:30",
+   "competition": "Under 10",
+   "home": {
+    "id": "unity-fc-u10-pumas",
+    "name": "Unity FC U10 Pumas"
+   },
+   "away": {
+    "id": "fusion-fc-u10-green",
+    "name": "Fusion FC U10 Green"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990188",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "11:15",
+   "competition": "Under 10",
+   "home": {
+    "id": "cheadle-s-m-u-youth-u10-yellow",
+    "name": "Cheadle S.M.U. Youth U10 Yellow"
+   },
+   "away": {
+    "id": "fusion-fc-u10-pu-green",
+    "name": "Fusion FC U10 PU Green"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990224",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-black",
+    "name": "Fusion FC U10 Black"
+   },
+   "away": {
+    "id": "fc33-united-u10-reds",
+    "name": "FC33 United U10 Reds"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990226",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-silver",
+    "name": "Fusion FC U10 Silver"
+   },
+   "away": {
+    "id": "madeley-white-star-junior-fc-u10-blue",
+    "name": "Madeley White Star Junior FC U10 Blue"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990227",
+   "type": "League",
+   "date": "2026-11-22",
+   "time": "09:00",
+   "competition": "Under 11",
+   "home": {
+    "id": "fusion-fc-u11",
+    "name": "Fusion FC U11"
+   },
+   "away": {
+    "id": "newcastle-strikers-u11-yellow",
+    "name": "Newcastle Strikers U11 yellow"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "North Staffs Junior Youth League"
   },
   {
    "id": "30990063",
@@ -4158,24 +4526,6 @@
    "league": "Staffordshire Junior Football League"
   },
   {
-   "id": "31096728",
-   "type": "League",
-   "date": "2026-11-21",
-   "time": "09:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "dna-football-club-madrid",
-    "name": "DNA Football Club Madrid"
-   },
-   "away": {
-    "id": "fusion-fc-u10-fusion-fc-pu-black",
-    "name": "Fusion FC U10 Fusion FC PU Black"
-   },
-   "venue": "THE DISCOVERY ACADEMY",
-   "status": null,
-   "league": "Staffordshire Junior Football League"
-  },
-  {
    "id": "31096749",
    "type": "League",
    "date": "2026-11-21",
@@ -4190,7 +4540,7 @@
     "name": "Biddulph Town FC U10 Black (U9 Playing U"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -4226,7 +4576,7 @@
     "name": "Congleton Town Juniors U10 Blues"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -4244,7 +4594,7 @@
     "name": "Fusion FC U10 Fusion FC Gold"
    },
    "venue": "ROE LANE PLAYING FIELDS PITCH 6",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -4298,7 +4648,7 @@
     "name": "X-CEL U8 X- CEL Football Lions"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -4424,7 +4774,7 @@
     "name": "Fusion FC U8 Fusion FC"
    },
    "venue": "ALSAGER LEISURE CENTRE",
-   "status": null,
+   "status": "Postponed Match Notes: DNA request",
    "league": "Staffordshire Junior Football League"
   },
   {
@@ -5072,204 +5422,6 @@
     "name": "Newcastle Town Juniors U7"
    },
    "venue": "ST LUKES C OF E ACADEMY",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990229",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "10:10",
-   "competition": "Under 8",
-   "home": {
-    "id": "fusion-fc-u8-black",
-    "name": "Fusion FC U8 Black"
-   },
-   "away": {
-    "id": "kidsgrove-athletic-youth-u8-blue",
-    "name": "Kidsgrove Athletic Youth U8 Blue"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990230",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "10:10",
-   "competition": "Under 8",
-   "home": {
-    "id": "fusion-fc-u8-green",
-    "name": "Fusion FC U8 Green"
-   },
-   "away": {
-    "id": "cheadle-s-m-u-youth-u8-white",
-    "name": "Cheadle S.M.U. Youth U8 White"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990264",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "09:00",
-   "competition": "Under 9",
-   "home": {
-    "id": "afc-alsager-u9-eagles",
-    "name": "AFC Alsager U9 Eagles"
-   },
-   "away": {
-    "id": "fusion-fc-u9",
-    "name": "Fusion FC U9"
-   },
-   "venue": "ALSAGER SPORTS HUB #2",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990225",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "10:10",
-   "competition": "Under 9",
-   "home": {
-    "id": "fusion-fc-u10-girls",
-    "name": "Fusion FC U10 Girls"
-   },
-   "away": {
-    "id": "pyramid-u9-sharks",
-    "name": "Pyramid U9 Sharks"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990201",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "11:30",
-   "competition": "Under 9",
-   "home": {
-    "id": "city-of-stoke-youth-u9-red",
-    "name": "City of Stoke Youth U9 Red"
-   },
-   "away": {
-    "id": "fusion-fc-u9-fusion-fc-black",
-    "name": "Fusion FC U9 Fusion FC Black"
-   },
-   "venue": "THE GORDON BANKS SPORTS CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "31157504",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "11:30",
-   "competition": "Under 9",
-   "home": {
-    "id": "unity-fc-u9-unity-fc-wolves",
-    "name": "Unity FC U9 Unity FC Wolves"
-   },
-   "away": {
-    "id": "fusion-fc-u9-fusion-fc-green",
-    "name": "Fusion FC U9 Fusion FC Green"
-   },
-   "venue": "CO-OP ACADEMY STOKE-ON-TRENT",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990224",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "09:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "fusion-fc-u10-black",
-    "name": "Fusion FC U10 Black"
-   },
-   "away": {
-    "id": "fc33-united-u10-reds",
-    "name": "FC33 United U10 Reds"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990226",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "09:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "fusion-fc-u10-silver",
-    "name": "Fusion FC U10 Silver"
-   },
-   "away": {
-    "id": "madeley-white-star-junior-fc-u10-blue",
-    "name": "Madeley White Star Junior FC U10 Blue"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990188",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "11:15",
-   "competition": "Under 10",
-   "home": {
-    "id": "cheadle-s-m-u-youth-u10-yellow",
-    "name": "Cheadle S.M.U. Youth U10 Yellow"
-   },
-   "away": {
-    "id": "fusion-fc-u10-pu-green",
-    "name": "Fusion FC U10 PU Green"
-   },
-   "venue": "MYACTIVE CHEADLE #1",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990277",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "12:30",
-   "competition": "Under 10",
-   "home": {
-    "id": "unity-fc-u10-pumas",
-    "name": "Unity FC U10 Pumas"
-   },
-   "away": {
-    "id": "fusion-fc-u10-green",
-    "name": "Fusion FC U10 Green"
-   },
-   "venue": "CO-OP ACADEMY STOKE-ON-TRENT",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990227",
-   "type": "League",
-   "date": "2026-11-22",
-   "time": "09:00",
-   "competition": "Under 11",
-   "home": {
-    "id": "fusion-fc-u11",
-    "name": "Fusion FC U11"
-   },
-   "away": {
-    "id": "newcastle-strikers-u11-yellow",
-    "name": "Newcastle Strikers U11 yellow"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
    "status": null,
    "league": "North Staffs Junior Youth League"
   },
