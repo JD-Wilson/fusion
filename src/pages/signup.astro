@@ -136,17 +136,18 @@ if (isSupabaseConfigured) {
       </label>
       <fieldset class="teams">
         <legend>Your teams</legend>
-        <p class="hint">Tick the teams you help with and your role on each. This tells the club admin which teams to add you to. It doesn't give you access on its own.</p>
+        <p class="hint">Tick the teams you help with and choose your role on each (Manager, Coach, Assistant coach or Helper). This tells the club admin which teams to add you to. It doesn't give you access on its own.</p>
         {[...new Set(teams.map(groupOf))].map((group) => (
           <div class="team-group">
-            <h3>{group}</h3>
+            <div class="group-head"><h3>{group}</h3><span aria-hidden="true">Your role</span></div>
             {teams.filter((t) => groupOf(t) === group).map((t) => {
               const picked = request.teams.find((r) => r.team_id === t.id);
               return (
                 <div class="team-pick" data-team-pick>
                   <label class="check"><input type="checkbox" name="team" value={t.id} checked={Boolean(picked)} />{t.name}</label>
                   <select name={`role_${t.id}`} aria-label={`Your role on ${t.name}`}>
-                    {TEAM_ROLES.map((r) => <option value={r} selected={(picked?.role ?? 'Coach') === r}>{r}</option>)}
+                    <option value="" selected={!picked}>Choose…</option>
+                    {TEAM_ROLES.map((r) => <option value={r} selected={picked?.role === r}>{r}</option>)}
                   </select>
                 </div>
               );
@@ -166,15 +167,20 @@ if (isSupabaseConfigured) {
 </BaseLayout>
 
 <script>
-  // The role only matters for ticked teams.
+  // Picking a role ticks the team; ticking a team without a role picks Coach.
   document.querySelectorAll<HTMLElement>('[data-team-pick]').forEach((row) => {
     const box = row.querySelector<HTMLInputElement>('input[name="team"]')!;
     const select = row.querySelector<HTMLSelectElement>('select')!;
-    const sync = () => {
-      row.classList.toggle('off', !box.checked);
-      select.disabled = !box.checked;
-    };
-    box.addEventListener('change', sync);
+    const sync = () => row.classList.toggle('on', box.checked);
+    select.addEventListener('change', () => {
+      box.checked = select.value !== '';
+      sync();
+    });
+    box.addEventListener('change', () => {
+      if (box.checked && !select.value) select.value = 'Coach';
+      if (!box.checked) select.value = '';
+      sync();
+    });
     sync();
   });
 </script>
@@ -189,12 +195,16 @@ if (isSupabaseConfigured) {
   .teams { border: 0; padding: 0; margin: 0; display: grid; gap: 0.4rem; min-width: 0; }
   .teams legend { padding: 0; font-size: 0.8rem; font-weight: 600; color: var(--color-muted); margin-bottom: 0.3rem; }
   .teams .hint { font-size: 0.8rem; margin: 0; }
+  .group-head { display: grid; grid-template-columns: minmax(0, 1fr) 9.5rem; gap: 0.5rem; align-items: end; margin: 0.5rem 0 0.2rem; }
+  .group-head span { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); font-weight: 600; }
+  .group-head h3 { margin: 0 !important; }
   .team-group h3 { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 0.5rem 0 0.2rem; }
   .team-pick { display: grid; grid-template-columns: minmax(0, 1fr) 9.5rem; gap: 0.5rem; align-items: center; padding: 0.25rem 0; border-top: 1px solid var(--line); }
   .team-pick .check { display: flex; align-items: center; gap: 0.5rem; font-size: 0.92rem; font-weight: 500; color: var(--text); }
   .team-pick .check input { min-height: 0; width: 18px; height: 18px; padding: 0; }
   .team-pick select { font: inherit; font-size: 16px; min-height: 40px; padding: 0.3rem 0.5rem; border: 1px solid var(--line); border-radius: var(--radius-s); background: var(--surface-2); color: var(--text); }
-  .team-pick.off select { opacity: 0.4; }
+  .team-pick select { cursor: pointer; }
+  .team-pick.on select { border-color: var(--accent-line); color: var(--accent); font-weight: 600; }
   .hint { font-weight: 400; color: var(--text-3); }
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   .primary { border: 0; cursor: pointer; }

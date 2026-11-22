@@ -1,6 +1,7 @@
 ---
 import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
+import SponsorFields from '../../../components/portal/SponsorFields.astro';
 import TeamFields from '../../../components/portal/TeamFields.astro';
 import { canEditTeam } from '../../../lib/auth';
 import { UUID, checked, line } from '../../../lib/forms';
@@ -14,6 +15,7 @@ import {
 import type { VacancyRow } from '../../../lib/portal-vacancies';
 import { TEAM_ROLES } from '../../../lib/portal-people';
 import { positionsLabel } from '../../../lib/vacancies';
+import { loadSponsorsForPortal, parseSponsorForm, removeSponsorLogo, uploadSponsorLogo, websiteLabel, type TeamSponsor } from '../../../lib/team-sponsors';
 
 export const prerender = false;
 const session = Astro.locals.session!;
@@ -26,6 +28,8 @@ let notice: { ok: boolean; text: string } | null = created === 'fulltime'
   ? { ok: true, text: 'Team added from Full-Time and linked to its fixtures. It is hidden for now: check the name, add its coaches, then tick "Show this team on the website".' }
   : created
   ? { ok: true, text: 'Created. Now add its coaches below; they can fill in the rest.' }
+  : Astro.url.searchParams.get('sponsor')
+  ? { ok: true, text: `Sponsor ${({ added: 'added', saved: 'saved', removed: 'removed' } as Record<string, string>)[Astro.url.searchParams.get('sponsor')!] ?? 'saved'}. The team page is updated.` }
   : Astro.url.searchParams.get('saved')
     ? { ok: true, text: 'Saved. The team page is updated.' }
     : null;
@@ -56,6 +60,44 @@ if (Astro.request.method === 'POST') {
         }
       }
     }
+  } else if (intent === 'sponsor-add' || intent === 'sponsor-save') {
+    // Admins and this team's managers (checked above, and again by RLS).
+    const sponsorId = String(form.get('sponsor_id') ?? '');
+    const parsed = parseSponsorForm(form);
+    const existing = intent === 'sponsor-save' && UUID.test(sponsorId)
+      ? ((await supabase.from('team_sponsors').select('logo_url').eq('id', sponsorId).eq('team_id', id).maybeSingle()).data as Pick<TeamSponsor, 'logo_url'> | null)
+      : null;
+    if (parsed.error !== undefined) {
+      notice = { ok: false, text: parsed.error };
+    } else if (intent === 'sponsor-save' && !existing) {
+      notice = { ok: false, text: 'That sponsor could not be found.' };
+    } else {
+      const logo = await uploadSponsorLogo(supabase, id, form.get('sponsor_logo'));
+      if (logo.error) {
+        notice = { ok: false, text: logo.error };
+      } else {
+        const values: Record<string, unknown> = { ...parsed.values };
+        if (logo.url) values.logo_url = logo.url;
+        else if (checked(form, 'remove_logo')) values.logo_url = null;
+        const { error } = existing
+          ? await supabase.from('team_sponsors').update(values).eq('id', sponsorId).eq('team_id', id)
+          : await supabase.from('team_sponsors').insert({ ...values, team_id: id });
+        if (error) {
+          if (logo.url) await removeSponsorLogo(supabase, logo.url);
+          notice = { ok: false, text: /team_sponsors/.test(error.message) ? 'Sponsors need migration 008_team_sponsors.sql to be run in Supabase.' : error.message };
+        } else {
+          if (existing && 'logo_url' in values) await removeSponsorLogo(supabase, existing.logo_url);
+          return Astro.redirect(`/portal/teams/${id}/?sponsor=${existing ? 'saved' : 'added'}#sponsors`);
+        }
+      }
+    }
+  } else if (intent === 'sponsor-delete') {
+    const sponsorId = String(form.get('sponsor_id') ?? '');
+    if (UUID.test(sponsorId)) {
+      const { data } = await supabase.from('team_sponsors').delete().eq('id', sponsorId).eq('team_id', id).select('logo_url');
+      for (const row of (data ?? []) as Pick<TeamSponsor, 'logo_url'>[]) await removeSponsorLogo(supabase, row.logo_url);
+    }
+    return Astro.redirect(`/portal/teams/${id}/?sponsor=removed#sponsors`);
   } else if (session.isAdmin && intent === 'add-manager') {
     // Someone already in People, or a new person by name.
     let personId = String(form.get('person_id') ?? '');
@@ -117,7 +159,7 @@ const people = session.isAdmin
   ? (((await supabase.from('people').select('id, full_name, email').order('full_name')).data ?? []) as { id: string; full_name: string; email: string | null }[])
       .filter((p) => !onTeam.has(p.id))
   : [];
-const newEnquiries = await countNewEnquiries(supabase);
+const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([countNewEnquiries(supabase), loadSponsorsForPortal(supabase, id)]);
 ---
 
 <PortalLayout title={team.name} session={session} active="teams" activeTeam={team.id} newEnquiries={newEnquiries}>
@@ -167,6 +209,53 @@ const newEnquiries = await countNewEnquiries(supabase);
       <div><button class="btn" type="submit">Save team</button></div>
     </form>
   </div>
+
+  {team.kind !== 'development' && (
+    <div class="card" id="sponsors">
+      <h2>Sponsors</h2>
+      <p class="p-sub" style="margin-bottom:0.6rem">Businesses that sponsor this team. They're shown, with their logo and a link to their website, on the team page.</p>
+      {!sponsorsReady ? (
+        <p class="empty">Sponsors need migration <code>008_team_sponsors.sql</code> to be run in Supabase. Ask a club admin.</p>
+      ) : (
+        <>
+          {sponsors.length === 0 && <p class="empty">No sponsors yet.</p>}
+          {sponsors.map((sp) => (
+            <div class="row sponsor-row">
+              <span class="logo" aria-hidden="true">{sp.logo_url ? <img src={sp.logo_url} alt="" loading="lazy" /> : sp.name.slice(0, 1).toUpperCase()}</span>
+              <div class="grow">
+                <h3>{sp.name}</h3>
+                <p>{[sp.website && websiteLabel(sp.website), sp.blurb].filter(Boolean).join(' · ') || 'No website or description'}</p>
+              </div>
+              <details class="sponsor-edit">
+                <summary class="btn outline sm">Edit</summary>
+                <form method="post" class="f" enctype="multipart/form-data">
+                  <input type="hidden" name="intent" value="sponsor-save" />
+                  <input type="hidden" name="sponsor_id" value={sp.id} />
+                  <SponsorFields sponsor={sp} />
+                  <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                    <button class="btn" type="submit">Save sponsor</button>
+                  </div>
+                </form>
+                <form method="post" onsubmit="return confirm('Remove this sponsor from the team page?')" style="margin-top:0.5rem">
+                  <input type="hidden" name="intent" value="sponsor-delete" />
+                  <input type="hidden" name="sponsor_id" value={sp.id} />
+                  <button class="btn danger sm" type="submit">Remove sponsor</button>
+                </form>
+              </details>
+            </div>
+          ))}
+          <details class="sponsor-add" open={sponsors.length === 0 ? true : undefined}>
+            <summary class="btn outline">+ Add a sponsor</summary>
+            <form method="post" class="f" enctype="multipart/form-data" style="margin-top:0.8rem">
+              <input type="hidden" name="intent" value="sponsor-add" />
+              <SponsorFields />
+              <div><button class="btn" type="submit">Add sponsor</button></div>
+            </form>
+          </details>
+        </>
+      )}
+    </div>
+  )}
 
   <div class="card">
     <h2>Coaches</h2>
@@ -247,3 +336,19 @@ const newEnquiries = await countNewEnquiries(supabase);
   }
 
 </script>
+
+<style>
+  .sponsor-row { align-items: flex-start; }
+  .sponsor-row .logo {
+    flex: none; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; display: grid; place-items: center;
+    background: #fff; border: 1px solid var(--line); color: #333; font-weight: 700;
+  }
+  .sponsor-row .logo img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+  .sponsor-edit { flex-basis: 100%; }
+  .sponsor-edit[open] { padding: 0.8rem; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--line); }
+  .sponsor-edit summary, .sponsor-add summary { list-style: none; display: inline-flex; width: auto; }
+  .sponsor-edit summary::-webkit-details-marker, .sponsor-add summary::-webkit-details-marker { display: none; }
+  .sponsor-edit[open] summary { margin-bottom: 0.8rem; }
+  .sponsor-add { margin-top: 0.8rem; }
+  @media (min-width: 640px) { .sponsor-edit:not([open]) { flex-basis: auto; } }
+</style>
