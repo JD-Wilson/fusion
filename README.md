@@ -195,7 +195,7 @@ Parents see which teams need players (by age group, position, match day) at `/va
 | Who | What they can do |
 | --- | --- |
 | **Parents** (no login) | Filter vacancies, tap *Message on WhatsApp* (opens WhatsApp with a pre-written message) or send a message through the form |
-| **Coaches** (managers, coaches, assistants, helpers with a login) | Post, edit, fill and delete vacancies for **their own teams**; edit their team pages; see and update enquiries about their teams. One person can run several teams, e.g. a Saturday and a Sunday team |
+| **Coaches** (managers, coaches, assistants, helpers with a login) | Post, edit, fill and delete vacancies for **their own teams**; edit their team pages; see and update enquiries about their teams. One person can run several teams, e.g. a Saturday and a Sunday team. A team's **Managers** can also add people to that team, change their roles and take them off (the club inbox is emailed each time); approving logins stays with club admins |
 | **Club admins** | Everything above for every team and development group, plus the website, adding teams (including straight from Full-Time) and managing **People**. An admin can also be a coach on teams, and sees those teams first |
 
 **People** are everyone who helps run the club. Add someone with just their name, tick the teams and development groups they help with (and their role on each), and give them a login only if they need one. Enquiries go to anyone on the team with an email, login or not.
