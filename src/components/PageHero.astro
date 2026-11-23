@@ -10,11 +10,12 @@ interface Props {
   /** CSS object-position for cropping the photo, e.g. "50% 30%". */
   imagePosition?: string;
   /**
-   * "cover" (default): the photo fills the header behind the text, darkened.
-   * "side": the photo is shown whole and undarkened beside the text; suits
-   * group shots where every face matters.
+   * "cover" (default): the photo fills the header, darkened from the left
+   * behind the text.
+   * "fade": the photo stays bright and only the bottom fades to dark behind
+   * the title; suits group shots where every face matters.
    */
-  layout?: 'cover' | 'side';
+  layout?: 'cover' | 'fade';
 }
 
 const {
@@ -26,12 +27,12 @@ const {
   imagePosition = '50% 40%',
   layout = 'cover'
 } = Astro.props as Props;
-const side = Boolean(image) && layout === 'side';
+const fade = Boolean(image) && layout === 'fade';
 ---
 
-<section class:list={['page-hero', side ? 'side' : image ? 'has-image' : 'no-image']}>
+<section class:list={['page-hero', image ? 'has-image' : 'no-image', fade && 'fade']}>
   {
-    image && !side && (
+    image && (
       <div class="hero-media" aria-hidden="true">
         <img {...responsive(image, 'hero')} alt="" width="1600" height="1067" decoding="async" fetchpriority="high" style={`object-position: ${imagePosition}`} />
       </div>
@@ -56,11 +57,6 @@ const side = Boolean(image) && layout === 'side';
         )
       }
     </div>
-    {side && (
-      <figure class="hero-photo">
-        <img {...responsive(image!, 'feature')} alt="" width="1200" height="800" decoding="async" fetchpriority="high" />
-      </figure>
-    )}
   </div>
 </section>
 
@@ -131,76 +127,20 @@ const side = Boolean(image) && layout === 'side';
       var(--bg);
   }
 
-  /* Side layout: text on the plain background, the photo whole beside it. */
-  .side {
-    background:
-      radial-gradient(900px 420px at 85% -20%, rgba(63, 209, 127, 0.14), transparent 65%),
-      var(--bg);
+  /* Fade layout: a taller, bright photo; only the bottom darkens behind the title. */
+  .fade .hero-inner {
+    min-height: min(86vh, 780px);
   }
 
-  .side .hero-inner {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    align-items: center;
-    gap: clamp(2rem, 5vw, 4rem);
-    padding: clamp(3.5rem, 8vh, 5.5rem) 0 clamp(3rem, 6vh, 4.5rem);
+  .fade .hero-media::after {
+    background: linear-gradient(0deg, var(--bg) 0%, rgba(9, 11, 10, 0.82) 20%, rgba(9, 11, 10, 0.35) 42%, rgba(9, 11, 10, 0) 62%);
   }
 
-  .hero-photo {
-    margin: 0;
-    border-radius: var(--radius-l);
-    overflow: hidden;
-    border: 1px solid var(--line);
-    background: var(--surface);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  }
-
-  /* Natural proportions, so nobody is cropped out. */
-  .hero-photo img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 520px;
-    object-fit: cover;
+  .fade .hero-content {
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
   }
 
   @media (max-width: 720px) {
-    .side .hero-inner {
-      grid-template-columns: 1fr;
-      padding: 1.25rem 0 2.5rem;
-      gap: 1.5rem;
-    }
-
-    .side .hero-photo {
-      order: -1;
-    }
-
-    .hero-inner {
-      width: calc(100vw - 32px);
-      min-height: 0;
-      padding: 0 0 2.5rem;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .has-image .hero-inner {
-      padding-top: 46vw;
-    }
-
-    .no-image .hero-inner {
-      padding: 3.5rem 0 2.5rem;
-    }
-
-    .hero-media {
-      bottom: auto;
-      height: 72vw;
-    }
-
-    .hero-media::after {
-      background: linear-gradient(0deg, var(--bg) 0%, rgba(9, 11, 10, 0.55) 45%, rgba(9, 11, 10, 0.1) 100%);
-    }
-
     .hero-actions .button {
       flex: 1 1 auto;
     }

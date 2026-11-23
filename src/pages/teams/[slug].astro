@@ -106,7 +106,7 @@ const teamJsonLd = team
         summary={summary}
         image={teamPhoto(team)}
         imagePosition="50% 40%"
-        layout="side"
+        layout="fade"
         actions={[
           ...(vacancies.length ? [{ href: '#recruiting', label: 'Looking for players' }] : []),
           ...(canMessage ? [{ href: '#contact', label: coach ? `Message ${shortName}` : 'Message the team', ghost: vacancies.length > 0 }] : [])
