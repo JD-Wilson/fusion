@@ -11,6 +11,12 @@ interface ImportMetaEnv {
   readonly RESEND_API_KEY?: string;
   readonly EMAIL_FROM?: string;
   readonly CLUB_INBOX_EMAIL?: string;
+  /** Google Analytics 4 measurement ID ("G-…") the site sends visits to. Defaults to the one in src/config/site.ts. */
+  readonly PUBLIC_GA_MEASUREMENT_ID?: string;
+  /** Google Analytics 4 property number, for the admin Analytics page. */
+  readonly GA_PROPERTY_ID?: string;
+  /** Server only. A Google Cloud service account's JSON key (as-is or base64) with Viewer access to the GA property. */
+  readonly GA_SERVICE_ACCOUNT_KEY?: string;
 }
 
 declare namespace App {

@@ -43,11 +43,17 @@ import { siteConfig } from '../config/site';
       // eslint-disable-next-line prefer-rest-params
       w.dataLayer.push(arguments);
     };
-    w.gtag('js', new Date());
-    w.gtag('config', id);
     const script = document.createElement('script');
     script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    if (id.startsWith('GTM-')) {
+      // A Google Tag Manager container: its own tags decide what's sent.
+      w.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+      script.src = `https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(id)}`;
+    } else {
+      w.gtag('js', new Date());
+      w.gtag('config', id);
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    }
     document.head.appendChild(script);
   };
 

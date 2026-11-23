@@ -1,0 +1,179 @@
+---
+import BarList from '../../components/portal/BarList.astro';
+import LineChart from '../../components/portal/LineChart.astro';
+import PortalLayout from '../../components/portal/PortalLayout.astro';
+import { loadAnalytics, type Totals } from '../../lib/google-analytics';
+import { ago, countNewEnquiries } from '../../lib/portal';
+
+export const prerender = false;
+const session = Astro.locals.session!;
+const supabase = Astro.locals.supabase!;
+if (!session.isAdmin) return Astro.redirect('/portal/');
+
+const fresh = Astro.url.searchParams.get('fresh') === '1';
+const since = new Date(Date.now() - 28 * 86400000).toISOString();
+const before = new Date(Date.now() - 56 * 86400000).toISOString();
+
+const [{ data: ga, error }, newEnquiries, { data: enquiryData }, { data: vacancyData }, { data: teamData }] = await Promise.all([
+  loadAnalytics(fresh),
+  countNewEnquiries(supabase),
+  supabase.from('enquiries').select('team_id, created_at').gte('created_at', before),
+  supabase.from('vacancies').select('team_id, whatsapp_clicks'),
+  supabase.from('teams').select('id, name, kind')
+]);
+
+// The website's own records: exact, and not affected by cookie choices.
+const teamName = new Map(((teamData ?? []) as { id: string; name: string }[]).map((t) => [t.id, t.name]));
+const enquiries = (enquiryData ?? []) as { team_id: string | null; created_at: string }[];
+const recent = enquiries.filter((e) => e.created_at >= since);
+const enquiriesBefore = enquiries.length - recent.length;
+const countBy = <T,>(rows: T[], key: (r: T) => string, value: (r: T) => number = () => 1) => {
+  const map = new Map<string, number>();
+  for (const r of rows) map.set(key(r), (map.get(key(r)) ?? 0) + value(r));
+  return [...map].map(([label, v]) => ({ label, value: v })).filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
+};
+const enquiriesByTeam = countBy(recent, (e) => (e.team_id && teamName.get(e.team_id)) || 'The club (no team)').slice(0, 10);
+const vacancies = (vacancyData ?? []) as { team_id: string; whatsapp_clicks: number }[];
+const tapsByTeam = countBy(vacancies, (v) => teamName.get(v.team_id) ?? 'Deleted team', (v) => v.whatsapp_clicks ?? 0).slice(0, 10);
+const totalTaps = vacancies.reduce((s, v) => s + (v.whatsapp_clicks ?? 0), 0);
+
+const fmt = (n: number) => Math.round(n).toLocaleString('en-GB');
+const duration = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${String(Math.round(s % 60)).padStart(2, '0')}s` : `${Math.round(s)}s`);
+const change = (now: number, then: number) => {
+  if (!then) return now ? { text: 'New', dir: 'up' } : null;
+  const pct = Math.round(((now - then) / then) * 100);
+  return { text: `${pct > 0 ? '+' : ''}${pct}%`, dir: pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat' };
+};
+const tiles = ga
+  ? ([
+      ['Visitors', 'visitors', fmt],
+      ['Visits', 'visits', fmt],
+      ['Page views', 'pageViews', fmt],
+      ['Average visit', 'avgVisit', duration]
+    ] as [string, keyof Totals, (n: number) => string][]).map(([label, key, show]) => ({
+      label,
+      value: show(ga.current[key]),
+      before: show(ga.previous[key]),
+      delta: change(ga.current[key], ga.previous[key])
+    }))
+  : [];
+const enquiryChange = change(recent.length, enquiriesBefore);
+
+// Friendlier names for a few page paths.
+const pageLabel = (path: string) => (path === '/' ? 'Home' : path.replace(/\/$/, ''));
+---
+
+<PortalLayout title="Analytics" session={session} active="analytics" newEnquiries={newEnquiries}>
+  <div class="p-head">
+    <div>
+      <h1>Analytics</h1>
+      <p class="p-sub">How the website is doing over the last 28 days, compared with the 28 days before.</p>
+    </div>
+    {ga && <div class="actions"><a class="btn outline sm" href="/portal/analytics/?fresh=1">Refresh</a></div>}
+  </div>
+
+  {error && <div class="msg bad" role="alert">{error}{ga ? ' Showing the last figures that loaded.' : ''}</div>}
+
+  {!ga && !error && (
+    <div class="card">
+      <h2>Connect Google Analytics</h2>
+      <p class="p-sub">
+        The website already records visits in Google Analytics. To show them here, a club admin needs to give the website read-only access:
+        set <code>GA_PROPERTY_ID</code> and <code>GA_SERVICE_ACCOUNT_KEY</code> in Vercel (see "Analytics dashboard" in the README), then redeploy.
+        The website's own figures below work already.
+      </p>
+    </div>
+  )}
+
+  {ga && (
+    <>
+      <div class="tiles">
+        {tiles.map((t) => (
+          <div class="tile">
+            <span class="t-label">{t.label}</span>
+            <strong class="t-value">{t.value}</strong>
+            <span class="t-sub">
+              {t.delta && <span class:list={['t-delta', t.delta.dir]}>{t.delta.dir === 'up' ? '▲' : t.delta.dir === 'down' ? '▼' : '■'} {t.delta.text}</span>}
+              <span>vs {t.before}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Visitors per day</h2><span class="note">Last 90 days</span></div>
+        <LineChart points={ga.daily.map((d) => ({ date: d.date, value: d.visitors }))} unit="visitors" label="Visitors per day" />
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Most viewed pages</h2>
+          <BarList items={ga.pages.map((p) => ({ label: pageLabel(p.label), value: p.value, href: p.label.startsWith('/') ? p.label : undefined }))} />
+        </div>
+        <div class="card">
+          <h2>How people find the site</h2>
+          <BarList items={ga.channels} percent />
+          <h3 class="sub">Top sources</h3>
+          <BarList items={ga.sources} />
+        </div>
+        <div class="card">
+          <h2>Phone or computer</h2>
+          <BarList items={ga.devices} percent />
+        </div>
+        <div class="card">
+          <h2>Where visitors are</h2>
+          <BarList items={ga.towns} empty="Not enough visitors yet to show towns." />
+        </div>
+      </div>
+    </>
+  )}
+
+  <h2 class="section-h">From the website's own records</h2>
+  <p class="p-sub" style="margin-bottom:0.8rem">Exact counts, whatever visitors choose about cookies.</p>
+  <div class="tiles">
+    <div class="tile">
+      <span class="t-label">Enquiries</span>
+      <strong class="t-value">{fmt(recent.length)}</strong>
+      <span class="t-sub">
+        {enquiryChange && <span class:list={['t-delta', enquiryChange.dir]}>{enquiryChange.dir === 'up' ? '▲' : enquiryChange.dir === 'down' ? '▼' : '■'} {enquiryChange.text}</span>}
+        <span>vs {fmt(enquiriesBefore)}</span>
+      </span>
+    </div>
+    <div class="tile">
+      <span class="t-label">WhatsApp taps on vacancies</span>
+      <strong class="t-value">{fmt(totalTaps)}</strong>
+      <span class="t-sub"><span>All time</span></span>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h2>Enquiries by team</h2>
+      <BarList items={enquiriesByTeam} empty="No enquiries in the last 28 days." />
+    </div>
+    <div class="card">
+      <h2>WhatsApp taps by team</h2>
+      <BarList items={tapsByTeam} empty="No WhatsApp taps on vacancies yet." />
+    </div>
+  </div>
+
+  <p class="foot">
+    {ga && <>Google Analytics figures updated {ago(ga.fetchedAt)} ({new Date(ga.fetchedAt).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' })}) and refreshed hourly. </>}
+    Google Analytics only counts visitors who accept cookies, so its numbers are lower than real traffic. Use them for trends rather than totals.
+  </p>
+</PortalLayout>
+
+<style>
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+  .tile { display: grid; gap: 0.3rem; padding: 1rem 1.1rem; border-radius: var(--radius-m); background: var(--surface); border: 1px solid var(--line); }
+  .t-label { font-size: 0.8rem; font-weight: 600; color: var(--text-3); }
+  .t-value { font-family: var(--font-display); font-size: clamp(1.6rem, 3.4vw, 2.1rem); line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+  .t-sub { display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--text-3); }
+  /* Ink stays neutral: the arrow and sign carry the direction. */
+  .t-delta { font-weight: 600; color: var(--text-2); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; margin-top: 1rem; }
+  .grid .card { margin-top: 0; }
+  .note { font-size: 0.82rem; color: var(--text-3); }
+  .sub { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 1.1rem 0 0.6rem; }
+  .section-h { font-size: 1.1rem; margin-top: 2rem; }
+  .foot { margin-top: 1.4rem; font-size: 0.82rem; color: var(--text-3); max-width: 70ch; }
+</style>

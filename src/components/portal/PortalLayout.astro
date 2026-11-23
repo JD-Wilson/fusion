@@ -5,7 +5,7 @@ import { roleLabel, shortDay, type Session } from '../../lib/auth';
 interface Props {
   title: string;
   session: Session;
-  active: 'dashboard' | 'vacancies' | 'teams' | 'enquiries' | 'pages' | 'blog' | 'media' | 'people' | 'account';
+  active: 'dashboard' | 'vacancies' | 'teams' | 'enquiries' | 'pages' | 'blog' | 'media' | 'people' | 'analytics' | 'account';
   /** On a team's page: highlights that team under "Your teams". */
   activeTeam?: string;
   newEnquiries?: number;
@@ -29,7 +29,8 @@ const groups: { label: string | null; links: Link[] }[] = [
           label: 'Club',
           links: [
             { id: 'teams', href: '/portal/teams/', label: 'Teams & sessions' },
-            { id: 'people', href: '/portal/people/', label: 'People' }
+            { id: 'people', href: '/portal/people/', label: 'People' },
+            { id: 'analytics', href: '/portal/analytics/', label: 'Analytics' }
           ]
         },
         {
