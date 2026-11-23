@@ -62,7 +62,17 @@ const off = (m: Match) => /postponed|cancelled|called off|abandoned|void/i.test(
 
 <style>
   .match-list { display: grid; gap: 1.2rem; }
-  .match-list.compact { gap: 0; }
+  /* Compact (team pages): one panel, a divider between games, not a box per day. */
+  .match-list.compact {
+    gap: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .compact ul { border: 0; border-radius: 0; background: none; }
+  .compact .day + .day { border-top: 1px solid var(--line); }
+  .compact .match { padding-block: 0.95rem; }
 
   .day-label {
     margin-bottom: 0.5rem;
