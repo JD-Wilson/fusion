@@ -211,3 +211,43 @@ export async function loadAnalytics(fresh = false): Promise<{ data: AnalyticsDas
     return { data: cache?.data ?? null, error: err instanceof Error ? err.message : 'Google Analytics could not be reached.' };
   }
 }
+
+export interface Realtime {
+  /** Visitors in the last 30 minutes. */
+  visitors: number;
+  pages: Share[];
+}
+
+let realtimeCache: { at: number; data: Realtime } | null = null;
+
+/**
+ * Who's on the site in the last 30 minutes (GA's realtime data, which shows
+ * within a minute; the other reports take a day or two). Kept for a minute.
+ */
+export async function loadRealtime(): Promise<Realtime | null> {
+  const property = propertyId();
+  const key = serviceAccount();
+  if (!property || !key) return null;
+  if (realtimeCache && Date.now() - realtimeCache.at < 60_000) return realtimeCache.data;
+  try {
+    const call = async (body: object) => {
+      const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${property}:runRealtimeReport`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await accessToken(key)}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(`Realtime ${res.status}: ${await res.text()}`);
+      return (await res.json()) as Report;
+    };
+    const [total, pages] = await Promise.all([
+      call({ metrics: [{ name: 'activeUsers' }] }),
+      call({ dimensions: [{ name: 'unifiedScreenName' }], metrics: [{ name: 'activeUsers' }], limit: 5 })
+    ]);
+    const data = { visitors: num(total.rows?.[0]?.metricValues?.[0]?.value), pages: shares(pages) };
+    realtimeCache = { at: Date.now(), data };
+    return data;
+  } catch (err) {
+    console.error('[analytics] realtime', err);
+    return null;
+  }
+}
