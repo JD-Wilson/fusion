@@ -336,9 +336,11 @@ const teamJsonLd = team
 
   .team-main > section { margin-top: 0; }
 
+  /* Flex rather than grid so a part-filled last row stretches to fill it,
+     instead of leaving empty boxes. */
   .facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     border: 1px solid var(--line);
     border-radius: var(--radius-l);
     overflow: hidden;
@@ -347,6 +349,7 @@ const teamJsonLd = team
   }
 
   .fact {
+    flex: 1 1 170px;
     display: grid;
     align-content: start;
     gap: 0.25rem;
