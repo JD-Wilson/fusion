@@ -11,7 +11,7 @@
  */
 
 /** Widths Vercel will produce (keep in step with astro.config.mjs). */
-export const IMAGE_WIDTHS = [256, 384, 640, 828, 1080, 1200, 1920, 2048] as const;
+export const IMAGE_WIDTHS = [256, 384, 640, 828, 1080, 1200, 1920, 2048, 2560, 3840] as const;
 type Width = (typeof IMAGE_WIDTHS)[number];
 
 const SUPABASE_PUBLIC = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\//i;
@@ -30,13 +30,11 @@ export const optimisedUrl = (src: string, width: Width, quality = 75) =>
 /** Sizes for the common places photos appear. */
 const PRESETS = {
   /** Full-width page header. */
-  hero: { widths: [828, 1200, 1920, 2048], sizes: '100vw', quality: 80 },
+  hero: { widths: [828, 1200, 1920, 2560, 3840], sizes: '100vw', quality: 82 },
   /** Cards in a grid (team cards, vacancy and blog cards). */
   card: { widths: [384, 640, 828, 1080], sizes: '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 400px', quality: 75 },
   /** A larger image inside the page column (blog cover, about page). */
   content: { widths: [640, 828, 1200, 1920], sizes: '(max-width: 900px) 100vw, 900px', quality: 78 },
-  /** A photo shown whole beside the page header (team pages). */
-  feature: { widths: [640, 828, 1080, 1200], sizes: '(max-width: 720px) 100vw, 600px', quality: 80 },
   /** Small round portraits (coaches). */
   avatar: { widths: [256], sizes: '96px', quality: 75 },
   /** Sponsor logos. */
