@@ -9,14 +9,16 @@
 /* Chart series colour: a step of the accent validated for marks on the dark surface (lightness band, ≥3:1). */
 :root {
   --chart-1: #22a35b;
-  /* Categorical order for charts with several parts, stepped for the dark
-     surface and validated as a set (lightness band, ≥3:1, colour-blind safe). */
-  --cat-1: #3987e5;
-  --cat-2: #d95926;
-  --cat-3: #199e70;
-  --cat-4: #c98500;
-  --cat-5: #d55181;
-  --cat-6: #9085e9;
+  /* Categorical order for charts with several parts: the brand green first,
+     then calm companions (deep blue, soft violet, then earthy bronze, teal and
+     brick). Validated for the dark surface as a set: lightness band, ≥3:1,
+     and colour-blind separation (all pairs among the first three). */
+  --cat-1: #22a35b;
+  --cat-2: #1870a1;
+  --cat-3: #8b80ca;
+  --cat-4: #915c08;
+  --cat-5: #138db1;
+  --cat-6: #9e4e42;
 }
 
 * { box-sizing: border-box; }
