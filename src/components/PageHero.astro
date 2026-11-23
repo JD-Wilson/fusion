@@ -9,6 +9,12 @@ interface Props {
   image?: string;
   /** CSS object-position for cropping the photo, e.g. "50% 30%". */
   imagePosition?: string;
+  /**
+   * "cover" (default): the photo fills the header behind the text, darkened.
+   * "side": the photo is shown whole and undarkened beside the text; suits
+   * group shots where every face matters.
+   */
+  layout?: 'cover' | 'side';
 }
 
 const {
@@ -17,13 +23,15 @@ const {
   summary,
   actions = [],
   image,
-  imagePosition = '50% 40%'
+  imagePosition = '50% 40%',
+  layout = 'cover'
 } = Astro.props as Props;
+const side = Boolean(image) && layout === 'side';
 ---
 
-<section class:list={['page-hero', image ? 'has-image' : 'no-image']}>
+<section class:list={['page-hero', side ? 'side' : image ? 'has-image' : 'no-image']}>
   {
-    image && (
+    image && !side && (
       <div class="hero-media" aria-hidden="true">
         <img {...responsive(image, 'hero')} alt="" width="1600" height="1067" decoding="async" fetchpriority="high" style={`object-position: ${imagePosition}`} />
       </div>
@@ -48,6 +56,11 @@ const {
         )
       }
     </div>
+    {side && (
+      <figure class="hero-photo">
+        <img {...responsive(image!, 'feature')} alt="" width="1200" height="800" decoding="async" fetchpriority="high" />
+      </figure>
+    )}
   </div>
 </section>
 
@@ -118,7 +131,51 @@ const {
       var(--bg);
   }
 
+  /* Side layout: text on the plain background, the photo whole beside it. */
+  .side {
+    background:
+      radial-gradient(900px 420px at 85% -20%, rgba(63, 209, 127, 0.14), transparent 65%),
+      var(--bg);
+  }
+
+  .side .hero-inner {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: clamp(2rem, 5vw, 4rem);
+    padding: clamp(3.5rem, 8vh, 5.5rem) 0 clamp(3rem, 6vh, 4.5rem);
+  }
+
+  .hero-photo {
+    margin: 0;
+    border-radius: var(--radius-l);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Natural proportions, so nobody is cropped out. */
+  .hero-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: cover;
+  }
+
   @media (max-width: 720px) {
+    .side .hero-inner {
+      grid-template-columns: 1fr;
+      padding: 1.25rem 0 2.5rem;
+      gap: 1.5rem;
+    }
+
+    .side .hero-photo {
+      order: -1;
+    }
+
     .hero-inner {
       width: calc(100vw - 32px);
       min-height: 0;

@@ -35,6 +35,8 @@ const PRESETS = {
   card: { widths: [384, 640, 828, 1080], sizes: '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 400px', quality: 75 },
   /** A larger image inside the page column (blog cover, about page). */
   content: { widths: [640, 828, 1200, 1920], sizes: '(max-width: 900px) 100vw, 900px', quality: 78 },
+  /** A photo shown whole beside the page header (team pages). */
+  feature: { widths: [640, 828, 1080, 1200], sizes: '(max-width: 720px) 100vw, 600px', quality: 80 },
   /** Small round portraits (coaches). */
   avatar: { widths: [256], sizes: '96px', quality: 75 },
   /** Sponsor logos. */
