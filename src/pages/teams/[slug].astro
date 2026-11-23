@@ -54,7 +54,6 @@ const ftTable = ftName ? tableFor(ftName) : null;
 const hasMatches = nextGames.length > 0 || pastGames.length > 0;
 
 const coach = team?.contact_name ?? null;
-const canMessage = Boolean(team && (team.whatsapp_enabled || team.email_enabled));
 const initial = (coach ?? 'F').replace(/^(coach|manager)\s+/i, '').trim()[0]?.toUpperCase() ?? 'F';
 const shortName = coach && coach.length <= 18 ? coach : (coach?.split(' ')[0] ?? 'the coach');
 const share = team
@@ -107,10 +106,7 @@ const teamJsonLd = team
         image={teamPhoto(team)}
         imagePosition="50% 40%"
         layout="fade"
-        actions={[
-          ...(vacancies.length ? [{ href: '#recruiting', label: 'Looking for players' }] : []),
-          ...(canMessage ? [{ href: '#contact', label: coach ? `Message ${shortName}` : 'Message the team', ghost: vacancies.length > 0 }] : [])
-        ]}
+        actions={vacancies.length ? [{ href: '#recruiting', label: 'Looking for players' }] : []}
       />
 
       {(sent || error) && (
