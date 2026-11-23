@@ -1,0 +1,91 @@
+---
+/*
+ * "Your team online": how the team's public page and vacancy pages are doing.
+ * Visits come from Google Analytics (only people who accepted cookies);
+ * enquiries and WhatsApp taps are the website's own exact records.
+ */
+import SegmentedBar from './SegmentedBar.astro';
+import TrendChart from './TrendChart.astro';
+import type { PageStats } from '../../lib/google-analytics';
+
+interface Props {
+  stats: PageStats | null;
+  error?: string;
+  /** Google Analytics is set up for the site. */
+  configured: boolean;
+  enquiries: { now: number; before: number };
+  /** All-time WhatsApp taps across the team's vacancies. */
+  taps: number;
+}
+const { stats, error, configured, enquiries, taps } = Astro.props as Props;
+
+const fmt = (n: number) => Math.round(n).toLocaleString('en-GB');
+// Small numbers: say "3 more" rather than a percentage that swings wildly.
+const change = (now: number, then: number) => {
+  const diff = now - then;
+  if (diff === 0) return { text: 'Same as before', dir: 'flat' };
+  return { text: `${diff > 0 ? '▲' : '▼'} ${fmt(Math.abs(diff))} ${diff > 0 ? 'more' : 'fewer'}`, dir: diff > 0 ? 'up' : 'down' };
+};
+const tiles = [
+  ...(stats
+    ? [
+        { label: 'People who visited', value: stats.current.visitors, before: stats.previous.visitors },
+        { label: 'Page views', value: stats.current.pageViews, before: stats.previous.pageViews }
+      ]
+    : []),
+  { label: 'Enquiries', value: enquiries.now, before: enquiries.before }
+];
+const hasVisits = stats ? stats.daily.some((d) => d.pageViews > 0) : false;
+---
+
+<div class="card team-stats">
+  <h2>Your team online</h2>
+  <p class="ts-intro">Your team page and vacancy pages over the last 28 days, compared with the 28 days before.</p>
+
+  <div class="ts-tiles">
+    {tiles.map((t) => {
+      const c = change(t.value, t.before);
+      return (
+        <div class="ts-tile">
+          <span class="ts-label">{t.label}</span>
+          <span class="ts-value">{fmt(t.value)}</span>
+          <span class="ts-sub"><span class:list={['ts-delta', c.dir]}>{c.text}</span> <span>vs {fmt(t.before)}</span></span>
+        </div>
+      );
+    })}
+    <div class="ts-tile">
+      <span class="ts-label">WhatsApp taps</span>
+      <span class="ts-value">{fmt(taps)}</span>
+      <span class="ts-sub">On your vacancies, all time</span>
+    </div>
+  </div>
+
+  {stats && hasVisits && (
+    <>
+      <h3 class="ts-head">Visits day by day</h3>
+      <TrendChart days={stats.daily} />
+      <h3 class="ts-head">How people found you</h3>
+      <SegmentedBar items={stats.channels} label="How people found your team's pages" />
+    </>
+  )}
+  {stats && !hasVisits && <p class="empty">No visits recorded yet. Figures appear a day or two after people visit.</p>}
+  {!stats && configured && error && <p class="empty">{error} Try again later.</p>}
+
+  <p class="ts-note">
+    {configured
+      ? 'Visit figures only count people who accepted cookies, so the real numbers are higher. They update every hour. Enquiries and WhatsApp taps are exact.'
+      : 'Enquiries and WhatsApp taps come from the website itself.'}
+  </p>
+</div>
+
+<style>
+  .ts-intro { margin: -0.3rem 0 1rem; font-size: 0.88rem; color: var(--text-3); }
+  .ts-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem; margin-bottom: 1.2rem; }
+  .ts-tile { display: grid; gap: 0.25rem; padding: 0.85rem 1rem; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--line); }
+  .ts-label { font-size: 0.78rem; font-weight: 600; color: var(--text-3); }
+  .ts-value { font-family: var(--font-display); font-size: 1.7rem; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+  .ts-sub { display: flex; gap: 0.4rem; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-3); }
+  .ts-delta { font-weight: 600; color: var(--text-2); }
+  .ts-head { margin: 1.3rem 0 0.7rem; font-size: 0.95rem; color: var(--text-2); }
+  .ts-note { margin: 1rem 0 0; font-size: 0.78rem; color: var(--text-3); }
+</style>

@@ -269,3 +269,80 @@ export async function loadRealtime(): Promise<Realtime | null> {
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// One team's pages
+
+export interface PageStats {
+  current: Omit<Totals, 'avgVisit'>;
+  previous: Omit<Totals, 'avgVisit'>;
+  /** Per day, oldest first: 118 days ending today (same shape as the club trend). */
+  daily: AnalyticsDashboard['daily'];
+  /** How people arrived, last 28 days (sessions that viewed these pages). */
+  channels: Share[];
+}
+
+const pageCache = new Map<string, { at: number; data: PageStats }>();
+
+/**
+ * Figures for a set of pages (a team's page and its vacancy pages). Each path
+ * is matched as itself or anything beneath it, e.g. "/teams/u10-blue/".
+ * Kept for an hour per team.
+ */
+export async function loadPageStats(cacheKey: string, paths: string[]): Promise<{ data: PageStats | null; error?: string }> {
+  const property = propertyId();
+  const key = serviceAccount();
+  if (!property || !key || paths.length === 0) return { data: null };
+  const cached = pageCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < CACHE_MS) return { data: cached.data };
+
+  // "/teams/u8/" must not also match "/teams/u8-white/", so match the path
+  // with its trailing slash, or exactly without it.
+  const expressions = paths.flatMap((p) => {
+    const withSlash = p.endsWith('/') ? p : `${p}/`;
+    return [
+      { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'BEGINS_WITH', value: withSlash } } },
+      { filter: { fieldName: 'pagePath', stringFilter: { matchType: 'EXACT', value: withSlash.slice(0, -1) } } }
+    ];
+  });
+  const dimensionFilter = { orGroup: { expressions } };
+  const metrics = ['activeUsers', 'sessions', 'screenPageViews'].map((name) => ({ name }));
+
+  try {
+    const reports = await batch(property, key, [
+      { dateRanges: [CURRENT, PREVIOUS], metrics, dimensionFilter },
+      {
+        dateRanges: [{ startDate: '117daysAgo', endDate: 'today' }],
+        dimensions: [{ name: 'date' }],
+        metrics,
+        dimensionFilter,
+        orderBys: [{ dimension: { dimensionName: 'date' } }],
+        limit: 200
+      },
+      { ...top('sessionDefaultChannelGroup', 'sessions', 8), dimensionFilter }
+    ]);
+    const totals = (name: string) => {
+      const m = reports[0]?.rows?.find((r) => r.dimensionValues?.[0]?.value === name)?.metricValues ?? [];
+      return { visitors: num(m[0]?.value), visits: num(m[1]?.value), pageViews: num(m[2]?.value) };
+    };
+    const byDay = new Map((reports[1]?.rows ?? []).map((r) => [r.dimensionValues?.[0]?.value ?? '', r.metricValues ?? []]));
+    const daily: PageStats['daily'] = [];
+    const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' }) + 'T00:00:00Z');
+    for (let i = 117; i >= 0; i--) {
+      const d = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
+      const m = byDay.get(d.replace(/-/g, '')) ?? [];
+      daily.push({ date: d, visitors: num(m[0]?.value), visits: num(m[1]?.value), pageViews: num(m[2]?.value) });
+    }
+    const data: PageStats = {
+      current: totals('current'),
+      previous: totals('previous'),
+      daily,
+      channels: shares(reports[2], /^\(not set\)$|^$|^Unassigned$/)
+    };
+    pageCache.set(cacheKey, { at: Date.now(), data });
+    return { data };
+  } catch (err) {
+    console.error('[analytics] team', err);
+    return { data: pageCache.get(cacheKey)?.data ?? null, error: 'Website figures could not be loaded just now.' };
+  }
+}

@@ -3,9 +3,11 @@ import PortalLayout from '../../../components/portal/PortalLayout.astro';
 import ResizeUploads from '../../../components/portal/ResizeUploads.astro';
 import SponsorFields from '../../../components/portal/SponsorFields.astro';
 import TeamFields from '../../../components/portal/TeamFields.astro';
+import TeamStats from '../../../components/portal/TeamStats.astro';
 import { siteConfig, toAbsoluteUrl } from '../../../config/site';
 import { canEditTeam } from '../../../lib/auth';
 import { sendEmail } from '../../../lib/email';
+import { isAnalyticsConfigured, loadPageStats } from '../../../lib/google-analytics';
 import { adminSupabase } from '../../../lib/supabase';
 import { UUID, checked, line } from '../../../lib/forms';
 import { countNewEnquiries, type TeamRow } from '../../../lib/portal';
@@ -223,7 +225,25 @@ const people = peopleDb
         ].filter(Boolean).join(' ')
       }))
   : [];
-const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([countNewEnquiries(supabase), loadSponsorsForPortal(supabase, id)]);
+// "Your team online": for the team's Managers and club admins. Not for
+// development sessions, which share one page.
+const showStats = canManageCoaches && team.kind !== 'development';
+const statsSince = new Date(Date.now() - 28 * 86400000).toISOString();
+const statsBefore = new Date(Date.now() - 56 * 86400000).toISOString();
+const [newEnquiries, { sponsors, ready: sponsorsReady }, pageStats, { data: enquiryData }] = await Promise.all([
+  countNewEnquiries(supabase),
+  loadSponsorsForPortal(supabase, id),
+  showStats
+    ? loadPageStats(id, [`/teams/${team.slug}/`, ...vacancies.map((v) => `/vacancies/${v.id}/`)])
+    : Promise.resolve({ data: null, error: undefined }),
+  showStats
+    ? supabase.from('enquiries').select('created_at').eq('team_id', id).gte('created_at', statsBefore)
+    : Promise.resolve({ data: [] })
+]);
+const teamEnquiries = (enquiryData ?? []) as { created_at: string }[];
+const enquiriesNow = teamEnquiries.filter((e) => e.created_at >= statsSince).length;
+const enquiryCounts = { now: enquiriesNow, before: teamEnquiries.length - enquiriesNow };
+const vacancyTaps = vacancies.reduce((sum, v) => sum + (v.whatsapp_clicks ?? 0), 0);
 ---
 
 <PortalLayout title={team.name} session={session} active="teams" activeTeam={team.id} newEnquiries={newEnquiries}>
@@ -264,6 +284,10 @@ const [newEnquiries, { sponsors, ready: sponsorsReady }] = await Promise.all([co
     ))}
     <div style="margin-top:0.8rem"><a class="btn outline" href={`/portal/vacancies/new/?team=${team.id}`}>+ Add a vacancy</a></div>
   </div>
+
+  {showStats && (
+    <TeamStats stats={pageStats.data} error={pageStats.error} configured={isAnalyticsConfigured()} enquiries={enquiryCounts} taps={vacancyTaps} />
+  )}
 
   <div class="card">
     <h2>{team.kind === 'development' ? 'Details' : 'Team page'}</h2>
