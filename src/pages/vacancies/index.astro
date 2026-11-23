@@ -1,4 +1,5 @@
 ---
+import { responsive } from '../../lib/images';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
@@ -213,7 +214,7 @@ const expiry = (d: string) =>
                 {vacancies.map((v) => (
                   <article class="dark-card vac" id={`v-${v.id}`}>
                     <a class="vac-cover" href={v.team_kind === 'development' ? '/development-sessions/' : `/teams/${v.team_slug}/`} tabindex="-1" aria-hidden="true">
-                      <img src={teamPhoto({ photo_url: v.team_photo_url ?? null, gender: v.gender, age_group: v.age_group })} alt="" loading="lazy" />
+                      <img {...responsive(teamPhoto({ photo_url: v.team_photo_url ?? null, gender: v.gender, age_group: v.age_group }), 'card')} alt="" loading="lazy" />
                     </a>
                     <div class="vac-top">
                       <span class="vac-age">{v.age_group}</span>

@@ -1,4 +1,5 @@
 ---
+import { responsive } from '../lib/images';
 import { teamPath, teamPhoto, type PublicTeam } from '../lib/teams';
 
 interface Props {
@@ -13,7 +14,7 @@ const meta = [team.gender === 'Mixed' ? null : team.gender, team.match_day, team
 
 <a class="team-card" href={teamPath(team)}>
   <div class="tc-photo">
-    <img src={teamPhoto(team)} alt="" loading="lazy" decoding="async" width="640" height="360" />
+    <img {...responsive(teamPhoto(team), 'card')} alt="" loading="lazy" decoding="async" width="640" height="360" />
     <span class="tc-age">{team.age_group}</span>
     {openSpaces > 0 && <span class="tc-recruiting">Looking for players</span>}
   </div>

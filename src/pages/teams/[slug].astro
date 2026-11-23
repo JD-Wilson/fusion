@@ -1,4 +1,5 @@
 ---
+import { responsive } from '../../lib/images';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
@@ -146,7 +147,7 @@ const teamJsonLd = team
                 {coaches.map((c) => (
                   <article class="coach">
                     <div class="coach-photo">
-                      {c.photo_url ? <img src={c.photo_url} alt={`${c.full_name}, ${c.role_title}`} loading="lazy" /> : <span aria-hidden="true">{initialsOf(c.full_name)}</span>}
+                      {c.photo_url ? <img {...responsive(c.photo_url, 'avatar')} alt={`${c.full_name}, ${c.role_title}`} loading="lazy" /> : <span aria-hidden="true">{initialsOf(c.full_name)}</span>}
                     </div>
                     <div class="coach-text">
                       <h3>{c.full_name}</h3>
@@ -219,7 +220,7 @@ const teamJsonLd = team
                   const body = (
                     <>
                       <div class="sponsor-logo">
-                        {sp.logo_url ? <img src={sp.logo_url} alt={`${sp.name} logo`} loading="lazy" /> : <span aria-hidden="true">{sp.name}</span>}
+                        {sp.logo_url ? <img {...responsive(sp.logo_url, 'logo')} alt={`${sp.name} logo`} loading="lazy" /> : <span aria-hidden="true">{sp.name}</span>}
                       </div>
                       <div class="sponsor-text">
                         <h3>{sp.name}</h3>
