@@ -1,0 +1,40 @@
+---
+/*
+ * Ranked horizontal bars with the value written beside each one, so the
+ * numbers never depend on reading the bar (and it doubles as the table).
+ */
+interface Props {
+  items: { label: string; value: number; href?: string }[];
+  /** Show each value as a share of the total, e.g. for devices. */
+  percent?: boolean;
+  empty?: string;
+}
+const { items, percent = false, empty = 'No data yet.' } = Astro.props as Props;
+const max = Math.max(1, ...items.map((i) => i.value));
+const total = items.reduce((s, i) => s + i.value, 0) || 1;
+const shown = (v: number) => (percent ? `${Math.round((v / total) * 100)}%` : v.toLocaleString('en-GB'));
+---
+
+{items.length === 0 ? (
+  <p class="empty">{empty}</p>
+) : (
+  <ol class="bars">
+    {items.map((i) => (
+      <li title={`${i.label}: ${i.value.toLocaleString('en-GB')}${percent ? ` (${shown(i.value)})` : ''}`}>
+        <span class="b-label">{i.href ? <a href={i.href}>{i.label}</a> : i.label}</span>
+        <span class="b-value">{shown(i.value)}</span>
+        <span class="b-track" aria-hidden="true"><span class="b-fill" style={`width:${Math.max(2, (i.value / max) * 100).toFixed(1)}%`}></span></span>
+      </li>
+    ))}
+  </ol>
+)}
+
+<style>
+  .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+  li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.2rem 0.8rem; align-items: baseline; }
+  .b-label { font-size: 0.88rem; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .b-label a { color: inherit; }
+  .b-value { font-size: 0.88rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .b-track { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+  .b-fill { display: block; height: 100%; border-radius: 4px; background: var(--chart-1); }
+</style>

@@ -247,6 +247,20 @@ Edits show on the website within a couple of minutes (pages are cached briefly a
 
 Page content is markdown, rendered by the same engine as the files (`src/lib/markdown.ts`), and cleaned of scripts and similar before display.
 
+## Analytics dashboard (club admins)
+
+`/portal/analytics/` shows the last 28 days against the 28 before: visitors, visits, page views, average visit, visitors per day (90 days), top pages, how people find the site, phone vs computer and towns, from **Google Analytics 4**. It also shows exact counts from the website's own database: enquiries and WhatsApp taps by team. Google Analytics only counts visitors who accept cookies, so treat those figures as trends.
+
+The Google figures are read on the server with a read-only **service account** and cached for an hour. Setup (free):
+
+1. [console.cloud.google.com](https://console.cloud.google.com): create a project (e.g. *fusion-website*), then **APIs & Services → Library → Google Analytics Data API → Enable**.
+2. **IAM & Admin → Service Accounts → Create service account** (e.g. *website-analytics*; no roles needed). Open it → **Keys → Add key → Create new key → JSON**. A `.json` file downloads; keep it private.
+3. [analytics.google.com](https://analytics.google.com) → **Admin → Property access management → +** → add the service account's email (`…@….iam.gserviceaccount.com`) as **Viewer**, without notifying.
+4. **Admin → Property details**: copy the **Property ID** (a number, not the `G-` ID).
+5. Vercel → Settings → Environment Variables (Production): if this is a different Analytics property from the one the site sends visits to, `PUBLIC_GA_MEASUREMENT_ID` = its `G-…` ID (Admin → Data streams); `GA_PROPERTY_ID` = that number, `GA_SERVICE_ACCOUNT_KEY` = the whole JSON file's contents. Redeploy.
+
+If your organisation blocks service account keys (*"Service account key creation is disabled"*), that's the `iam.disableServiceAccountKeyCreation` policy: turn it off for the project under **IAM & Admin → Organization Policies**.
+
 ## Fixtures, results and league tables (FA Full-Time)
 
 Ported from the Florence FC site. Full-Time has no public API and blocks plain server requests, so:

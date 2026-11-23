@@ -6,6 +6,8 @@ const configuredSiteUrl = normalizeSiteUrl(import.meta.env.SITE_URL ?? '');
 
 export const isSiteUrlConfigured = configuredSiteUrl.length > 0;
 
+const gaFromEnv = (import.meta.env.PUBLIC_GA_MEASUREMENT_ID ?? '').trim().toUpperCase();
+
 export const siteConfig = {
   siteName: 'Fusion Football Club',
   siteUrl: isSiteUrlConfigured ? configuredSiteUrl : FALLBACK_SITE_URL,
@@ -15,8 +17,12 @@ export const siteConfig = {
   defaultOgImage: '/og/default.jpg',
   locale: 'en_GB',
   clubContactEmail: 'info@fusionfc.co.uk',
-  /** Google Analytics 4. Only loaded after a visitor accepts analytics cookies. */
-  googleAnalyticsId: 'G-BBFQYZMGJ6'
+  /**
+   * Google Analytics 4 measurement ID ("G-…"), or a Google Tag Manager
+   * container ("GTM-…"). Only loaded after a visitor accepts analytics
+   * cookies. Set PUBLIC_GA_MEASUREMENT_ID to switch.
+   */
+  googleAnalyticsId: /^(G|GTM)-[A-Z0-9]{4,}$/.test(gaFromEnv) ? gaFromEnv : 'G-WHFLGSVST8'
 } as const;
 
 export const toAbsoluteUrl = (pathOrUrl: string) => {

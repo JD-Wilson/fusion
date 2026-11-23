@@ -6,6 +6,9 @@
  * calmer, denser scale for getting things done.
  */
 
+/* Chart series colour: a step of the accent validated for marks on the dark surface (lightness band, ≥3:1). */
+:root { --chart-1: #22a35b; }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {

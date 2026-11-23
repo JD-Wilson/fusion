@@ -1,0 +1,153 @@
+---
+/*
+ * A single-series daily line chart (inline SVG). Hover, touch or arrow keys
+ * show the day's value; the same numbers are in the table below it.
+ */
+interface Props {
+  points: { date: string; value: number }[];
+  /** e.g. "visitors" — used in the readout and the table. */
+  unit: string;
+  label: string;
+}
+const { points, unit, label } = Astro.props as Props;
+
+const W = 720;
+const H = 220;
+const pad = { top: 18, right: 4, bottom: 26, left: 4 };
+const iw = W - pad.left - pad.right;
+const ih = H - pad.top - pad.bottom;
+
+const max = Math.max(1, ...points.map((p) => p.value));
+// A "nice" top for the axis: 1, 2 or 5 × a power of ten, with 4 steps.
+const rawStep = max / 4;
+const mag = 10 ** Math.floor(Math.log10(rawStep));
+const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= rawStep) ?? rawStep);
+const top = step * Math.ceil(max / step);
+const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+
+const x = (i: number) => pad.left + (points.length <= 1 ? iw / 2 : (i / (points.length - 1)) * iw);
+const y = (v: number) => pad.top + ih - (v / top) * ih;
+const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(' ');
+const area = points.length ? `${line} L${x(points.length - 1).toFixed(1)},${y(0)} L${x(0).toFixed(1)},${y(0)} Z` : '';
+
+const day = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...opts });
+// X labels on the 1st of each month.
+const monthTicks = points.map((p, i) => ({ i, p })).filter(({ p }) => p.date.endsWith('-01'));
+const total = points.reduce((s, p) => s + p.value, 0);
+const pctX = (i: number) => (x(i) / W) * 100;
+const pctY = (v: number) => (y(v) / H) * 100;
+// [label, value, x%, y%] for the hover readout.
+const data = JSON.stringify(
+  points.map((p, i) => [day(p.date, { weekday: 'short', day: 'numeric', month: 'short' }), p.value, +pctX(i).toFixed(2), +pctY(p.value).toFixed(2)])
+);
+---
+
+<figure class="lc" data-line-chart data-points={data} data-unit={unit}>
+  <div class="lc-plot" data-plot data-left={(pad.left / W) * 100} data-width={(iw / W) * 100}>
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: ${total.toLocaleString('en-GB')} ${unit} over ${points.length} days`} tabindex="0" preserveAspectRatio="none">
+      {ticks.map((t) => <line class="grid" x1={pad.left} x2={W - pad.right} y1={y(t)} y2={y(t)} />)}
+      <path class="area" d={area} />
+      <path class="line" d={line} />
+      <line class="cross" data-cross x1="0" x2="0" y1={pad.top} y2={pad.top + ih} visibility="hidden" />
+    </svg>
+    {ticks.map((t) => <span class="axis y" style={`top:${pctY(t)}%`} aria-hidden="true">{t.toLocaleString('en-GB')}</span>)}
+    {monthTicks.map(({ i, p }) => <span class="axis x" style={`left:${pctX(i)}%`} aria-hidden="true">{day(p.date, { month: 'short' })}</span>)}
+    <span class="dot" data-dot hidden></span>
+    <div class="tip" data-tip hidden><strong data-tip-value></strong><span data-tip-label></span></div>
+  </div>
+  <details class="lc-table">
+    <summary>Show as a table</summary>
+    <table>
+      <thead><tr><th scope="col">Day</th><th scope="col">{unit.charAt(0).toUpperCase() + unit.slice(1)}</th></tr></thead>
+      <tbody>
+        {[...points].reverse().map((p) => <tr><td>{day(p.date, { weekday: 'short', day: 'numeric', month: 'short' })}</td><td>{p.value.toLocaleString('en-GB')}</td></tr>)}
+      </tbody>
+    </table>
+  </details>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-line-chart]').forEach((fig) => {
+    const points = JSON.parse(fig.dataset.points ?? '[]') as [string, number, number, number][];
+    const unit = fig.dataset.unit ?? '';
+    const plot = fig.querySelector<HTMLElement>('[data-plot]')!;
+    const svg = plot.querySelector('svg')!;
+    const cross = plot.querySelector<SVGLineElement>('[data-cross]')!;
+    const dot = plot.querySelector<HTMLElement>('[data-dot]')!;
+    const tip = plot.querySelector<HTMLElement>('[data-tip]')!;
+    if (!points.length) return;
+    const left = Number(plot.dataset.left);
+    const width = Number(plot.dataset.width);
+    let current = points.length - 1;
+
+    const show = (i: number) => {
+      current = Math.max(0, Math.min(points.length - 1, i));
+      const [label, value, px, py] = points[current]!;
+      const vx = String((px / 100) * 720);
+      cross.setAttribute('x1', vx);
+      cross.setAttribute('x2', vx);
+      cross.setAttribute('visibility', 'visible');
+      dot.style.left = `${px}%`;
+      dot.style.top = `${py}%`;
+      dot.hidden = false;
+      tip.querySelector('[data-tip-value]')!.textContent = `${value.toLocaleString('en-GB')} ${unit}`;
+      tip.querySelector('[data-tip-label]')!.textContent = label;
+      tip.hidden = false;
+      // Keep the readout inside the chart.
+      const w = plot.clientWidth;
+      tip.style.left = `${Math.min(Math.max((px / 100) * w, 64), w - 64)}px`;
+    };
+    const hide = () => {
+      cross.setAttribute('visibility', 'hidden');
+      dot.hidden = true;
+      tip.hidden = true;
+    };
+    const fromPointer = (e: PointerEvent) => {
+      const box = plot.getBoundingClientRect();
+      const pct = ((e.clientX - box.left) / box.width) * 100;
+      show(Math.round(((pct - left) / width) * (points.length - 1)));
+    };
+
+    svg.addEventListener('pointermove', fromPointer);
+    svg.addEventListener('pointerdown', fromPointer);
+    svg.addEventListener('pointerleave', hide);
+    svg.addEventListener('focus', () => show(current));
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        show(current + (e.key === 'ArrowLeft' ? -1 : 1));
+      }
+    });
+  });
+</script>
+
+<style>
+  .lc { margin: 0; }
+  .lc-plot { position: relative; }
+  svg { display: block; width: 100%; height: 220px; overflow: visible; touch-action: pan-y; }
+  svg:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 4px; border-radius: 4px; }
+  .grid { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .axis { position: absolute; color: var(--text-3); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; }
+  .axis.y { left: 0; transform: translateY(calc(-100% - 3px)); }
+  .axis.x { bottom: 4px; transform: translateX(-50%); }
+  .line { fill: none; stroke: var(--chart-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .area { fill: var(--chart-1); opacity: 0.12; }
+  .cross { stroke: var(--text-3); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .dot {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
+    background: var(--chart-1); box-shadow: 0 0 0 2px var(--surface);
+  }
+  .dot[hidden], .tip[hidden] { display: none; }
+  .tip {
+    position: absolute; top: -6px; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
+    display: grid; gap: 0.1rem; padding: 0.4rem 0.6rem; border-radius: 8px;
+    background: var(--surface-3); border: 1px solid var(--line-strong); font-size: 0.8rem; color: var(--text-2);
+  }
+  .tip strong { color: var(--text); font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+  .lc-table { margin-top: 0.6rem; font-size: 0.85rem; }
+  .lc-table summary { cursor: pointer; color: var(--text-3); }
+  .lc-table table { margin-top: 0.5rem; width: 100%; max-width: 320px; border-collapse: collapse; }
+  .lc-table th, .lc-table td { text-align: left; padding: 0.25rem 0.4rem; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  .lc-table th { color: var(--text-3); font-weight: 600; }
+</style>
