@@ -2,7 +2,7 @@
 import BarList from '../../components/portal/BarList.astro';
 import LineChart from '../../components/portal/LineChart.astro';
 import PortalLayout from '../../components/portal/PortalLayout.astro';
-import { loadAnalytics, type Totals } from '../../lib/google-analytics';
+import { loadAnalytics, loadRealtime, type Totals } from '../../lib/google-analytics';
 import { ago, countNewEnquiries } from '../../lib/portal';
 
 export const prerender = false;
@@ -14,7 +14,8 @@ const fresh = Astro.url.searchParams.get('fresh') === '1';
 const since = new Date(Date.now() - 28 * 86400000).toISOString();
 const before = new Date(Date.now() - 56 * 86400000).toISOString();
 
-const [{ data: ga, error }, newEnquiries, { data: enquiryData }, { data: vacancyData }, { data: teamData }] = await Promise.all([
+const [realtime, { data: ga, error }, newEnquiries, { data: enquiryData }, { data: vacancyData }, { data: teamData }] = await Promise.all([
+  loadRealtime(),
   loadAnalytics(fresh),
   countNewEnquiries(supabase),
   supabase.from('enquiries').select('team_id, created_at').gte('created_at', before),
@@ -82,6 +83,26 @@ const pageLabel = (path: string) => (path === '/' ? 'Home' : path.replace(/\/$/,
         set <code>GA_PROPERTY_ID</code> and <code>GA_SERVICE_ACCOUNT_KEY</code> in Vercel (see "Analytics dashboard" in the README), then redeploy.
         The website's own figures below work already.
       </p>
+    </div>
+  )}
+
+  {realtime && (
+    <div class="card live">
+      <div class="live-head">
+        <span class="pulse" aria-hidden="true"></span>
+        <h2>Right now</h2>
+        <span class="note">Visitors in the last 30 minutes</span>
+      </div>
+      <strong class="t-value">{fmt(realtime.visitors)}</strong>
+      {realtime.pages.length > 0 && <BarList items={realtime.pages} />}
+      <p class="note" style="margin-top:0.6rem">Updates within a minute. The figures below take Google a day or two to process.</p>
+    </div>
+  )}
+
+  {ga && ga.daily.every((d) => d.visitors === 0) && (
+    <div class="msg ok" role="status">
+      No visits processed yet. Google takes 24 to 48 hours to add visits to these reports, so a new Analytics property starts empty.
+      {realtime && realtime.visitors > 0 ? ' Visits are coming in (see "Right now"), so these will fill in soon.' : ' To check tracking works, accept cookies on the site in a private window, then refresh this page and look at "Right now".'}
     </div>
   )}
 
@@ -173,6 +194,10 @@ const pageLabel = (path: string) => (path === '/' ? 'Home' : path.replace(/\/$/,
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; margin-top: 1rem; }
   .grid .card { margin-top: 0; }
   .note { font-size: 0.82rem; color: var(--text-3); }
+  .live { margin-bottom: 1rem; display: grid; gap: 0.5rem; }
+  .live-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .live-head h2 { margin: 0; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
   .sub { font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 1.1rem 0 0.6rem; }
   .section-h { font-size: 1.1rem; margin-top: 2rem; }
   .foot { margin-top: 1.4rem; font-size: 0.82rem; color: var(--text-3); max-width: 70ch; }
