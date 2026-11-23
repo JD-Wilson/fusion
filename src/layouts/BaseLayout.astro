@@ -3,6 +3,7 @@ import SEOHead from '../components/SEOHead.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import CookieBanner from '../components/CookieBanner.astro';
+import PointerGlow from '../components/PointerGlow.astro';
 import '../styles/global.css';
 import { createOrganizationJsonLd } from '../lib/seo';
 import type { SEOProps } from '../types/seo';
@@ -91,6 +92,7 @@ if (!Astro.response.headers.has('Cache-Control')) {
     />
   </head>
   <body>
+    <PointerGlow />
     <a class="skip-link" href="#content">Skip to content</a>
     <SiteHeader />
     <main id="content">
@@ -161,20 +163,6 @@ if (!Astro.response.headers.has('Cache-Control')) {
       img.addEventListener('error', show);
     }
   });
-
-  /* ─── Cursor glow on dark sections ──────────────────── */
-  document.querySelectorAll<HTMLElement>('.dark-band').forEach((section) => {
-    section.addEventListener('mousemove', (e: MouseEvent) => {
-      const rect = section.getBoundingClientRect();
-      section.style.setProperty('--cursor-x', `${e.clientX - rect.left}px`);
-      section.style.setProperty('--cursor-y', `${e.clientY - rect.top}px`);
-    });
-    section.addEventListener('mouseleave', () => {
-      section.style.setProperty('--cursor-x', '-200%');
-      section.style.setProperty('--cursor-y', '-200%');
-    });
-  });
-
 </script>
 
 <style>
