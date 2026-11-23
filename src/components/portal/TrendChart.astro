@@ -1,0 +1,256 @@
+---
+/*
+ * Daily trend with switches for the measure (visitors / visits / page views)
+ * and the range (28 or 90 days). Over 28 days the previous 28 are drawn as a
+ * dashed line to compare against. Hover, tap or arrow keys show each day's
+ * figures; the same numbers are in the table underneath.
+ */
+interface Props {
+  /** Oldest first, ending today; needs 118 days for the 28-day comparison. */
+  days: { date: string; visitors: number; visits: number; pageViews: number }[];
+}
+const { days } = Astro.props as Props;
+const label = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...opts });
+const data = JSON.stringify(days.map((d) => [d.date, label(d.date, { weekday: 'short', day: 'numeric', month: 'short' }), d.visitors, d.visits, d.pageViews]));
+const recent = days.slice(-90).reverse();
+---
+
+<figure class="tc" data-trend data-days={data}>
+  <div class="tc-controls">
+    <div class="seg" role="group" aria-label="Measure">
+      <button type="button" data-metric="2" aria-pressed="true">Visitors</button>
+      <button type="button" data-metric="3" aria-pressed="false">Visits</button>
+      <button type="button" data-metric="4" aria-pressed="false">Page views</button>
+    </div>
+    <div class="seg" role="group" aria-label="Range">
+      <button type="button" data-range="28" aria-pressed="true">28 days</button>
+      <button type="button" data-range="90" aria-pressed="false">90 days</button>
+    </div>
+  </div>
+
+  <div class="tc-legend" data-legend>
+    <span><i class="sw now"></i><span data-legend-now>Last 28 days</span> <strong data-total-now></strong></span>
+    <span data-legend-prev><i class="sw prev"></i>Previous 28 days <strong data-total-prev></strong></span>
+  </div>
+
+  <div class="tc-plot" data-plot>
+    <svg viewBox="0 0 720 240" preserveAspectRatio="none" role="img" tabindex="0" data-svg aria-label="Daily trend">
+      <g data-grid></g>
+      <path class="area" data-area d="" />
+      <path class="prev" data-prev d="" />
+      <path class="now" data-now d="" />
+      <line class="cross" data-cross x1="0" x2="0" y1="18" y2="214" visibility="hidden" />
+    </svg>
+    <div data-labels></div>
+    <span class="dot now" data-dot-now hidden></span>
+    <span class="dot prev" data-dot-prev hidden></span>
+    <div class="tip" data-tip hidden></div>
+  </div>
+
+  <details class="tc-table">
+    <summary>Show as a table</summary>
+    <div class="scroll">
+      <table>
+        <thead><tr><th scope="col">Day</th><th scope="col">Visitors</th><th scope="col">Visits</th><th scope="col">Page views</th></tr></thead>
+        <tbody>
+          {recent.map((d) => (
+            <tr><td>{label(d.date, { weekday: 'short', day: 'numeric', month: 'short' })}</td><td>{d.visitors.toLocaleString('en-GB')}</td><td>{d.visits.toLocaleString('en-GB')}</td><td>{d.pageViews.toLocaleString('en-GB')}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</figure>
+
+<script>
+  type Day = [string, string, number, number, number];
+  const NAMES: Record<number, string> = { 2: 'visitors', 3: 'visits', 4: 'page views' };
+  const W = 720, H = 240, PAD = { top: 18, right: 6, bottom: 26, left: 6 };
+  const IW = W - PAD.left - PAD.right, IH = H - PAD.top - PAD.bottom;
+  const fmt = (n: number) => n.toLocaleString('en-GB');
+
+  document.querySelectorAll<HTMLElement>('[data-trend]').forEach((fig) => {
+    const days = JSON.parse(fig.dataset.days ?? '[]') as Day[];
+    const $ = <T extends Element>(sel: string) => fig.querySelector<T>(sel)!;
+    const svg = $<SVGSVGElement>('[data-svg]');
+    const plot = $<HTMLElement>('[data-plot]');
+    const grid = $<SVGGElement>('[data-grid]');
+    const labels = $<HTMLElement>('[data-labels]');
+    const tip = $<HTMLElement>('[data-tip]');
+    const cross = $<SVGLineElement>('[data-cross]');
+    const dotNow = $<HTMLElement>('[data-dot-now]');
+    const dotPrev = $<HTMLElement>('[data-dot-prev]');
+    let metric: 2 | 3 | 4 = 2;
+    let range = 28;
+    let current = -1;
+    let now: Day[] = [];
+    let prev: Day[] = [];
+    let top = 1;
+
+    const x = (i: number, n: number) => PAD.left + (n <= 1 ? IW / 2 : (i / (n - 1)) * IW);
+    const y = (v: number) => PAD.top + IH - (v / top) * IH;
+    const path = (list: Day[]) => list.map((d, i) => `${i ? 'L' : 'M'}${x(i, list.length).toFixed(1)},${y(d[metric]).toFixed(1)}`).join(' ');
+
+    function draw() {
+      now = days.slice(-range);
+      prev = range === 28 ? days.slice(-56, -28) : [];
+      const max = Math.max(1, ...now.map((d) => d[metric]), ...prev.map((d) => d[metric]));
+      const raw = max / 4;
+      const mag = 10 ** Math.floor(Math.log10(raw));
+      const step = Math.max(1, [1, 2, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw);
+      top = step * Math.ceil(max / step);
+
+      grid.replaceChildren();
+      labels.replaceChildren();
+      for (let t = 0; t <= top; t += step) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(PAD.left));
+        line.setAttribute('x2', String(W - PAD.right));
+        line.setAttribute('y1', String(y(t)));
+        line.setAttribute('y2', String(y(t)));
+        line.setAttribute('class', 'grid');
+        grid.append(line);
+        const lab = document.createElement('span');
+        lab.className = 'axis y';
+        lab.style.top = `${(y(t) / H) * 100}%`;
+        lab.textContent = fmt(t);
+        labels.append(lab);
+      }
+      // X labels: Mondays over 28 days, the 1st of each month over 90.
+      now.forEach((d, i) => {
+        const date = new Date(`${d[0]}T12:00:00Z`);
+        const show = range === 28 ? date.getUTCDay() === 1 : date.getUTCDate() === 1;
+        if (!show) return;
+        const lab = document.createElement('span');
+        lab.className = 'axis x';
+        lab.style.left = `${(x(i, now.length) / W) * 100}%`;
+        lab.textContent = date.toLocaleDateString('en-GB', { timeZone: 'UTC', ...(range === 28 ? { day: 'numeric', month: 'short' } : { month: 'short' }) });
+        labels.append(lab);
+      });
+
+      const line = path(now);
+      $<SVGPathElement>('[data-now]').setAttribute('d', line);
+      $<SVGPathElement>('[data-area]').setAttribute('d', now.length ? `${line} L${x(now.length - 1, now.length)},${y(0)} L${x(0, now.length)},${y(0)} Z` : '');
+      $<SVGPathElement>('[data-prev]').setAttribute('d', prev.length ? path(prev) : '');
+
+      const sum = (list: Day[]) => list.reduce((s, d) => s + d[metric], 0);
+      $<HTMLElement>('[data-legend-now]').textContent = range === 28 ? 'Last 28 days' : 'Last 90 days';
+      $<HTMLElement>('[data-total-now]').textContent = `${fmt(sum(now))} ${NAMES[metric]}`;
+      $<HTMLElement>('[data-legend-prev]').hidden = !prev.length;
+      $<HTMLElement>('[data-total-prev]').textContent = `${fmt(sum(prev))}`;
+      svg.setAttribute('aria-label', `${NAMES[metric]} per day, ${range === 28 ? 'last 28 days compared with the 28 before' : 'last 90 days'}: ${fmt(sum(now))} in total`);
+      if (current >= 0) show(Math.min(current, now.length - 1));
+    }
+
+    function show(i: number) {
+      current = Math.max(0, Math.min(now.length - 1, i));
+      const d = now[current]!;
+      const px = (x(current, now.length) / W) * 100;
+      cross.setAttribute('x1', String(x(current, now.length)));
+      cross.setAttribute('x2', String(x(current, now.length)));
+      cross.setAttribute('visibility', 'visible');
+      dotNow.style.left = `${px}%`;
+      dotNow.style.top = `${(y(d[metric]) / H) * 100}%`;
+      dotNow.hidden = false;
+      const p = prev[current];
+      dotPrev.hidden = !p;
+      if (p) {
+        dotPrev.style.left = `${px}%`;
+        dotPrev.style.top = `${(y(p[metric]) / H) * 100}%`;
+      }
+      // One readout with every series at this day; values first.
+      tip.replaceChildren();
+      const row = (cls: string, value: number, text: string) => {
+        const r = document.createElement('span');
+        r.className = 'tip-row';
+        const sw = document.createElement('i');
+        sw.className = `sw ${cls}`;
+        const v = document.createElement('strong');
+        v.textContent = fmt(value);
+        r.append(sw, v, document.createTextNode(` ${text}`));
+        tip.append(r);
+      };
+      row('now', d[metric], d[1]);
+      if (p) row('prev', p[metric], p[1]);
+      tip.hidden = false;
+      const w = plot.clientWidth;
+      tip.style.left = `${Math.min(Math.max((px / 100) * w, 80), w - 80)}px`;
+    }
+    function hide() {
+      current = -1;
+      cross.setAttribute('visibility', 'hidden');
+      dotNow.hidden = dotPrev.hidden = tip.hidden = true;
+    }
+    const fromPointer = (e: PointerEvent) => {
+      const box = plot.getBoundingClientRect();
+      const vx = ((e.clientX - box.left) / box.width) * W;
+      show(Math.round(((vx - PAD.left) / IW) * (now.length - 1)));
+    };
+    svg.addEventListener('pointermove', fromPointer);
+    svg.addEventListener('pointerdown', fromPointer);
+    svg.addEventListener('pointerleave', hide);
+    svg.addEventListener('focus', () => show(now.length - 1));
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      show((current < 0 ? now.length - 1 : current) + (e.key === 'ArrowLeft' ? -1 : 1));
+    });
+
+    const press = (group: string, btn: HTMLButtonElement) =>
+      fig.querySelectorAll<HTMLButtonElement>(`[${group}]`).forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    fig.querySelectorAll<HTMLButtonElement>('[data-metric]').forEach((b) =>
+      b.addEventListener('click', () => { metric = Number(b.dataset.metric) as 2 | 3 | 4; press('data-metric', b); draw(); })
+    );
+    fig.querySelectorAll<HTMLButtonElement>('[data-range]').forEach((b) =>
+      b.addEventListener('click', () => { range = Number(b.dataset.range); press('data-range', b); hide(); draw(); })
+    );
+    draw();
+  });
+</script>
+
+<style>
+  .tc { margin: 0; display: grid; gap: 0.8rem; }
+  .tc-controls { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: space-between; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .seg button {
+    font: inherit; font-size: 0.82rem; font-weight: 600; border: 0; border-radius: 999px; padding: 0.35rem 0.8rem; min-height: 32px;
+    background: none; color: var(--text-3); cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] { background: var(--surface-3); color: var(--text); box-shadow: 0 0 0 1px var(--line-strong); }
+  .seg button:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+  .tc-legend { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-2); }
+  .tc-legend > span { display: inline-flex; align-items: center; gap: 0.45rem; }
+  .tc-legend strong { color: var(--text); font-variant-numeric: tabular-nums; }
+  .tc-legend [hidden] { display: none; }
+  :global(.tc .sw) { display: inline-block; width: 16px; height: 0; border-top: 2px solid var(--chart-1); flex: none; }
+  :global(.tc .sw.prev) { border-top: 2px dashed var(--text-3); }
+  .tc-plot { position: relative; }
+  svg { display: block; width: 100%; height: 240px; overflow: visible; touch-action: pan-y; }
+  svg:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 4px; border-radius: 4px; }
+  :global(.tc .grid) { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  .now { fill: none; stroke: var(--chart-1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .prev { fill: none; stroke: var(--text-3); stroke-width: 1.5; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+  .area { fill: var(--chart-1); opacity: 0.12; }
+  .cross { stroke: var(--text-3); stroke-width: 1; vector-effect: non-scaling-stroke; }
+  :global(.tc .axis) { position: absolute; color: var(--text-3); font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; white-space: nowrap; }
+  :global(.tc .axis.y) { left: 0; transform: translateY(calc(-100% - 3px)); }
+  :global(.tc .axis.x) { bottom: 4px; transform: translateX(-50%); }
+  .dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 0 0 2px var(--surface); }
+  .dot.now { background: var(--chart-1); }
+  .dot.prev { background: var(--text-3); }
+  .dot[hidden], .tip[hidden] { display: none; }
+  .tip {
+    position: absolute; top: -8px; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap; z-index: 2;
+    display: grid; gap: 0.2rem; padding: 0.45rem 0.65rem; border-radius: 8px;
+    background: var(--surface-3); border: 1px solid var(--line-strong); font-size: 0.8rem; color: var(--text-2);
+  }
+  :global(.tc .tip-row) { display: flex; align-items: center; gap: 0.4rem; }
+  :global(.tc .tip-row strong) { color: var(--text); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+  .tc-table { font-size: 0.85rem; }
+  .tc-table summary { cursor: pointer; color: var(--text-3); }
+  .scroll { max-height: 280px; overflow: auto; margin-top: 0.5rem; }
+  table { width: 100%; max-width: 520px; border-collapse: collapse; }
+  th, td { text-align: left; padding: 0.25rem 0.5rem; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-3); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+</style>
