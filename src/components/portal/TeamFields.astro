@@ -84,7 +84,7 @@ const t = team ?? {};
         <input type="text" name="fulltime_name" maxlength="120" value={t.fulltime_name ?? ''} list="fulltime-teams" placeholder="e.g. Fusion FC U8 Black" />
         <span class="hint">
           {fulltimeTeams.length
-            ? 'Start typing and pick the team from the list. This shows its fixtures, results and league table on the team page.'
+            ? 'Pick the team from the list, or just type its age group and colour (e.g. U8 White). This shows its fixtures, results and league table on the team page.'
             : 'The list fills in after the first Full-Time update. Enter it exactly as Full-Time shows it.'}
         </span>
         <datalist id="fulltime-teams">
