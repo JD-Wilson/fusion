@@ -136,8 +136,35 @@ const fade = Boolean(image) && layout === 'fade';
     background: linear-gradient(0deg, var(--bg) 0%, rgba(9, 11, 10, 0.82) 20%, rgba(9, 11, 10, 0.35) 42%, rgba(9, 11, 10, 0) 62%);
   }
 
+  /* Tighter text block that sits low on the photo. */
+  .fade .hero-inner {
+    padding-bottom: clamp(2rem, 5vh, 3rem);
+  }
+
   .fade .hero-content {
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.5);
+  }
+
+  /* A solid pill so it reads on any photo. */
+  .fade .eyebrow {
+    margin-bottom: 0.7rem;
+    background: rgba(9, 11, 10, 0.72);
+    backdrop-filter: blur(6px);
+    text-shadow: none;
+  }
+
+  .fade .hero-title {
+    font-size: clamp(2.2rem, 4.6vw, 3.6rem);
+  }
+
+  .fade .hero-summary {
+    margin-top: 0.4rem;
+    color: var(--text);
+    opacity: 0.85;
+  }
+
+  .fade .hero-actions {
+    margin-top: 1.2rem;
   }
 
   @media (max-width: 720px) {
