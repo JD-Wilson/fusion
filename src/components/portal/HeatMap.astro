@@ -1,0 +1,93 @@
+---
+/*
+ * When people visit: weekday × hour, shaded by the number of visits (one
+ * hue, darker = fewer). Hover, tap or focus a cell for its figure.
+ */
+interface Props {
+  cells: { day: number; hour: number; value: number }[];
+  unit: string;
+}
+const { cells, unit } = Astro.props as Props;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const FULL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const grid = Array.from({ length: 7 }, () => Array<number>(24).fill(0));
+for (const c of cells) if (grid[c.day] && c.hour >= 0 && c.hour < 24) grid[c.day]![c.hour]! += c.value;
+const max = Math.max(1, ...grid.flat());
+// Five steps from "none" up to the busiest hour.
+const step = (v: number) => (v === 0 ? 0 : Math.min(5, Math.ceil((v / max) * 5)));
+const hourLabel = (h: number) => `${String(h).padStart(2, '0')}:00`;
+const busiest = grid.flatMap((row, d) => row.map((v, h) => ({ d, h, v }))).sort((a, b) => b.v - a.v)[0];
+---
+
+<figure class="heat" data-heat>
+  {busiest && busiest.v > 0 && (
+    <p class="busiest">Busiest: <strong>{FULL[busiest.d]}s, {hourLabel(busiest.h)}–{hourLabel((busiest.h + 1) % 24)}</strong></p>
+  )}
+  <div class="hm" role="table" aria-label={`${unit} by day and hour`}>
+    <div class="hm-row hm-head" role="row">
+      <span role="columnheader"></span>
+      {Array.from({ length: 24 }, (_, h) => <span class="hm-hour" role="columnheader" aria-label={hourLabel(h)}>{h % 3 === 0 ? String(h).padStart(2, '0') : ''}</span>)}
+    </div>
+    {grid.map((row, d) => (
+      <div class="hm-row" role="row">
+        <span class="hm-day" role="rowheader">{DAYS[d]}</span>
+        {row.map((v, h) => (
+          <span class={`hm-cell s${step(v)}`} role="cell" tabindex="-1" data-tip={`${FULL[d]} ${hourLabel(h)}–${hourLabel((h + 1) % 24)}`} data-value={v} aria-label={`${FULL[d]} ${hourLabel(h)}: ${v} ${unit}`}></span>
+        ))}
+      </div>
+    ))}
+  </div>
+  <div class="hm-foot">
+    <span class="scale" aria-hidden="true">Fewer <i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i> More</span>
+    <span class="readout" data-readout aria-live="polite">Hover or tap a square for its number.</span>
+  </div>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-heat]').forEach((fig) => {
+    const readout = fig.querySelector<HTMLElement>('[data-readout]')!;
+    const idle = readout.textContent;
+    const unit = fig.querySelector('[role="table"]')?.getAttribute('aria-label')?.split(' ')[0] ?? '';
+    fig.querySelectorAll<HTMLElement>('.hm-cell').forEach((cell) => {
+      const show = () => {
+        fig.querySelectorAll('.hm-cell.on').forEach((c) => c.classList.remove('on'));
+        cell.classList.add('on');
+        readout.replaceChildren();
+        const strong = document.createElement('strong');
+        strong.textContent = `${Number(cell.dataset.value).toLocaleString('en-GB')} ${unit}`;
+        readout.append(strong, document.createTextNode(` · ${cell.dataset.tip}`));
+      };
+      cell.addEventListener('pointerenter', show);
+      cell.addEventListener('pointerdown', show);
+    });
+    fig.querySelector('.hm')!.addEventListener('pointerleave', () => {
+      fig.querySelectorAll('.hm-cell.on').forEach((c) => c.classList.remove('on'));
+      readout.textContent = idle;
+    });
+  });
+</script>
+
+<style>
+  .heat { margin: 0; display: grid; gap: 0.7rem; }
+  .busiest { margin: 0; font-size: 0.88rem; color: var(--text-2); }
+  .busiest strong { color: var(--text); }
+  .hm { display: grid; gap: 3px; }
+  .hm-row { display: grid; grid-template-columns: 2.4rem repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center; }
+  .hm-day, .hm-hour { font-size: 0.7rem; color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .hm-hour { text-align: left; white-space: nowrap; overflow: visible; }
+  .hm-cell { aspect-ratio: 1; border-radius: 3px; background: var(--surface-3); }
+  /* One hue, lightness stepping up with the count. */
+  .hm-cell.s1, .scale .s1 { background: color-mix(in oklab, var(--chart-1) 22%, var(--surface-3)); }
+  .hm-cell.s2, .scale .s2 { background: color-mix(in oklab, var(--chart-1) 42%, var(--surface-3)); }
+  .hm-cell.s3, .scale .s3 { background: color-mix(in oklab, var(--chart-1) 62%, var(--surface-3)); }
+  .hm-cell.s4, .scale .s4 { background: color-mix(in oklab, var(--chart-1) 82%, var(--surface-3)); }
+  .hm-cell.s5, .scale .s5 { background: color-mix(in oklab, var(--chart-1) 82%, #ffffff); }
+  .hm-cell.on { outline: 2px solid var(--text); outline-offset: 1px; }
+  .hm-foot { display: flex; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; align-items: center; font-size: 0.8rem; color: var(--text-3); }
+  .scale { display: inline-flex; align-items: center; gap: 3px; }
+  .scale i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .scale i:first-of-type { margin-left: 0.3rem; }
+  .scale i:last-of-type { margin-right: 0.3rem; }
+  .readout strong { color: var(--text); }
+  @media (max-width: 480px) { .hm-row { grid-template-columns: 2rem repeat(24, minmax(0, 1fr)); gap: 2px; } }
+</style>

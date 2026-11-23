@@ -119,8 +119,12 @@ export interface Share {
 export interface AnalyticsDashboard {
   current: Totals;
   previous: Totals;
-  /** Visitors per day, oldest first, 90 days ending today. */
-  daily: { date: string; visitors: number }[];
+  /** Per day, oldest first: 118 days ending today (90 to show, plus 28 earlier to compare against). */
+  daily: { date: string; visitors: number; visits: number; pageViews: number }[];
+  /** New vs returning visitors, last 28 days. */
+  audience: Share[];
+  /** Visits by weekday (0 = Monday) and hour (0–23), last 28 days. */
+  heat: { day: number; hour: number; value: number }[];
   pages: Share[];
   channels: Share[];
   sources: Share[];
@@ -162,17 +166,22 @@ export async function loadAnalytics(fresh = false): Promise<{ data: AnalyticsDas
       batch(property, key, [
         { dateRanges: [CURRENT, PREVIOUS], metrics },
         {
-          dateRanges: [{ startDate: '89daysAgo', endDate: 'today' }],
+          dateRanges: [{ startDate: '117daysAgo', endDate: 'today' }],
           dimensions: [{ name: 'date' }],
-          metrics: [{ name: 'activeUsers' }],
+          metrics: [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }],
           orderBys: [{ dimension: { dimensionName: 'date' } }],
-          limit: 120
+          limit: 200
         },
         top('pagePath', 'screenPageViews', 10),
         top('sessionDefaultChannelGroup', 'sessions', 8),
         top('deviceCategory', 'activeUsers', 5)
       ]),
-      batch(property, key, [top('city', 'activeUsers', 9), top('sessionSource', 'sessions', 9)])
+      batch(property, key, [
+        top('city', 'activeUsers', 9),
+        top('sessionSource', 'sessions', 9),
+        top('newVsReturning', 'activeUsers', 4),
+        { dateRanges: [CURRENT], dimensions: [{ name: 'dayOfWeek' }, { name: 'hour' }], metrics: [{ name: 'sessions' }], limit: 200 }
+      ])
     ]);
 
     const totals = (name: string): Totals => {
@@ -183,15 +192,22 @@ export async function loadAnalytics(fresh = false): Promise<{ data: AnalyticsDas
     };
 
     // Every day appears, with 0 for days with no visits.
-    const byDay = new Map(
-      (first[1]?.rows ?? []).map((r) => [r.dimensionValues?.[0]?.value ?? '', num(r.metricValues?.[0]?.value)])
-    );
+    const byDay = new Map((first[1]?.rows ?? []).map((r) => [r.dimensionValues?.[0]?.value ?? '', r.metricValues ?? []]));
     const daily: AnalyticsDashboard['daily'] = [];
     const today = new Date(new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' }) + 'T00:00:00Z');
-    for (let i = 89; i >= 0; i--) {
+    for (let i = 117; i >= 0; i--) {
       const d = new Date(today.getTime() - i * 86400000).toISOString().slice(0, 10);
-      daily.push({ date: d, visitors: byDay.get(d.replace(/-/g, '')) ?? 0 });
+      const m = byDay.get(d.replace(/-/g, '')) ?? [];
+      daily.push({ date: d, visitors: num(m[0]?.value), visits: num(m[1]?.value), pageViews: num(m[2]?.value) });
     }
+
+    // GA's dayOfWeek is 0 = Sunday; show Monday first.
+    const heat = (second[3]?.rows ?? []).map((r) => ({
+      day: (Number(r.dimensionValues?.[0]?.value ?? 0) + 6) % 7,
+      hour: Number(r.dimensionValues?.[1]?.value ?? 0),
+      value: num(r.metricValues?.[0]?.value)
+    }));
+    const audienceNames: Record<string, string> = { new: 'New visitors', returning: 'Returning visitors' };
 
     const data: AnalyticsDashboard = {
       current: totals('current'),
@@ -202,6 +218,8 @@ export async function loadAnalytics(fresh = false): Promise<{ data: AnalyticsDas
       devices: shares(first[4]).map((s) => ({ ...s, label: s.label.charAt(0).toUpperCase() + s.label.slice(1) })),
       towns: shares(second[0]).slice(0, 8),
       sources: shares(second[1]).slice(0, 8),
+      audience: shares(second[2]).map((s) => ({ ...s, label: audienceNames[s.label] ?? s.label })),
+      heat,
       fetchedAt: new Date().toISOString()
     };
     cache = { at: Date.now(), data };

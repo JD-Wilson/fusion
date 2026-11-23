@@ -1,6 +1,9 @@
 ---
 import BarList from '../../components/portal/BarList.astro';
-import LineChart from '../../components/portal/LineChart.astro';
+import DonutChart from '../../components/portal/DonutChart.astro';
+import HeatMap from '../../components/portal/HeatMap.astro';
+import SegmentedBar from '../../components/portal/SegmentedBar.astro';
+import TrendChart from '../../components/portal/TrendChart.astro';
 import PortalLayout from '../../components/portal/PortalLayout.astro';
 import { loadAnalytics, loadRealtime, type Totals } from '../../lib/google-analytics';
 import { ago, countNewEnquiries } from '../../lib/portal';
@@ -122,24 +125,37 @@ const pageLabel = (path: string) => (path === '/' ? 'Home' : path.replace(/\/$/,
       </div>
 
       <div class="card">
-        <div class="card-head"><h2>Visitors per day</h2><span class="note">Last 90 days</span></div>
-        <LineChart points={ga.daily.map((d) => ({ date: d.date, value: d.visitors }))} unit="visitors" label="Visitors per day" />
+        <h2>Visits over time</h2>
+        <TrendChart days={ga.daily} />
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Phone or computer</h2>
+          <DonutChart items={ga.devices} unit="visitors" label="Visitors by device" />
+        </div>
+        <div class="card">
+          <h2>New or returning</h2>
+          <DonutChart items={ga.audience} unit="visitors" label="New and returning visitors" />
+        </div>
+      </div>
+
+      <div class="card spaced">
+        <h2>How people find the site</h2>
+        <SegmentedBar items={ga.channels} label="Visits by channel" />
+        <h3 class="sub">Top sources</h3>
+        <BarList items={ga.sources} />
+      </div>
+
+      <div class="card spaced">
+        <h2>When people visit</h2>
+        <HeatMap cells={ga.heat} unit="visits" />
       </div>
 
       <div class="grid">
         <div class="card">
           <h2>Most viewed pages</h2>
           <BarList items={ga.pages.map((p) => ({ label: pageLabel(p.label), value: p.value, href: p.label.startsWith('/') ? p.label : undefined }))} />
-        </div>
-        <div class="card">
-          <h2>How people find the site</h2>
-          <BarList items={ga.channels} percent />
-          <h3 class="sub">Top sources</h3>
-          <BarList items={ga.sources} />
-        </div>
-        <div class="card">
-          <h2>Phone or computer</h2>
-          <BarList items={ga.devices} percent />
         </div>
         <div class="card">
           <h2>Where visitors are</h2>
@@ -194,6 +210,7 @@ const pageLabel = (path: string) => (path === '/' ? 'Home' : path.replace(/\/$/,
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 1rem; margin-top: 1rem; }
   .grid .card { margin-top: 0; }
   .note { font-size: 0.82rem; color: var(--text-3); }
+  .spaced { margin-top: 1rem; }
   .live { margin-bottom: 1rem; display: grid; gap: 0.5rem; }
   .live-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .live-head h2 { margin: 0; }

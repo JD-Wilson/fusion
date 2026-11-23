@@ -1,0 +1,76 @@
+---
+/*
+ * One whole split into up to six parts, as a tall segmented bar with the share
+ * printed on each block that has room, and a legend with every figure.
+ * Hover or focus a block or a legend row to pick it out.
+ */
+interface Props {
+  items: { label: string; value: number }[];
+  label: string;
+}
+const { items: raw, label } = Astro.props as Props;
+const COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)'];
+const sorted = [...raw].filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
+const items = sorted.length > 6 ? [...sorted.slice(0, 5), { label: 'Other', value: sorted.slice(5).reduce((s, i) => s + i.value, 0) }] : sorted;
+const total = items.reduce((s, i) => s + i.value, 0);
+const share = (v: number) => (total ? (v / total) * 100 : 0);
+---
+
+{items.length === 0 ? (
+  <p class="empty">No data yet.</p>
+) : (
+  <figure class="segbar" data-segbar>
+    <div class="bar" role="img" aria-label={`${label}: ${items.map((i) => `${i.label} ${Math.round(share(i.value))}%`).join(', ')}`}>
+      {items.map((item, i) => (
+        <span class="block" data-block={i} style={`flex-grow:${item.value};background:${COLORS[i]}`} title={`${item.label}: ${item.value.toLocaleString('en-GB')} (${Math.round(share(item.value))}%)`}>
+          {share(item.value) >= 9 && <span class="b-pct">{Math.round(share(item.value))}%</span>}
+        </span>
+      ))}
+    </div>
+    <ul class="legend">
+      {items.map((item, i) => (
+        <li data-key={i} tabindex="0">
+          <i class="sw" style={`background:${COLORS[i]}`}></i>
+          <span class="l-name">{item.label}</span>
+          <span class="l-val">{item.value.toLocaleString('en-GB')} <small>{Math.round(share(item.value))}%</small></span>
+        </li>
+      ))}
+    </ul>
+  </figure>
+)}
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-segbar]').forEach((fig) => {
+    const blocks = [...fig.querySelectorAll<HTMLElement>('[data-block]')];
+    const keys = [...fig.querySelectorAll<HTMLElement>('[data-key]')];
+    const pick = (i: number | null) => {
+      fig.classList.toggle('has-focus', i !== null);
+      blocks.forEach((b, j) => b.classList.toggle('on', j === i));
+      keys.forEach((k, j) => k.classList.toggle('on', j === i));
+    };
+    [...blocks, ...keys].forEach((el) => {
+      const i = Number(el.dataset.block ?? el.dataset.key);
+      el.addEventListener('pointerenter', () => pick(i));
+      el.addEventListener('pointerleave', () => pick(null));
+      el.addEventListener('focus', () => pick(i));
+      el.addEventListener('blur', () => pick(null));
+    });
+  });
+</script>
+
+<style>
+  .segbar { margin: 0; display: grid; gap: 0.9rem; }
+  .bar { display: flex; gap: 2px; height: 40px; border-radius: 8px; overflow: hidden; }
+  .block { min-width: 4px; display: grid; place-items: center; transition: opacity 0.15s ease; }
+  .has-focus .block { opacity: 0.35; }
+  .has-focus .block.on { opacity: 1; }
+  .b-pct { font-size: 0.78rem; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45); font-variant-numeric: tabular-nums; }
+  .legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.15rem 0.6rem; }
+  .legend li { display: inline-flex; gap: 0.5rem; align-items: center; max-width: 100%; padding: 0.35rem 0.5rem; border-radius: 8px; font-size: 0.86rem; }
+  .legend li.on, .legend li:focus-visible { background: var(--surface-2); outline: none; }
+  .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .l-name { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .l-val { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .l-val small { font-weight: 500; color: var(--text-3); margin-left: 0.25rem; }
+  @media (prefers-reduced-motion: reduce) { .block { transition: none; } }
+</style>

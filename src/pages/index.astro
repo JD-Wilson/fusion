@@ -1,4 +1,5 @@
 ---
+import { responsive } from '../lib/images';
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
@@ -108,10 +109,10 @@ const breadcrumbs = createBreadcrumbJsonLd([{ name: 'Home', path: '/' }]);
 
   <section class="photo-strip reveal" aria-hidden="true">
     <div class="photo-grid">
-      <img class="photo-item p1" src="/images/web/session-group-young.jpg" alt="" loading="lazy" style="object-position: center 40%" />
-      <img class="photo-item p2" src="/images/web/players-training-bibs.jpg" alt="" loading="lazy" style="object-position: center 35%" />
-      <img class="photo-item p3" src="/images/web/girls-session-evening.jpg" alt="" loading="lazy" style="object-position: 40% center" />
-      <img class="photo-item p4" src="/images/web/coach-directing.jpg" alt="" loading="lazy" style="object-position: center 30%" />
+      <img class="photo-item p1" {...responsive('/images/web/session-group-young.jpg', 'card')} alt="" loading="lazy" style="object-position: center 40%" />
+      <img class="photo-item p2" {...responsive('/images/web/players-training-bibs.jpg', 'card')} alt="" loading="lazy" style="object-position: center 35%" />
+      <img class="photo-item p3" {...responsive('/images/web/girls-session-evening.jpg', 'card')} alt="" loading="lazy" style="object-position: 40% center" />
+      <img class="photo-item p4" {...responsive('/images/web/coach-directing.jpg', 'card')} alt="" loading="lazy" style="object-position: center 30%" />
     </div>
   </section>
 </BaseLayout>

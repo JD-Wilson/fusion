@@ -1,0 +1,117 @@
+---
+/*
+ * A donut for a whole split into a few parts (2–4). The middle shows the
+ * largest part; hovering or focusing a slice or legend row shows that one.
+ * The legend lists every part with its figure and share, so nothing depends
+ * on reading the colours. Colours: the validated categorical order.
+ */
+interface Props {
+  items: { label: string; value: number }[];
+  /** What the numbers count, e.g. "visitors". */
+  unit: string;
+  label: string;
+}
+const { items: raw, unit, label } = Astro.props as Props;
+const COLORS = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)'];
+// Largest first; anything past four folds into "Other".
+const sorted = [...raw].filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
+const items = sorted.length > 4 ? [...sorted.slice(0, 3), { label: 'Other', value: sorted.slice(3).reduce((s, i) => s + i.value, 0) }] : sorted;
+const total = items.reduce((s, i) => s + i.value, 0);
+const pct = (v: number) => (total ? Math.round((v / total) * 100) : 0);
+
+// Each slice is a stroked arc on one circle; a 2px gap separates slices.
+const R = 70;
+const C = 2 * Math.PI * R;
+const gap = items.length > 1 ? 2 : 0;
+let offset = 0;
+const slices = items.map((item, i) => {
+  const length = total ? (item.value / total) * C : 0;
+  const slice = { ...item, color: COLORS[i]!, dash: `${Math.max(0, length - gap).toFixed(2)} ${(C - Math.max(0, length - gap)).toFixed(2)}`, offset: (-offset).toFixed(2) };
+  offset += length;
+  return slice;
+});
+const lead = items[0];
+---
+
+{items.length === 0 ? (
+  <p class="empty">No data yet.</p>
+) : (
+  <figure class="donut" data-donut>
+    <div class="ring">
+      <svg viewBox="0 0 180 180" role="img" aria-label={`${label}: ${items.map((i) => `${i.label} ${pct(i.value)}%`).join(', ')}`}>
+        <circle cx="90" cy="90" r={R} class="track" />
+        <g transform="rotate(-90 90 90)">
+          {slices.map((s, i) => (
+            <circle cx="90" cy="90" r={R} class="slice" data-slice={i} stroke={s.color} stroke-dasharray={s.dash} stroke-dashoffset={s.offset} />
+          ))}
+        </g>
+      </svg>
+      <div class="centre" aria-hidden="true">
+        <strong data-centre-value>{pct(lead!.value)}%</strong>
+        <span data-centre-label>{lead!.label}</span>
+      </div>
+    </div>
+    <ul class="legend">
+      {slices.map((s, i) => (
+        <li data-part={i} data-pct={pct(s.value)} data-label={s.label} tabindex="0">
+          <i class="sw" style={`background:${s.color}`}></i>
+          <span class="l-name">{s.label}</span>
+          <span class="l-val">{s.value.toLocaleString('en-GB')} <small>{pct(s.value)}%</small></span>
+        </li>
+      ))}
+      <li class="l-total"><span class="l-name">Total {unit}</span><span class="l-val">{total.toLocaleString('en-GB')}</span></li>
+    </ul>
+  </figure>
+)}
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-donut]').forEach((fig) => {
+    const value = fig.querySelector<HTMLElement>('[data-centre-value]')!;
+    const name = fig.querySelector<HTMLElement>('[data-centre-label]')!;
+    const parts = [...fig.querySelectorAll<HTMLElement>('[data-part]')];
+    const slices = [...fig.querySelectorAll<SVGCircleElement>('[data-slice]')];
+    const first = parts[0];
+    const focus = (i: number | null) => {
+      const part = i === null ? first : parts[i];
+      if (!part) return;
+      value.textContent = `${part.dataset.pct}%`;
+      name.textContent = part.dataset.label ?? '';
+      fig.classList.toggle('has-focus', i !== null);
+      slices.forEach((s, j) => s.classList.toggle('on', j === i));
+      parts.forEach((p, j) => p.classList.toggle('on', j === i));
+    };
+    const bind = (el: Element, i: number) => {
+      el.addEventListener('pointerenter', () => focus(i));
+      el.addEventListener('pointerleave', () => focus(null));
+      el.addEventListener('focus', () => focus(i));
+      el.addEventListener('blur', () => focus(null));
+    };
+    slices.forEach(bind);
+    parts.forEach(bind);
+  });
+</script>
+
+<style>
+  .donut { margin: 0; display: grid; grid-template-columns: minmax(140px, 180px) minmax(0, 1fr); gap: 1.2rem; align-items: center; }
+  @media (max-width: 420px) { .donut { grid-template-columns: 1fr; justify-items: center; } .legend { width: 100%; } }
+  .ring { position: relative; width: 100%; max-width: 180px; aspect-ratio: 1; }
+  svg { width: 100%; height: 100%; display: block; }
+  .track { fill: none; stroke: var(--surface-3); stroke-width: 22; }
+  .slice { fill: none; stroke-width: 22; transition: stroke-width 0.15s ease, opacity 0.15s ease; cursor: pointer; }
+  .has-focus .slice { opacity: 0.35; }
+  .has-focus .slice.on { opacity: 1; stroke-width: 26; }
+  .centre { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 0.1rem; pointer-events: none; padding: 2.2rem; }
+  .centre strong { font-family: var(--font-display); font-size: 1.7rem; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+  .centre span { font-size: 0.75rem; color: var(--text-3); line-height: 1.2; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.15rem; }
+  .legend li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0.6rem; align-items: center; padding: 0.4rem 0.5rem; border-radius: 8px; font-size: 0.88rem; }
+  .legend li[data-part] { cursor: default; }
+  .legend li.on, .legend li[data-part]:focus-visible { background: var(--surface-2); outline: none; }
+  .sw { width: 10px; height: 10px; border-radius: 3px; }
+  .l-name { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .l-val { font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+  .l-val small { font-weight: 500; color: var(--text-3); margin-left: 0.3rem; }
+  .l-total { grid-template-columns: minmax(0, 1fr) auto !important; border-top: 1px solid var(--line); border-radius: 0 !important; margin-top: 0.2rem; }
+  .l-total .l-name { color: var(--text-3); }
+  @media (prefers-reduced-motion: reduce) { .slice { transition: none; } }
+</style>
