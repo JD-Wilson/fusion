@@ -50,6 +50,28 @@ export async function createTeamFromFulltime(supabase: SupabaseClient, fulltimeN
   return insertTeam(supabase, { ...rest, age_group: rest.age_group || 'U?', fulltime_name, published: false, kind: 'team' });
 }
 
+/** Compare team names ignoring case, spacing and the repeated club name. */
+const teamKey = (name: string) =>
+  name.toLowerCase().replace(/fusion\s*fc/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+
+/** Find the Full-Time team someone means, or explain what to enter. */
+export function matchFulltimeTeam(typed: string): { name: string; error?: undefined } | { name?: undefined; error: string } {
+  if (fulltimeTeams.includes(typed)) return { name: typed };
+  if (/fulltime\.thefa\.com|^https?:/i.test(typed)) {
+    return { error: 'Put the Full-Time link in the "FA Full-Time link" box. In the name box, choose the team’s name from the list.' };
+  }
+  const key = teamKey(typed);
+  const hits = fulltimeTeams.filter((n) => teamKey(n) === key);
+  if (hits.length === 1) return { name: hits[0]! };
+  const age = /u\s*(\d{1,2})/i.exec(typed)?.[1];
+  const sameAge = age ? fulltimeTeams.filter((n) => new RegExp(`\\bU${age}\\b`, 'i').test(n)) : [];
+  return {
+    error: sameAge.length
+      ? `That name isn’t on Full-Time. The U${age} teams there are: ${sameAge.join(', ')}.`
+      : 'Choose the team’s name from the Full-Time list so its fixtures can be found.'
+  };
+}
+
 /** Day-to-day details any of the team's managers may change. */
 export function parseManagerTeamFields(form: FormData) {
   const fulltime = cleanFulltimeUrl(text(form, 'fulltime_url', 300));
@@ -68,10 +90,15 @@ export function parseManagerTeamFields(form: FormData) {
   }
   if (contact_email && !EMAIL.test(contact_email)) return { error: "That contact email doesn't look right." };
 
-  // Must match a Full-Time team name exactly, once the first snapshot exists.
-  const fulltime_name = line(form, 'fulltime_name', 120);
-  if (fulltime_name && fulltimeTeams.length && !fulltimeTeams.includes(fulltime_name)) {
-    return { error: 'Choose the team’s name from the Full-Time list so its fixtures can be found.' };
+  // Must match a Full-Time team name, once the first snapshot exists. Forgiving:
+  // "U8 White" finds Full-Time's "Fusion FC U8 Fusion FC White"; the exact
+  // Full-Time name is what's saved.
+  const typed = line(form, 'fulltime_name', 120);
+  let fulltime_name = typed;
+  if (typed && fulltimeTeams.length) {
+    const match = matchFulltimeTeam(typed);
+    if (match.name) fulltime_name = match.name;
+    else return { error: match.error };
   }
 
   return {
