@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-22T20:01:40.527Z",
+ "scrapedAt": "2026-11-23T19:45:18.966Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -5426,28 +5426,10 @@
    "league": "North Staffs Junior Youth League"
   },
   {
-   "id": "30990330",
-   "type": "League",
-   "date": "2026-11-29",
-   "time": "17:00",
-   "competition": "Under 7",
-   "home": {
-    "id": "fusion-fc-u7-fusion-fc-black",
-    "name": "Fusion FC U7 Fusion FC Black"
-   },
-   "away": {
-    "id": "newcastle-town-juniors-u7-evolution",
-    "name": "Newcastle Town Juniors U7 Evolution"
-   },
-   "venue": "ST LUKES C OF E ACADEMY",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
    "id": "30990331",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "10:10",
    "competition": "Under 7",
    "home": {
     "id": "fusion-fc-u7-fusion-fc-green",
@@ -5462,10 +5444,28 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990330",
+   "type": "League",
+   "date": "2026-11-29",
+   "time": "10:30",
+   "competition": "Under 7",
+   "home": {
+    "id": "fusion-fc-u7-fusion-fc-black",
+    "name": "Fusion FC U7 Fusion FC Black"
+   },
+   "away": {
+    "id": "newcastle-town-juniors-u7-evolution",
+    "name": "Newcastle Town Juniors U7 Evolution"
+   },
+   "venue": "ST LUKES C OF E ACADEMY",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990318",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "13:00",
    "competition": "Under 8",
    "home": {
     "id": "dl-ballerz-u8-dynamites-x",
@@ -5483,7 +5483,7 @@
    "id": "30990374",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "13:00",
    "competition": "Under 8",
    "home": {
     "id": "dl-ballerz-u8-dortmund",
@@ -5498,10 +5498,28 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990334",
+   "type": "League",
+   "date": "2026-11-29",
+   "time": "09:00",
+   "competition": "Under 9",
+   "home": {
+    "id": "fusion-fc-u9-fusion-fc-green",
+    "name": "Fusion FC U9 Fusion FC Green"
+   },
+   "away": {
+    "id": "walton-warriors-fc-u9",
+    "name": "Walton Warriors FC U9"
+   },
+   "venue": "DIMENSIONS LEISURE CENTRE",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990332",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "10:10",
    "competition": "Under 9",
    "home": {
     "id": "fusion-fc-u9",
@@ -5519,7 +5537,7 @@
    "id": "30990333",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "10:10",
    "competition": "Under 9",
    "home": {
     "id": "fusion-fc-u9-fusion-fc-black",
@@ -5528,24 +5546,6 @@
    "away": {
     "id": "newcastle-town-juniors-u9-evolution",
     "name": "Newcastle Town Juniors U9 Evolution"
-   },
-   "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990334",
-   "type": "League",
-   "date": "2026-11-29",
-   "time": "17:00",
-   "competition": "Under 9",
-   "home": {
-    "id": "fusion-fc-u9-fusion-fc-green",
-    "name": "Fusion FC U9 Fusion FC Green"
-   },
-   "away": {
-    "id": "walton-warriors-fc-u9",
-    "name": "Walton Warriors FC U9"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
    "status": null,
@@ -5570,28 +5570,10 @@
    "league": "North Staffs Junior Youth League"
   },
   {
-   "id": "30990315",
-   "type": "League",
-   "date": "2026-11-29",
-   "time": "11:30",
-   "competition": "Under 10",
-   "home": {
-    "id": "city-of-stoke-girls-u11-girls",
-    "name": "City of Stoke Girls U11 Girls"
-   },
-   "away": {
-    "id": "fusion-fc-u10-silver",
-    "name": "Fusion FC U10 Silver"
-   },
-   "venue": "THE GORDON BANKS SPORTS CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
    "id": "30990328",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "09:00",
    "competition": "Under 10",
    "home": {
     "id": "fusion-fc-u10-green",
@@ -5609,7 +5591,7 @@
    "id": "30990329",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "09:00",
    "competition": "Under 10",
    "home": {
     "id": "fusion-fc-u10-pu-green",
@@ -5620,6 +5602,24 @@
     "name": "FC33 United U10 Reds"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
+   "id": "30990315",
+   "type": "League",
+   "date": "2026-11-29",
+   "time": "11:30",
+   "competition": "Under 10",
+   "home": {
+    "id": "city-of-stoke-girls-u11-girls",
+    "name": "City of Stoke Girls U11 Girls"
+   },
+   "away": {
+    "id": "fusion-fc-u10-silver",
+    "name": "Fusion FC U10 Silver"
+   },
+   "venue": "THE GORDON BANKS SPORTS CENTRE",
    "status": null,
    "league": "North Staffs Junior Youth League"
   },
