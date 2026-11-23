@@ -44,6 +44,8 @@ export interface PublicVacancy {
   match_day: 'Saturday' | 'Sunday' | null;
   league: string | null;
   training: string | null;
+  /** The team's own cover photo, if it has one (from `teams`, added after loading). */
+  team_photo_url?: string | null;
 }
 
 export interface VacancyFilters {
@@ -71,7 +73,15 @@ export async function getPublicVacancies(): Promise<PublicVacancy[] | null> {
     console.error('[vacancies] load failed', error.message);
     return null;
   }
-  return ((data ?? []) as PublicVacancy[]).sort(
+  const list = (data ?? []) as PublicVacancy[];
+  // Team cover photos (public columns on published teams) for the cards.
+  const ids = [...new Set(list.map((v) => v.team_id))];
+  if (ids.length) {
+    const { data: photos } = await db.from('teams').select('id, photo_url').in('id', ids);
+    const byTeam = new Map(((photos ?? []) as { id: string; photo_url: string | null }[]).map((t) => [t.id, t.photo_url]));
+    for (const v of list) v.team_photo_url = byTeam.get(v.team_id) ?? null;
+  }
+  return list.sort(
     (a, b) => ageNumber(a.age_group) - ageNumber(b.age_group) || a.team_name.localeCompare(b.team_name)
   );
 }

@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
 import { createBreadcrumbJsonLd } from '../../lib/seo';
 import { isSupabaseConfigured } from '../../lib/supabase';
+import { teamPhoto } from '../../lib/teams';
 import {
   EXPERIENCE,
   LEVELS,
@@ -211,6 +212,9 @@ const expiry = (d: string) =>
               <div class="vac-grid">
                 {vacancies.map((v) => (
                   <article class="dark-card vac" id={`v-${v.id}`}>
+                    <a class="vac-cover" href={v.team_kind === 'development' ? '/development-sessions/' : `/teams/${v.team_slug}/`} tabindex="-1" aria-hidden="true">
+                      <img src={teamPhoto({ photo_url: v.team_photo_url ?? null, gender: v.gender, age_group: v.age_group })} alt="" loading="lazy" />
+                    </a>
                     <div class="vac-top">
                       <span class="vac-age">{v.age_group}</span>
                       <div>
@@ -422,7 +426,19 @@ const expiry = (d: string) =>
   .inline-link { color: var(--color-forest-deep); text-decoration: underline; font-weight: 600; }
 
   .vac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--space-m); position: relative; }
-  .vac { display: flex; flex-direction: column; gap: var(--space-s); }
+  .vac { display: flex; flex-direction: column; gap: var(--space-s); overflow: hidden; }
+  /* The team's cover photo, edge to edge across the top of the card. */
+  .vac-cover {
+    display: block;
+    margin: calc(var(--space-m) * -1) calc(var(--space-m) * -1) 0;
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    background: var(--surface-3);
+    border-bottom: 1px solid var(--line);
+  }
+  .vac-cover img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; transition: transform 0.4s ease; }
+  .vac:hover .vac-cover img { transform: scale(1.03); }
+  @media (prefers-reduced-motion: reduce) { .vac-cover img { transition: none; } .vac:hover .vac-cover img { transform: none; } }
   .vac-top { display: flex; gap: var(--space-s); align-items: center; }
   .vac-age {
     font-family: var(--font-display);
