@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-23T19:45:18.966Z",
+ "scrapedAt": "2026-11-26T01:42:43.590Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -4881,7 +4881,7 @@
     "id": "fusion-fc-u10-fusion-fc-pu-black",
     "name": "Fusion FC U10 Fusion FC PU Black"
    },
-   "venue": "HEMPSTALLS PRIMARY SCHOOL",
+   "venue": "THE ORME ACADEMY",
    "status": null,
    "league": "Staffordshire Junior Football League"
   },
@@ -5516,6 +5516,24 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990376",
+   "type": "League",
+   "date": "2026-11-29",
+   "time": "09:00",
+   "competition": "Under 9",
+   "home": {
+    "id": "penkhull-rangers-u10-girls",
+    "name": "Penkhull Rangers U10 Girls"
+   },
+   "away": {
+    "id": "fusion-fc-u10-girls",
+    "name": "Fusion FC U10 Girls"
+   },
+   "venue": "BIRCHENWOOD PLAYING FIELDS #4 B",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990332",
    "type": "League",
    "date": "2026-11-29",
@@ -5548,24 +5566,6 @@
     "name": "Newcastle Town Juniors U9 Evolution"
    },
    "venue": "DIMENSIONS LEISURE CENTRE",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
-   "id": "30990376",
-   "type": "League",
-   "date": "2026-11-29",
-   "time": "17:00",
-   "competition": "Under 9",
-   "home": {
-    "id": "penkhull-rangers-u10-girls",
-    "name": "Penkhull Rangers U10 Girls"
-   },
-   "away": {
-    "id": "fusion-fc-u10-girls",
-    "name": "Fusion FC U10 Girls"
-   },
-   "venue": "BIRCHENWOOD PLAYING FIELDS #4 B",
    "status": null,
    "league": "North Staffs Junior Youth League"
   },
@@ -5606,6 +5606,24 @@
    "league": "North Staffs Junior Youth League"
   },
   {
+   "id": "30990346",
+   "type": "League",
+   "date": "2026-11-29",
+   "time": "09:30",
+   "competition": "Under 10",
+   "home": {
+    "id": "leek-c-s-o-b-youth-u10-wolves",
+    "name": "Leek C.S.O.B Youth U10 Wolves"
+   },
+   "away": {
+    "id": "fusion-fc-u10-black",
+    "name": "Fusion FC U10 Black"
+   },
+   "venue": "WESTWOOD FIRST SCHOOL #3",
+   "status": null,
+   "league": "North Staffs Junior Youth League"
+  },
+  {
    "id": "30990315",
    "type": "League",
    "date": "2026-11-29",
@@ -5624,28 +5642,10 @@
    "league": "North Staffs Junior Youth League"
   },
   {
-   "id": "30990346",
-   "type": "League",
-   "date": "2026-11-29",
-   "time": "17:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "leek-c-s-o-b-youth-u10-wolves",
-    "name": "Leek C.S.O.B Youth U10 Wolves"
-   },
-   "away": {
-    "id": "fusion-fc-u10-black",
-    "name": "Fusion FC U10 Black"
-   },
-   "venue": "WESTWOOD FIRST SCHOOL #3",
-   "status": null,
-   "league": "North Staffs Junior Youth League"
-  },
-  {
    "id": "30990310",
    "type": "League",
    "date": "2026-11-29",
-   "time": "17:00",
+   "time": "10:15",
    "competition": "Under 11",
    "home": {
     "id": "cheadle-s-m-u-youth-u11-blue",
@@ -5987,7 +5987,7 @@
    "id": "30990570",
    "type": "League",
    "date": "2026-12-13",
-   "time": "17:00",
+   "time": "09:00",
    "competition": "Under 10",
    "home": {
     "id": "florence-fc-u10-black",
