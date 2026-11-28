@@ -1,5 +1,5 @@
 {
- "scrapedAt": "2026-11-26T01:42:43.590Z",
+ "scrapedAt": "2026-11-28T01:15:45.691Z",
  "leagues": [
   {
    "name": "Staffordshire Junior Football League",
@@ -40,6 +40,52 @@
   "Fusion FC U9 Fusion FC White"
  ],
  "results": [
+  {
+   "id": "31096808",
+   "type": "League",
+   "date": "2026-11-28",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "fusion-fc-u10-fusion-fc-white",
+    "name": "Fusion FC U10 Fusion FC White"
+   },
+   "away": {
+    "id": "nmh-fc-u10-ferdinand-collective-nmh-blac",
+    "name": "NMH FC U10 Ferdinand Collective NMH Blac"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096769",
+   "type": "League",
+   "date": "2026-11-28",
+   "time": "09:00",
+   "competition": "Under 8",
+   "home": {
+    "id": "dna-football-club-napoli",
+    "name": "DNA Football Club Napoli"
+   },
+   "away": {
+    "id": "fusion-fc-u8-fusion-fc",
+    "name": "Fusion FC U8 Fusion FC"
+   },
+   "venue": null,
+   "status": "Postponed",
+   "hidden": false,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
   {
    "id": "31096728",
    "type": "League",
@@ -306,6 +352,29 @@
    "away": {
     "id": "dl-ballerz-u10-dl-ballerz-falcons",
     "name": "DL BallerZ U10 DL BallerZ Falcons"
+   },
+   "venue": null,
+   "status": null,
+   "hidden": true,
+   "homeScore": null,
+   "awayScore": null,
+   "penalties": null,
+   "afterExtraTime": false,
+   "league": "Staffordshire Junior Football League"
+  },
+  {
+   "id": "31096702",
+   "type": "League",
+   "date": "2026-11-14",
+   "time": "09:00",
+   "competition": "Under 10",
+   "home": {
+    "id": "willaston-white-star-u10-willaston-white",
+    "name": "Willaston White Star U10 Willaston White"
+   },
+   "away": {
+    "id": "fusion-fc-u10-fusion-fc-white",
+    "name": "Fusion FC U10 Fusion FC White"
    },
    "venue": null,
    "status": null,
@@ -4505,24 +4574,6 @@
    },
    "venue": "REASEHEATH COLLEGE",
    "status": "Postponed Match Notes: Fusion request",
-   "league": "Staffordshire Junior Football League"
-  },
-  {
-   "id": "31096702",
-   "type": "League",
-   "date": "2026-11-14",
-   "time": "09:00",
-   "competition": "Under 10",
-   "home": {
-    "id": "willaston-white-star-u10-willaston-white",
-    "name": "Willaston White Star U10 Willaston White"
-   },
-   "away": {
-    "id": "fusion-fc-u10-fusion-fc-white",
-    "name": "Fusion FC U10 Fusion FC White"
-   },
-   "venue": "WILLASTON WHITE STAR FC",
-   "status": null,
    "league": "Staffordshire Junior Football League"
   },
   {
